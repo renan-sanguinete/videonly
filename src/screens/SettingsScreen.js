@@ -81,7 +81,7 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Configurações da câmera</Text>
       <Text style={styles.subtitle}>
-        Os ajustes abaixo alimentam os CameraProps da VisionCamera e já ficam prontos para o uso no preview e na gravação.
+        Os ajustes abaixo influenciam a captura de vídeo e foto.
       </Text>
 
       <SectionTitle>Captura</SectionTitle>

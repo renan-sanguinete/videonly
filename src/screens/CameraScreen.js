@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import {useIsFocused} from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {
   Camera,
   useCameraDevice,
@@ -47,8 +48,23 @@ function formatDate(dateLike) {
     timeStyle: 'short',
   }).format(date);
 }
+
+function formatElapsedTime(milliseconds) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
+  }
+
+  return [minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
+}
+
 export default function CameraScreen({navigation}) {
   const camera = useRef(null);
+  const recordingStartedAtRef = useRef(null);
   const isFocused = useIsFocused();
   const device = useCameraDevice('back');
   const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
@@ -61,7 +77,8 @@ export default function CameraScreen({navigation}) {
 
   const [isRecording, setIsRecording] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
-  const [status, setStatus] = useState('Pronto para gravar.');
+  const [fps, setFps] = useState('');
+  const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
 
   const selectedFormat = useMemo(() => {
     const index = settings.formatIndex === '' ? undefined : Number(settings.formatIndex);
@@ -111,15 +128,42 @@ export default function CameraScreen({navigation}) {
     loadVideosFromGallery();
   }, []);
 
+  useEffect(() => {
+    setFps(`FPS: ${cameraProps.fps ?? 'auto'}`);
+  }, [cameraProps.fps]);
+
+  useEffect(() => {
+    if (!isRecording || !recordingStartedAtRef.current) {
+      return undefined;
+    }
+
+    const syncElapsed = () => {
+      setRecordingElapsedMs(Date.now() - recordingStartedAtRef.current);
+    };
+
+    syncElapsed();
+    const intervalId = setInterval(syncElapsed, 250);
+
+    return () => clearInterval(intervalId);
+  }, [isRecording]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={{flexDirection: 'row', gap: 12}}>
-          <Pressable onPress={() => navigation.navigate('Library')}>
-            <Text style={styles.headerAction}>Vídeos</Text>
+          <Pressable
+            accessibilityLabel="Abrir galeria"
+            hitSlop={10}
+            onPress={() => navigation.navigate('Library')}
+            style={styles.headerIconButton}>
+            <Icon name="images-outline" size={24} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => navigation.navigate('Settings')}>
-            <Text style={styles.headerAction}>⚙</Text>
+          <Pressable
+            accessibilityLabel="Abrir configuracoes"
+            hitSlop={10}
+            onPress={() => navigation.navigate('Settings')}
+            style={styles.headerIconButton}>
+            <Icon name="settings-outline" size={22} color="#fff" />
           </Pressable>
         </View>
       ),
@@ -156,28 +200,27 @@ export default function CameraScreen({navigation}) {
     settings.audio,
   ]);
 
- const handleRecordingFinished = async (video) => {
-  try {
-    const savedAsset = await saveVideoToCameraRoll(video.path);
-
-    console.log("Salvo na galeria:", savedAsset?.node?.image?.uri ?? video.path);
-    setStatus("Vídeo salvo na galeria!");
-    await loadVideosFromGallery();
-  } catch (error) {
-    console.error(error);
-    setStatus('Erro ao salvar vídeo.');
-    Alert.alert(
-      'Erro ao salvar vídeo',
-      error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
-    );
-  } finally {
-    setIsRecording(false);
-  }
-};
+  const handleRecordingFinished = useCallback(async video => {
+    try {
+      await saveVideoToCameraRoll(video.path);
+      await loadVideosFromGallery();
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        'Erro ao salvar vídeo',
+        error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
+      );
+    } finally {
+      recordingStartedAtRef.current = null;
+      setRecordingElapsedMs(0);
+      setIsRecording(false);
+    }
+  }, []);
 
   const handleRecordingError = useCallback(error => {
     console.error(error);
-    setStatus('Erro durante a gravação.');
+    recordingStartedAtRef.current = null;
+    setRecordingElapsedMs(0);
     setIsRecording(false);
     Alert.alert('Erro de gravação', error?.message ?? 'Não foi possível gravar o vídeo.');
   }, []);
@@ -193,11 +236,8 @@ export default function CameraScreen({navigation}) {
     }
 
     try {
-      if (settings.audio && settings.audioCodec === 'mp3') {
-        setStatus('MP3 nao e suportado no Android. Gravando com fallback AAC.');
-      } else {
-        setStatus('Gravando...');
-      }
+      recordingStartedAtRef.current = Date.now();
+      setRecordingElapsedMs(0);
       setIsRecording(true);
       camera.current.startRecording({
         fileType: settings.recordFileType,
@@ -206,8 +246,9 @@ export default function CameraScreen({navigation}) {
         onRecordingError: handleRecordingError,
       });
     } catch (error) {
+      recordingStartedAtRef.current = null;
+      setRecordingElapsedMs(0);
       setIsRecording(false);
-      setStatus('Falha ao iniciar gravação.');
       Alert.alert('Erro', error?.message ?? 'Falha ao iniciar a gravação.');
     }
   }, [
@@ -215,8 +256,6 @@ export default function CameraScreen({navigation}) {
     handleRecordingError,
     handleRecordingFinished,
     isRecording,
-    settings.audio,
-    settings.audioCodec,
     settings.recordFileType,
     settings.recordVideoCodec,
   ]);
@@ -227,8 +266,9 @@ export default function CameraScreen({navigation}) {
     }
     try {
       await camera.current.stopRecording();
-      setStatus('Finalizando gravação...');
     } catch (error) {
+      recordingStartedAtRef.current = null;
+      setRecordingElapsedMs(0);
       setIsRecording(false);
       Alert.alert('Erro', error?.message ?? 'Falha ao parar a gravação.');
     }
@@ -302,10 +342,19 @@ export default function CameraScreen({navigation}) {
       <View style={styles.cameraWrap}>
         <Camera ref={camera} style={StyleSheet.absoluteFill} {...cameraProps} />
         <View style={styles.topOverlay}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{isRecording ? 'REC' : 'PRONTO'}</Text>
+          {isRecording ? (
+          <View style={styles.recordingStatus}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{'REC'}</Text>
+            </View>
+            <View style={styles.timerPill}>
+              <Text style={styles.timerText}>{formatElapsedTime(recordingElapsedMs)}</Text>
+            </View>
           </View>
-          <Text style={styles.statusText}>{status}</Text>
+          ) : (
+            <Text >{''}</Text>
+          )}
+          <Text style={styles.fpsText}>{fps}</Text>
         </View>
 
         <View style={styles.controls}>
@@ -313,9 +362,6 @@ export default function CameraScreen({navigation}) {
             onPress={isRecording ? stopRecording : startRecording}
             style={[styles.recordButton, isRecording && styles.recordButtonActive]}>
             <Text style={styles.recordButtonText}>{isRecording ? 'Parar' : 'Gravar'}</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate('Settings')}>
-            <Text style={styles.secondaryButtonText}>Configurações</Text>
           </Pressable>
         </View>
       </View>
@@ -335,7 +381,6 @@ export default function CameraScreen({navigation}) {
               </Text>
               <Text style={styles.videoMeta}>{formatSize(item.size)}</Text>
               <Text style={styles.videoMeta}>{formatDate(item.mtime || item.timestamp * 1000)}</Text>
-              <Text style={styles.videoHint}>Toque para abrir ou compartilhar</Text>
             </Pressable>
           )}
           ListEmptyComponent={
@@ -368,8 +413,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
-  badgeText: {color: '#f8fafc', fontWeight: '700', fontSize: 12},
-  statusText: {
+  badgeText: {color: '#dc2626', fontWeight: '700', fontSize: 12},
+  recordingStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timerPill: {
+    backgroundColor: 'rgba(17,24,39,0.9)',
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  timerText: {
+    color: '#f8fafc',
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  fpsText: {
     color: '#e5e7eb',
     backgroundColor: 'rgba(17,24,39,0.7)',
     paddingVertical: 8,
@@ -439,7 +502,6 @@ const styles = StyleSheet.create({
   },
   videoName: {color: '#fff', fontWeight: '700', marginBottom: 6},
   videoMeta: {color: '#9ca3af', fontSize: 12, marginBottom: 2},
-  videoHint: {color: '#93c5fd', fontSize: 12, marginTop: 8, fontWeight: '600'},
   emptyText: {color: '#9ca3af'},
   center: {flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#0b1020'},
   title: {color: '#fff', fontSize: 28, fontWeight: '800', marginBottom: 8, textAlign: 'center'},
@@ -451,5 +513,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   primaryButtonText: {color: '#fff', fontWeight: '700'},
-  headerAction: {color: '#fff', fontSize: 15, fontWeight: '700'},
+  headerIconButton: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

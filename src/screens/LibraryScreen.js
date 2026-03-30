@@ -139,10 +139,6 @@ export default function LibraryScreen() {
               <Text style={styles.path} numberOfLines={2}>
                 {item.uri}
               </Text>
-
-              <Text style={styles.actionHint}>
-                Toque para visualizar ou compartilhar
-              </Text>
             </View>
 
             <Pressable
@@ -201,12 +197,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 8,
     lineHeight: 16,
-  },
-  actionHint: {
-    color: '#93c5fd',
-    fontSize: 12,
-    marginTop: 10,
-    fontWeight: '600',
   },
   deleteButton: {
     backgroundColor: '#7f1d1d',
