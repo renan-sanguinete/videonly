@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -9,11 +10,25 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {
   deleteVideoFromCameraRoll,
   loadSavedVideosFromCameraRoll,
 } from '../utils/cameraRollVideos';
 import {openVideoUri, shareVideo} from '../utils/videoActions';
+
+function formatVideoDuration(secondsLike) {
+  const totalSeconds = Math.max(0, Math.round(secondsLike || 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
+  }
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
 
 export default function LibraryScreen() {
   const [videos, setVideos] = useState([]);
@@ -123,6 +138,22 @@ export default function LibraryScreen() {
         }
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => onCardPress(item)}>
+            <View style={styles.thumbWrap}>
+              {item.thumbnailUri ? (
+                <Image source={{uri: item.thumbnailUri}} style={styles.thumb} />
+              ) : (
+                <View style={[styles.thumb, styles.thumbFallback]}>
+                  <Icon name="videocam-outline" size={26} color="#cbd5e1" />
+                </View>
+              )}
+              <View style={styles.playBadge}>
+                <Icon name="play" size={14} color="#fff" />
+              </View>
+              <View style={styles.durationBadge}>
+                <Text style={styles.durationText}>{formatVideoDuration(item.duration)}</Text>
+              </View>
+            </View>
+
             <View style={{ flex: 1 }}>
               <Text style={styles.name} numberOfLines={1}>
                 {item.filename || 'Sem nome'}
@@ -180,6 +211,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'flex-start',
+  },
+  thumbWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#172033',
+    position: 'relative',
+  },
+  thumb: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(15,23,42,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  durationBadge: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    backgroundColor: 'rgba(2,6,23,0.78)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  durationText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   name: {
     color: '#fff',

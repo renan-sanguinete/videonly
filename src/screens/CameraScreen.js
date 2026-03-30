@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import {
   Alert,
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -47,6 +48,19 @@ function formatDate(dateLike) {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date);
+}
+
+function formatVideoDuration(secondsLike) {
+  const totalSeconds = Math.max(0, Math.round(secondsLike || 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
+  }
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function formatElapsedTime(milliseconds) {
@@ -376,11 +390,25 @@ export default function CameraScreen({navigation}) {
           contentContainerStyle={{gap: 12}}
           renderItem={({item}) => (
             <Pressable style={styles.videoCard} onPress={() => onVideoCardPress(item)}>
-              <Text style={styles.videoName} numberOfLines={1}>
-                {item.filename}
-              </Text>
-              <Text style={styles.videoMeta}>{formatSize(item.size)}</Text>
-              <Text style={styles.videoMeta}>{formatDate(item.mtime || item.timestamp * 1000)}</Text>
+              <View style={styles.videoThumbWrap}>
+                {item.thumbnailUri ? (
+                  <Image source={{uri: item.thumbnailUri}} style={styles.videoThumb} />
+                ) : (
+                  <View style={[styles.videoThumb, styles.videoThumbFallback]}>
+                    <Icon name="videocam-outline" size={22} color="#cbd5e1" />
+                  </View>
+                )}
+                <View style={styles.videoThumbOverlay}>
+                  <Icon name="play" size={12} color="#fff" />
+                </View>
+                <View style={styles.videoDurationPill}>
+                  <Text style={styles.videoDurationText}>{formatVideoDuration(item.duration)}</Text>
+                </View>
+              </View>
+              <View style={styles.videoCardBody}>
+                <Text style={styles.videoMeta}>{formatSize(item.size)}</Text>
+                <Text style={styles.videoMeta}>{formatDate(item.mtime || item.timestamp * 1000)}</Text>
+              </View>
             </Pressable>
           )}
           ListEmptyComponent={
@@ -496,10 +524,54 @@ const styles = StyleSheet.create({
     width: 200,
     backgroundColor: '#0f172a',
     borderRadius: 18,
-    padding: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#243244',
+    overflow: 'hidden',
   },
+  videoThumbWrap: {
+    height: 92,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#172033',
+    marginBottom: 10,
+    position: 'relative',
+  },
+  videoThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  videoThumbFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoThumbOverlay: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(15,23,42,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoDurationPill: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    backgroundColor: 'rgba(2,6,23,0.78)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  videoDurationText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  videoCardBody: {gap: 2},
   videoName: {color: '#fff', fontWeight: '700', marginBottom: 6},
   videoMeta: {color: '#9ca3af', fontSize: 12, marginBottom: 2},
   emptyText: {color: '#9ca3af'},

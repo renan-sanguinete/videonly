@@ -9,10 +9,13 @@ function mapEdgeToVideo(edge) {
 
   return {
     uri: node.image.uri,
+    thumbnailUri: node.image.uri,
     filename,
     duration: node.image.playableDuration || 0,
     timestamp: node.timestamp,
     size: node.image.fileSize || 0,
+    width: node.image.width || 0,
+    height: node.image.height || 0,
     name: filename,
     path: node.image.uri,
     mtime: (node.modificationTimestamp || node.timestamp || 0) * 1000,
@@ -54,7 +57,7 @@ export async function loadSavedVideosFromCameraRoll() {
   const baseParams = {
     first: 100,
     assetType: 'Videos',
-    include: ['filename', 'fileSize', 'playableDuration'],
+    include: ['filename', 'fileSize', 'playableDuration', 'imageSize'],
   };
 
   const albumResult = await CameraRoll.getPhotos({
