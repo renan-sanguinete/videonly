@@ -20,6 +20,7 @@ import {
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
 } from '../utils/cameraRollVideos';
+import {openVideoUri, shareVideo} from '../utils/videoActions';
 
 function parseMaybeNumber(value) {
   if (value === '' || value === null || value === undefined) {
@@ -237,6 +238,44 @@ export default function CameraScreen({navigation}) {
     await ensurePermissions();
   }, [ensurePermissions]);
 
+  const onOpenVideo = useCallback(async item => {
+    try {
+      await openVideoUri(item.uri);
+    } catch (error) {
+      Alert.alert(
+        'Erro ao abrir vídeo',
+        error?.message ?? 'Não foi possível abrir este vídeo.',
+      );
+    }
+  }, []);
+
+  const onShareVideo = useCallback(async item => {
+    try {
+      await shareVideo(item);
+    } catch (error) {
+      Alert.alert(
+        'Erro ao compartilhar',
+        error?.message ?? 'Não foi possível compartilhar este vídeo.',
+      );
+    }
+  }, []);
+
+  const onVideoCardPress = useCallback(
+    item => {
+      Alert.alert(
+        item.filename || 'Vídeo',
+        'Escolha o que deseja fazer com este vídeo.',
+        [
+          {text: 'Cancelar', style: 'cancel'},
+          {text: 'Visualizar', onPress: () => onOpenVideo(item)},
+          {text: 'Compartilhar', onPress: () => onShareVideo(item)},
+          {text: 'Biblioteca', onPress: () => navigation.navigate('Library')},
+        ],
+      );
+    },
+    [navigation, onOpenVideo, onShareVideo],
+  );
+
   if (!hasCameraPermission) {
     return (
       <View style={styles.center}>
@@ -290,13 +329,14 @@ export default function CameraScreen({navigation}) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{gap: 12}}
           renderItem={({item}) => (
-            <View style={styles.videoCard}>
+            <Pressable style={styles.videoCard} onPress={() => onVideoCardPress(item)}>
               <Text style={styles.videoName} numberOfLines={1}>
                 {item.filename}
               </Text>
               <Text style={styles.videoMeta}>{formatSize(item.size)}</Text>
               <Text style={styles.videoMeta}>{formatDate(item.mtime || item.timestamp * 1000)}</Text>
-            </View>
+              <Text style={styles.videoHint}>Toque para abrir ou compartilhar</Text>
+            </Pressable>
           )}
           ListEmptyComponent={
             <Text style={styles.emptyText}>Nenhum vídeo salvo ainda.</Text>
@@ -399,6 +439,7 @@ const styles = StyleSheet.create({
   },
   videoName: {color: '#fff', fontWeight: '700', marginBottom: 6},
   videoMeta: {color: '#9ca3af', fontSize: 12, marginBottom: 2},
+  videoHint: {color: '#93c5fd', fontSize: 12, marginTop: 8, fontWeight: '600'},
   emptyText: {color: '#9ca3af'},
   center: {flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#0b1020'},
   title: {color: '#fff', fontSize: 28, fontWeight: '800', marginBottom: 8, textAlign: 'center'},

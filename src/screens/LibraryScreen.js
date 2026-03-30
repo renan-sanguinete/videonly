@@ -13,6 +13,7 @@ import {
   deleteVideoFromCameraRoll,
   loadSavedVideosFromCameraRoll,
 } from '../utils/cameraRollVideos';
+import {openVideoUri, shareVideo} from '../utils/videoActions';
 
 export default function LibraryScreen() {
   const [videos, setVideos] = useState([]);
@@ -71,6 +72,44 @@ export default function LibraryScreen() {
     [load],
   );
 
+  const onOpen = useCallback(async item => {
+    try {
+      await openVideoUri(item.uri);
+    } catch (error) {
+      Alert.alert(
+        'Erro ao abrir vídeo',
+        error?.message || 'Não foi possível abrir este vídeo.',
+      );
+    }
+  }, []);
+
+  const onShare = useCallback(async item => {
+    try {
+      await shareVideo(item);
+    } catch (error) {
+      Alert.alert(
+        'Erro ao compartilhar',
+        error?.message || 'Não foi possível compartilhar este vídeo.',
+      );
+    }
+  }, []);
+
+  const onCardPress = useCallback(
+    item => {
+      Alert.alert(
+        item.filename || 'Vídeo',
+        'Escolha o que deseja fazer com este vídeo.',
+        [
+          {text: 'Cancelar', style: 'cancel'},
+          {text: 'Visualizar', onPress: () => onOpen(item)},
+          {text: 'Compartilhar', onPress: () => onShare(item)},
+          {text: 'Excluir', style: 'destructive', onPress: () => onDelete(item)},
+        ],
+      );
+    },
+    [onDelete, onOpen, onShare],
+  );
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -83,7 +122,7 @@ export default function LibraryScreen() {
           videos.length === 0 ? styles.emptyContainer : styles.listContent
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Pressable style={styles.card} onPress={() => onCardPress(item)}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name} numberOfLines={1}>
                 {item.filename || 'Sem nome'}
@@ -100,6 +139,10 @@ export default function LibraryScreen() {
               <Text style={styles.path} numberOfLines={2}>
                 {item.uri}
               </Text>
+
+              <Text style={styles.actionHint}>
+                Toque para visualizar ou compartilhar
+              </Text>
             </View>
 
             <Pressable
@@ -108,7 +151,7 @@ export default function LibraryScreen() {
             >
               <Text style={styles.deleteButtonText}>Excluir</Text>
             </Pressable>
-          </View>
+          </Pressable>
         )}
         ListEmptyComponent={
           <View>
@@ -158,6 +201,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 8,
     lineHeight: 16,
+  },
+  actionHint: {
+    color: '#93c5fd',
+    fontSize: 12,
+    marginTop: 10,
+    fontWeight: '600',
   },
   deleteButton: {
     backgroundColor: '#7f1d1d',
