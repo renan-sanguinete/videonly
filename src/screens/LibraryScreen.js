@@ -9,7 +9,10 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
+import {
+  deleteVideoFromCameraRoll,
+  loadSavedVideosFromCameraRoll,
+} from '../utils/cameraRollVideos';
 
 export default function LibraryScreen() {
   const [videos, setVideos] = useState([]);
@@ -17,27 +20,14 @@ export default function LibraryScreen() {
 
   const load = useCallback(async () => {
     try {
-      const result = await CameraRoll.getPhotos({
-        first: 50,
-        assetType: 'Videos',
-        // Se estiver usando álbum custom:
-        // groupName: 'Videonly',
-      });
-
-      const items = result.edges.map(edge => {
-        const node = edge.node;
-
-        return {
-          uri: node.image.uri,
-          filename: node.image.filename,
-          duration: node.image.playableDuration,
-          timestamp: node.timestamp,
-        };
-      });
-
+      const items = await loadSavedVideosFromCameraRoll();
       setVideos(items);
     } catch (error) {
       console.warn('Erro ao carregar vídeos:', error);
+      Alert.alert(
+        'Erro ao carregar vídeos',
+        error?.message || 'Não foi possível carregar os vídeos da galeria.',
+      );
     }
   }, []);
 
@@ -68,7 +58,7 @@ export default function LibraryScreen() {
             style: 'destructive',
             onPress: async () => {
               try {
-                await CameraRoll.deletePhotos([item.uri]);
+                await deleteVideoFromCameraRoll(item.uri);
                 await load();
               } catch (error) {
                 Alert.alert('Erro', 'Não foi possível excluir o vídeo.');

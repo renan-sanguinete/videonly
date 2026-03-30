@@ -2,8 +2,6 @@ import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import {
   Alert,
   FlatList,
-  PermissionsAndroid,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -16,11 +14,12 @@ import {
   useCameraPermission,
   useMicrophonePermission,
 } from 'react-native-vision-camera';
-import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 
 import {useCameraSettings} from '../context/CameraSettingsContext';
-
-
+import {
+  loadSavedVideosFromCameraRoll,
+  saveVideoToCameraRoll,
+} from '../utils/cameraRollVideos';
 
 function parseMaybeNumber(value) {
   if (value === '' || value === null || value === undefined) {
@@ -47,20 +46,6 @@ function formatDate(dateLike) {
     timeStyle: 'short',
   }).format(date);
 }
-async function requestExtraPermissions() {
-  if (Platform.OS === "android") {
-    if (Platform.Version >= 33) {
-      await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO
-      );
-    } else {
-      await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
-      );
-    }
-  }
-}
-
 export default function CameraScreen({navigation}) {
   const camera = useRef(null);
   const isFocused = useIsFocused();
@@ -114,31 +99,12 @@ export default function CameraScreen({navigation}) {
 
   const loadVideosFromGallery = async () => {
     try {
-      const result = await CameraRoll.getPhotos({
-        first: 50,
-        assetType: "Videos",
-      });
-      console.log("Vídeos carregados da galeria:", result);
-      const videos = result.edges.map(edge => {
-        const node = edge.node;
-
-        return {
-          uri: node.image.uri,
-          filename: node.image.filename,
-          playableDuration: node.image.playableDuration,
-          timestamp: node.timestamp,
-        };
-      });
-      console.log("Vídeos formatados:", videos);
-
+      const videos = await loadSavedVideosFromCameraRoll();
       setSavedVideos(videos);
     } catch (error) {
       console.error("Erro ao carregar vídeos:", error);
     }
   };
-  useEffect(() => {
-    requestExtraPermissions();
-  }, []);
 
   useEffect(() => {
     loadVideosFromGallery();
@@ -191,13 +157,11 @@ export default function CameraScreen({navigation}) {
 
  const handleRecordingFinished = async (video) => {
   try {
-    const savedUri = await CameraRoll.save(video.path, {
-      type: "video",
-    });
+    const savedAsset = await saveVideoToCameraRoll(video.path);
 
-    console.log("Salvo na galeria:", savedUri);
+    console.log("Salvo na galeria:", savedAsset?.node?.image?.uri ?? video.path);
     setStatus("Vídeo salvo na galeria!");
-    loadVideosFromGallery();
+    await loadVideosFromGallery();
   } catch (error) {
     console.error(error);
     setStatus('Erro ao salvar vídeo.');
@@ -321,17 +285,17 @@ export default function CameraScreen({navigation}) {
         <Text style={styles.panelTitle}>Vídeos salvos</Text>
         <FlatList
           data={savedVideos}
-          keyExtractor={item => item.path}
+          keyExtractor={item => item.uri}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{gap: 12}}
           renderItem={({item}) => (
             <View style={styles.videoCard}>
               <Text style={styles.videoName} numberOfLines={1}>
-                {item.name}
+                {item.filename}
               </Text>
               <Text style={styles.videoMeta}>{formatSize(item.size)}</Text>
-              <Text style={styles.videoMeta}>{formatDate(item.mtime)}</Text>
+              <Text style={styles.videoMeta}>{formatDate(item.mtime || item.timestamp * 1000)}</Text>
             </View>
           )}
           ListEmptyComponent={
