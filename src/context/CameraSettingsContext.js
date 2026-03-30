@@ -4,6 +4,10 @@ const CameraSettingsContext = createContext(null);
 
 const DEFAULT_SETTINGS = {
   audio: true,
+  audioCodec: 'aac',
+  audioChannels: 'stereo',
+  audioSampleRate: '44100',
+  audioBitRateKbps: '128',
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
   photo: false,

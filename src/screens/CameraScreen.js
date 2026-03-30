@@ -90,6 +90,9 @@ export default function CameraScreen({navigation}) {
       device,
       isActive: isFocused,
       audio: settings.audio,
+      audioChannels: settings.audioChannels,
+      audioSampleRate: parseMaybeNumber(settings.audioSampleRate),
+      audioBitRateKbps: parseMaybeNumber(settings.audioBitRateKbps),
       photo: settings.photo,
       video: settings.video,
       preview: settings.preview,
@@ -225,7 +228,11 @@ export default function CameraScreen({navigation}) {
     }
 
     try {
-      setStatus('Gravando...');
+      if (settings.audio && settings.audioCodec === 'mp3') {
+        setStatus('MP3 nao e suportado no Android. Gravando com fallback AAC.');
+      } else {
+        setStatus('Gravando...');
+      }
       setIsRecording(true);
       camera.current.startRecording({
         fileType: settings.recordFileType,
@@ -243,6 +250,8 @@ export default function CameraScreen({navigation}) {
     handleRecordingError,
     handleRecordingFinished,
     isRecording,
+    settings.audio,
+    settings.audioCodec,
     settings.recordFileType,
     settings.recordVideoCodec,
   ]);

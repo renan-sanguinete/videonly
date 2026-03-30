@@ -35,6 +35,22 @@ const TORCH_OPTIONS = [
   {label: 'on', value: 'on'},
 ];
 
+const AUDIO_CHANNEL_OPTIONS = [
+  {label: 'Stereo (2 canais)', value: 'stereo'},
+  {label: 'Mono (1 canal)', value: 'mono'},
+];
+
+const AUDIO_CODEC_OPTIONS = [
+  {label: 'AAC', value: 'aac'},
+  {label: 'MP3 (fallback AAC no Android)', value: 'mp3'},
+];
+
+const AUDIO_SAMPLE_RATE_OPTIONS = [
+  {label: '32000 Hz', value: '32000'},
+  {label: '44100 Hz', value: '44100'},
+  {label: '48000 Hz', value: '48000'},
+];
+
 const RECORD_FILE_TYPE_OPTIONS = [
   {label: 'mp4', value: 'mp4'},
   {label: 'mov', value: 'mov'},
@@ -171,10 +187,52 @@ export default function SettingsScreen() {
         />
       </Card>
 
+      <SectionTitle>Audio da gravacao</SectionTitle>
+      <Card>
+        <Text style={styles.helper}>
+          No Android nativo, canais, sample rate e bitrate sao aplicados na gravacao. `mp3` nao e suportado pelo pipeline de video e usa fallback para `aac`.
+        </Text>
+        <View style={{height: 14}} />
+
+        <Text style={styles.label}>Codec de audio</Text>
+        <OptionChips
+          value={settings.audioCodec}
+          options={AUDIO_CODEC_OPTIONS}
+          onChange={value => update({audioCodec: value})}
+        />
+
+        <View style={{height: 14}} />
+
+        <Text style={styles.label}>Canais</Text>
+        <OptionChips
+          value={settings.audioChannels}
+          options={AUDIO_CHANNEL_OPTIONS}
+          onChange={value => update({audioChannels: value})}
+        />
+
+        <View style={{height: 14}} />
+
+        <Text style={styles.label}>Sample rate</Text>
+        <OptionChips
+          value={settings.audioSampleRate}
+          options={AUDIO_SAMPLE_RATE_OPTIONS}
+          onChange={value => update({audioSampleRate: value})}
+        />
+
+        <View style={{height: 14}} />
+
+        <NumberField
+          label="Bitrate de audio (kbps)"
+          value={settings.audioBitRateKbps}
+          onChangeText={text => update({audioBitRateKbps: text})}
+          placeholder="ex.: 128"
+        />
+      </Card>
+
       <SectionTitle>Gravação</SectionTitle>
       <Card>
         <Text style={styles.helper}>
-          No Android atual, a VisionCamera permite controlar áudio ligado/desligado, formato do arquivo e codec de vídeo.
+          No Android atual, a VisionCamera permite controlar audio ligado/desligado, formato do arquivo e codec de video.
         </Text>
         <View style={{height: 14}} />
 

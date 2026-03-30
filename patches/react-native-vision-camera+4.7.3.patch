@@ -1,0 +1,156 @@
+diff --git a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraConfiguration.kt b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraConfiguration.kt
+index f91ce83..45763ab 100644
+--- a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraConfiguration.kt
++++ b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraConfiguration.kt
+@@ -50,7 +50,7 @@ data class CameraConfiguration(
+   data class Photo(val isMirrored: Boolean, val enableHdr: Boolean, val photoQualityBalance: QualityBalance)
+   data class Video(val isMirrored: Boolean, val enableHdr: Boolean, val bitRateOverride: Double?, val bitRateMultiplier: Double?)
+   data class FrameProcessor(val isMirrored: Boolean, val pixelFormat: PixelFormat)
+-  data class Audio(val nothing: Unit)
++  data class Audio(val channelCount: Int?, val sampleRate: Int?, val bitRate: Int?)
+   data class Preview(val surfaceProvider: SurfaceProvider)
+ 
+   val targetFpsRange: Range<Int>?
+@@ -124,6 +124,7 @@ data class CameraConfiguration(
+       // outputs
+       val outputsChanged = left?.photo != right.photo ||
+         left.video != right.video ||
++        left.audio != right.audio ||
+         left.enableLowLightBoost != right.enableLowLightBoost ||
+         left.videoStabilizationMode != right.videoStabilizationMode ||
+         left.frameProcessor != right.frameProcessor ||
+diff --git a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraSession+Configuration.kt b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraSession+Configuration.kt
+index 1e9c0de..380796b 100644
+--- a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraSession+Configuration.kt
++++ b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/CameraSession+Configuration.kt
+@@ -2,6 +2,7 @@ package com.mrousavy.camera.core
+ 
+ import android.annotation.SuppressLint
+ import android.util.Log
++import android.util.Range
+ import androidx.annotation.OptIn
+ import androidx.camera.core.CameraSelector
+ import androidx.camera.core.CameraState
+@@ -15,8 +16,10 @@ import androidx.camera.core.TorchState
+ import androidx.camera.core.resolutionselector.ResolutionSelector
+ import androidx.camera.extensions.ExtensionMode
+ import androidx.camera.lifecycle.ProcessCameraProvider
++import androidx.camera.video.AudioSpec
+ import androidx.camera.video.Recorder
+ import androidx.camera.video.VideoCapture
++import androidx.core.util.Consumer
+ import androidx.lifecycle.Lifecycle
+ import com.mrousavy.camera.core.extensions.*
+ import com.mrousavy.camera.core.types.CameraDeviceFormat
+@@ -54,6 +57,7 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration)
+ 
+   val photoConfig = configuration.photo as? CameraConfiguration.Output.Enabled<CameraConfiguration.Photo>
+   val videoConfig = configuration.video as? CameraConfiguration.Output.Enabled<CameraConfiguration.Video>
++  val audioConfig = configuration.audio as? CameraConfiguration.Output.Enabled<CameraConfiguration.Audio>
+ 
+   // 1. Preview
+   val previewConfig = configuration.preview as? CameraConfiguration.Output.Enabled<CameraConfiguration.Preview>
+@@ -127,6 +131,7 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration)
+         format?.let { format ->
+           recorder.setQualitySelector(format.videoQualitySelector)
+         }
++        audioConfig?.let { configureRecorderAudio(recorder, it.config) }
+         videoConfig.config.bitRateOverride?.let { bitRateOverride ->
+           val bps = bitRateOverride * 1_000_000
+           recorder.setTargetVideoEncodingBitRate(bps.toInt())
+@@ -338,6 +343,34 @@ internal fun CameraSession.configureSideProps(config: CameraConfiguration) {
+   }
+ }
+ 
++private fun configureRecorderAudio(recorder: Recorder.Builder, audioConfig: CameraConfiguration.Audio) {
++  try {
++    val mediaSpecField = Recorder.Builder::class.java.getDeclaredField("mMediaSpecBuilder")
++    mediaSpecField.isAccessible = true
++    val mediaSpecBuilder = mediaSpecField.get(recorder)
++    val configureAudioMethod =
++      mediaSpecBuilder.javaClass.methods.firstOrNull { method ->
++        method.name == "configureAudio" && method.parameterTypes.size == 1
++      } ?: return
++
++    configureAudioMethod.invoke(mediaSpecBuilder, Consumer<AudioSpec.Builder> { builder ->
++      audioConfig.bitRate?.let { builder.setBitrate(Range(it, it)) }
++      audioConfig.sampleRate?.let { builder.setSampleRate(Range(it, it)) }
++      audioConfig.channelCount?.let { channels ->
++        val cameraXChannels =
++          when (channels) {
++            1 -> AudioSpec.CHANNEL_COUNT_MONO
++            2 -> AudioSpec.CHANNEL_COUNT_STEREO
++            else -> null
++          }
++        cameraXChannels?.let { builder.setChannelCount(it) }
++      }
++    })
++  } catch (error: Throwable) {
++    Log.w(CameraSession.TAG, "Failed to apply custom audio settings, falling back to defaults.", error)
++  }
++}
++
+ internal fun CameraSession.configureIsActive(config: CameraConfiguration) {
+   if (config.isActive) {
+     lifecycleRegistry.currentState = Lifecycle.State.STARTED
+diff --git a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraView.kt b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraView.kt
+index 64a751e..a1c7272 100644
+--- a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraView.kt
++++ b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraView.kt
+@@ -59,6 +59,9 @@ class CameraView(context: Context) :
+   var photo = false
+   var video = false
+   var audio = false
++  var audioChannels: Int? = null
++  var audioSampleRate: Int? = null
++  var audioBitRateKbps: Int? = null
+   var enableFrameProcessor = false
+   var pixelFormat: PixelFormat = PixelFormat.YUV
+   var enableLocation = false
+@@ -199,7 +202,14 @@ class CameraView(context: Context) :
+ 
+         // Audio
+         if (audio) {
+-          config.audio = CameraConfiguration.Output.Enabled.create(CameraConfiguration.Audio(Unit))
++          config.audio =
++            CameraConfiguration.Output.Enabled.create(
++              CameraConfiguration.Audio(
++                audioChannels,
++                audioSampleRate,
++                audioBitRateKbps?.times(1000)
++              )
++            )
+         } else {
+           config.audio = CameraConfiguration.Output.Disabled.create()
+         }
+diff --git a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt
+index cc20b40..b46b8ec 100644
+--- a/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt
++++ b/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt
+@@ -80,6 +80,26 @@ class CameraViewManager : ViewGroupManager<CameraView>() {
+     view.audio = audio
+   }
+ 
++  @ReactProp(name = "audioChannels")
++  fun setAudioChannels(view: CameraView, audioChannels: String?) {
++    view.audioChannels =
++      when (audioChannels) {
++        "mono" -> 1
++        "stereo" -> 2
++        else -> null
++      }
++  }
++
++  @ReactProp(name = "audioSampleRate", defaultInt = -1)
++  fun setAudioSampleRate(view: CameraView, audioSampleRate: Int) {
++    view.audioSampleRate = if (audioSampleRate > 0) audioSampleRate else null
++  }
++
++  @ReactProp(name = "audioBitRateKbps", defaultInt = -1)
++  fun setAudioBitRateKbps(view: CameraView, audioBitRateKbps: Int) {
++    view.audioBitRateKbps = if (audioBitRateKbps > 0) audioBitRateKbps else null
++  }
++
+   @ReactProp(name = "enableLocation")
+   fun setEnableLocation(view: CameraView, enableLocation: Boolean) {
+     view.enableLocation = enableLocation
