@@ -1,0 +1,44 @@
+# Distill - Arquivo de Configuração com sintaxe GLOB
+# Linhas sem "!" = INCLUIR
+# Linhas com "!" = EXCLUIR
+
+# ===== INCLUIR =====
+# Incluir todos os arquivos (exceto exclusões fixas: node_modules, arquivos ., package-lock.json)
+
+# Ou especifique tipos específicos:
+# src/**/*.ts
+# src/**/*.tsx
+# src/**/*.js
+# src/**/*.jsx
+# package.json
+# tsconfig.json
+# README.md
+
+# ===== EXCLUIR =====
+# Adicione aqui pastas/arquivos que você quer excluir
+# Exemplos:
+
+# Excluir builds
+# !dist/**
+# !build/**
+# !out/**
+
+# Excluir testes
+# !**/*.test.ts
+# !**/*.spec.ts
+
+# Excluir pasta específica
+# !temp/**
+# !src/test/**
+
+# Excluir arquivo específico
+# !src/config/secrets.ts
+# !README.old.md
+
+# NOTA: A extensão já exclui automaticamente:
+# - node_modules (sempre)
+# - Arquivos que começam com "." (sempre)
+# - package-lock.json (sempre)
+
+src/screens/CameraScreen.js
+package.json
