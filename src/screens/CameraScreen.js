@@ -99,14 +99,17 @@ function HeaderActions({onOpenLibrary, onOpenSettings}) {
 
 function CameraPreview({
   camera,
+  cameraPosition,
+  currentCameraLabel,
   isFocused,
   isRecording,
+  onToggleCamera,
   recordingElapsedMs,
   settings,
   startRecording,
   stopRecording,
 }) {
-  const device = useCameraDevice('back');
+  const device = useCameraDevice(cameraPosition);
   const selectedFormat = useMemo(() => {
     const index = settings.formatIndex === '' ? undefined : Number(settings.formatIndex);
     if (!device || index === undefined || Number.isNaN(index)) {
@@ -146,7 +149,7 @@ function CameraPreview({
   if (device == null) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Buscando câmera traseira...</Text>
+        <Text style={styles.title}>Buscando câmera {currentCameraLabel}...</Text>
         <Text style={styles.subtitle}>Se o aparelho não tiver câmera compatível, nada será exibido.</Text>
       </View>
     );
@@ -172,15 +175,28 @@ function CameraPreview({
       </View>
 
       <View style={styles.controls}>
-        <Pressable
-          onPress={isRecording ? stopRecording : startRecording}
-          style={[styles.recordButton, isRecording && styles.recordButtonActive]}>
-          {isRecording ? (
-            <View style={styles.stopIcon} />
-          ) : (
-            <View style={styles.recordIcon} />
-          )}
-        </Pressable>
+        <View style={styles.controlsRow}>
+          <View style={styles.controlsSideSlot} />
+          <Pressable
+            onPress={isRecording ? stopRecording : startRecording}
+            style={[styles.recordButton, isRecording && styles.recordButtonActive]}>
+            {isRecording ? (
+              <View style={styles.stopIcon} />
+            ) : (
+              <View style={styles.recordIcon} />
+            )}
+          </Pressable>
+          <Pressable
+            accessibilityLabel={`Alternar para câmera ${cameraPosition === 'back' ? 'frontal' : 'traseira'}`}
+            disabled={isRecording}
+            onPress={onToggleCamera}
+            style={[
+              styles.cameraSwitchButton,
+              isRecording && styles.cameraSwitchButtonDisabled,
+            ]}>
+            <Icon name="camera-reverse-outline" size={24} color="#fff" />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -196,12 +212,14 @@ export default function CameraScreen({navigation}) {
     hasPermission: hasMicrophonePermission,
     requestPermission: requestMicrophonePermission,
   } = useMicrophonePermission();
-  const {settings} = useCameraSettings();
+  const {settings, resetSettings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
 
   const [isRecording, setIsRecording] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
+  const [cameraPosition, setCameraPosition] = useState('back');
+  const currentCameraLabel = cameraPosition === 'back' ? 'traseira' : 'frontal';
 
   const loadVideosFromGallery = async () => {
     try {
@@ -357,6 +375,17 @@ export default function CameraScreen({navigation}) {
     await ensurePermissions();
   }, [ensurePermissions]);
 
+  const onToggleCamera = useCallback(() => {
+    if (isRecording) {
+      return;
+    }
+
+    resetSettings();
+    setCameraPosition(currentPosition =>
+      currentPosition === 'back' ? 'front' : 'back',
+    );
+  }, [isRecording, resetSettings]);
+
   const onOpenVideo = useCallback(async item => {
     try {
       await openVideoUri(item.uri);
@@ -411,8 +440,11 @@ export default function CameraScreen({navigation}) {
     <View style={styles.container}>
       <CameraPreview
         camera={camera}
+        cameraPosition={cameraPosition}
+        currentCameraLabel={currentCameraLabel}
         isFocused={isFocused}
         isRecording={isRecording}
+        onToggleCamera={onToggleCamera}
         recordingElapsedMs={recordingElapsedMs}
         settings={settings}
         startRecording={startRecording}
@@ -521,6 +553,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
+  controlsRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    gap: 18,
+  },
+  controlsSideSlot: {
+    width: 56,
+    height: 56,
+  },
   recordButton: {
     width: 92,
     height: 92,
@@ -545,6 +588,19 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     backgroundColor: '#fff',
+  },
+  cameraSwitchButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(17, 24, 39, 0.1)',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  cameraSwitchButtonDisabled: {
+    opacity: 0.45,
   },
   secondaryButton: {
     backgroundColor: 'rgba(17,24,39,0.85)',
