@@ -76,24 +76,37 @@ function formatElapsedTime(milliseconds) {
   return [minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
 }
 
-export default function CameraScreen({navigation}) {
-  const camera = useRef(null);
-  const recordingStartedAtRef = useRef(null);
-  const isFocused = useIsFocused();
+function HeaderActions({onOpenLibrary, onOpenSettings}) {
+  return (
+    <View style={styles.headerActions}>
+      <Pressable
+        accessibilityLabel="Abrir galeria"
+        hitSlop={10}
+        onPress={onOpenLibrary}
+        style={styles.headerIconButton}>
+        <Icon name="images-outline" size={24} color="#fff" />
+      </Pressable>
+      <Pressable
+        accessibilityLabel="Abrir configuracoes"
+        hitSlop={10}
+        onPress={onOpenSettings}
+        style={styles.headerIconButton}>
+        <Icon name="settings-outline" size={22} color="#fff" />
+      </Pressable>
+    </View>
+  );
+}
+
+function CameraPreview({
+  camera,
+  isFocused,
+  isRecording,
+  recordingElapsedMs,
+  settings,
+  startRecording,
+  stopRecording,
+}) {
   const device = useCameraDevice('back');
-  const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
-    useCameraPermission();
-  const {
-    hasPermission: hasMicrophonePermission,
-    requestPermission: requestMicrophonePermission,
-  } = useMicrophonePermission();
-  const {settings} = useCameraSettings();
-
-  const [isRecording, setIsRecording] = useState(false);
-  const [savedVideos, setSavedVideos] = useState([]);
-  const [fps, setFps] = useState('');
-  const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
-
   const selectedFormat = useMemo(() => {
     const index = settings.formatIndex === '' ? undefined : Number(settings.formatIndex);
     if (!device || index === undefined || Number.isNaN(index)) {
@@ -128,6 +141,62 @@ export default function CameraScreen({navigation}) {
     }),
     [device, isFocused, selectedFormat, settings],
   );
+  const fpsLabel = `FPS: ${cameraProps.fps ?? 'auto'}`;
+
+  if (device == null) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.title}>Buscando câmera traseira...</Text>
+        <Text style={styles.subtitle}>Se o aparelho não tiver câmera compatível, nada será exibido.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.cameraWrap}>
+      <Camera ref={camera} style={StyleSheet.absoluteFill} {...cameraProps} />
+      <View style={styles.topOverlay}>
+        {isRecording ? (
+        <View style={styles.recordingStatus}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{'REC'}</Text>
+          </View>
+          <View style={styles.timerPill}>
+            <Text style={styles.timerText}>{formatElapsedTime(recordingElapsedMs)}</Text>
+          </View>
+        </View>
+        ) : (
+          <Text>{''}</Text>
+        )}
+        <Text style={styles.fpsText}>{fpsLabel}</Text>
+      </View>
+
+      <View style={styles.controls}>
+        <Pressable
+          onPress={isRecording ? stopRecording : startRecording}
+          style={[styles.recordButton, isRecording && styles.recordButtonActive]}>
+          <Text style={styles.recordButtonText}>{isRecording ? 'Parar' : 'Gravar'}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+export default function CameraScreen({navigation}) {
+  const camera = useRef(null);
+  const recordingStartedAtRef = useRef(null);
+  const isFocused = useIsFocused();
+  const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
+    useCameraPermission();
+  const {
+    hasPermission: hasMicrophonePermission,
+    requestPermission: requestMicrophonePermission,
+  } = useMicrophonePermission();
+  const {settings} = useCameraSettings();
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [savedVideos, setSavedVideos] = useState([]);
+  const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
 
   const loadVideosFromGallery = async () => {
     try {
@@ -141,10 +210,6 @@ export default function CameraScreen({navigation}) {
   useEffect(() => {
     loadVideosFromGallery();
   }, []);
-
-  useEffect(() => {
-    setFps(`FPS: ${cameraProps.fps ?? 'auto'}`);
-  }, [cameraProps.fps]);
 
   useEffect(() => {
     if (!isRecording || !recordingStartedAtRef.current) {
@@ -161,28 +226,21 @@ export default function CameraScreen({navigation}) {
     return () => clearInterval(intervalId);
   }, [isRecording]);
 
+  const renderHeaderRight = useCallback(
+    () => (
+      <HeaderActions
+        onOpenLibrary={() => navigation.navigate('Library')}
+        onOpenSettings={() => navigation.navigate('Settings')}
+      />
+    ),
+    [navigation],
+  );
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <View style={{flexDirection: 'row', gap: 12}}>
-          <Pressable
-            accessibilityLabel="Abrir galeria"
-            hitSlop={10}
-            onPress={() => navigation.navigate('Library')}
-            style={styles.headerIconButton}>
-            <Icon name="images-outline" size={24} color="#fff" />
-          </Pressable>
-          <Pressable
-            accessibilityLabel="Abrir configuracoes"
-            hitSlop={10}
-            onPress={() => navigation.navigate('Settings')}
-            style={styles.headerIconButton}>
-            <Icon name="settings-outline" size={22} color="#fff" />
-          </Pressable>
-        </View>
-      ),
+      headerRight: renderHeaderRight,
     });
-  }, [navigation]);
+  }, [navigation, renderHeaderRight]);
 
   const ensurePermissions = useCallback(async () => {
     let cameraOk = hasCameraPermission;
@@ -342,43 +400,17 @@ export default function CameraScreen({navigation}) {
     );
   }
 
-  if (device == null) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.title}>Buscando câmera traseira...</Text>
-        <Text style={styles.subtitle}>Se o aparelho não tiver câmera compatível, nada será exibido.</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <View style={styles.cameraWrap}>
-        <Camera ref={camera} style={StyleSheet.absoluteFill} {...cameraProps} />
-        <View style={styles.topOverlay}>
-          {isRecording ? (
-          <View style={styles.recordingStatus}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{'REC'}</Text>
-            </View>
-            <View style={styles.timerPill}>
-              <Text style={styles.timerText}>{formatElapsedTime(recordingElapsedMs)}</Text>
-            </View>
-          </View>
-          ) : (
-            <Text >{''}</Text>
-          )}
-          <Text style={styles.fpsText}>{fps}</Text>
-        </View>
-
-        <View style={styles.controls}>
-          <Pressable
-            onPress={isRecording ? stopRecording : startRecording}
-            style={[styles.recordButton, isRecording && styles.recordButtonActive]}>
-            <Text style={styles.recordButtonText}>{isRecording ? 'Parar' : 'Gravar'}</Text>
-          </Pressable>
-        </View>
-      </View>
+      <CameraPreview
+        camera={camera}
+        isFocused={isFocused}
+        isRecording={isRecording}
+        recordingElapsedMs={recordingElapsedMs}
+        settings={settings}
+        startRecording={startRecording}
+        stopRecording={stopRecording}
+      />
 
       <View style={styles.panel}>
         <Text style={styles.panelTitle}>Vídeos salvos</Text>
@@ -387,7 +419,7 @@ export default function CameraScreen({navigation}) {
           keyExtractor={item => item.uri}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{gap: 12}}
+          contentContainerStyle={styles.savedVideosContent}
           renderItem={({item}) => (
             <Pressable style={styles.videoCard} onPress={() => onVideoCardPress(item)}>
               <View style={styles.videoThumbWrap}>
@@ -423,6 +455,10 @@ export default function CameraScreen({navigation}) {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#0b1020'},
   cameraWrap: {flex: 1, backgroundColor: '#000'},
+  headerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   topOverlay: {
     position: 'absolute',
     top: 14,
@@ -513,6 +549,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#1f2937',
     padding: 16,
+  },
+  savedVideosContent: {
+    gap: 12,
   },
   panelTitle: {
     color: '#f9fafb',

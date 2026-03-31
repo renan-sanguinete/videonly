@@ -32,20 +32,25 @@ export async function ensureCameraRollVideoPermission() {
   }
 
   if (Platform.Version >= 33) {
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
-    );
+    const permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO;
+    const alreadyGranted = await PermissionsAndroid.check(permission);
+    if (alreadyGranted) {
+      return true;
+    }
+
+    const result = await PermissionsAndroid.request(permission);
     return result === PermissionsAndroid.RESULTS.GRANTED;
   }
 
-  const results = await PermissionsAndroid.requestMultiple([
-    PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-  ]);
+  const readPermission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+  const readGranted = await PermissionsAndroid.check(readPermission);
 
-  return Object.values(results).every(
-    value => value === PermissionsAndroid.RESULTS.GRANTED,
-  );
+  if (readGranted) {
+    return true;
+  }
+
+  const result = await PermissionsAndroid.request(readPermission);
+  return result === PermissionsAndroid.RESULTS.GRANTED;
 }
 
 export async function loadSavedVideosFromCameraRoll() {
