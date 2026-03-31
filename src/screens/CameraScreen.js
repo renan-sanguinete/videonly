@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import {useIsFocused} from '@react-navigation/native';
+import RNFS from 'react-native-fs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
   Camera,
@@ -17,11 +18,13 @@ import {
 } from 'react-native-vision-camera';
 
 import {useCameraSettings} from '../context/CameraSettingsContext';
+import LoadingModal from '../components/LoadingModal';
 import {useCustomAlert} from '../context/CustomAlertContext';
 import {
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
 } from '../utils/cameraRollVideos';
+import {compressVideo} from '../utils/videoCompression';
 import {openVideoUri, shareVideo} from '../utils/videoActions';
 
 function parseMaybeNumber(value) {
@@ -76,6 +79,119 @@ function formatElapsedTime(milliseconds) {
   return [minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
 }
 
+function getTargetHeightForPreset(preset) {
+  switch (preset) {
+    case '480p':
+      return 480;
+    case '720p':
+      return 720;
+    case '1080p':
+      return 1080;
+    case '2k':
+      return 1440;
+    case '4k':
+      return 2160;
+    default:
+      return undefined;
+  }
+}
+
+function getAutoPreferredHeights() {
+  return [1080, 720, 480, 1440, 2160];
+}
+
+function sortFormatsByPreference(formats, preferredHeights) {
+  return [...formats].sort((left, right) => {
+    const leftHeight = left.videoHeight ?? 0;
+    const rightHeight = right.videoHeight ?? 0;
+    const leftPreferredIndex = preferredHeights.indexOf(leftHeight);
+    const rightPreferredIndex = preferredHeights.indexOf(rightHeight);
+    const normalizedLeftIndex = leftPreferredIndex === -1 ? preferredHeights.length : leftPreferredIndex;
+    const normalizedRightIndex = rightPreferredIndex === -1 ? preferredHeights.length : rightPreferredIndex;
+
+    if (normalizedLeftIndex !== normalizedRightIndex) {
+      return normalizedLeftIndex - normalizedRightIndex;
+    }
+
+    if (leftHeight !== rightHeight) {
+      return leftHeight - rightHeight;
+    }
+
+    return (left.videoWidth ?? 0) - (right.videoWidth ?? 0);
+  });
+}
+
+function pickFormatForSettings(formats, settings) {
+  if (!Array.isArray(formats) || formats.length === 0) {
+    return undefined;
+  }
+
+  const requestedFps = parseMaybeNumber(settings.fps);
+  const targetHeight = getTargetHeightForPreset(settings.videoResolutionPreset);
+  const requiresFormat =
+    settings.formatIndex !== '' ||
+    settings.videoResolutionPreset !== 'auto' ||
+    requestedFps !== undefined ||
+    settings.videoBitRate !== 'normal' ||
+    settings.videoHdr ||
+    settings.photoHdr;
+
+  if (!requiresFormat) {
+    return undefined;
+  }
+
+  const explicitIndex = settings.formatIndex === '' ? undefined : Number(settings.formatIndex);
+  if (explicitIndex !== undefined && !Number.isNaN(explicitIndex) && formats[explicitIndex]) {
+    return formats[explicitIndex];
+  }
+
+  const preferredFormats =
+    targetHeight !== undefined
+      ? sortFormatsByPreference(formats, [targetHeight])
+      : sortFormatsByPreference(formats, getAutoPreferredHeights());
+
+  return (
+    preferredFormats.find(format => {
+      const fpsMatches =
+        requestedFps === undefined ||
+        (typeof format.minFps === 'number' &&
+          typeof format.maxFps === 'number' &&
+          requestedFps >= format.minFps &&
+          requestedFps <= format.maxFps);
+      const videoHdrMatches = !settings.videoHdr || format.supportsVideoHdr;
+      const photoHdrMatches = !settings.photoHdr || format.supportsPhotoHdr;
+      const resolutionMatches =
+        targetHeight === undefined || format.videoHeight === targetHeight;
+
+      return fpsMatches && videoHdrMatches && photoHdrMatches && resolutionMatches;
+    }) || formats[0]
+  );
+}
+
+function normalizeFilePath(pathLike) {
+  if (!pathLike) {
+    return null;
+  }
+
+  return pathLike.startsWith('file://') ? pathLike.replace('file://', '') : pathLike;
+}
+
+async function deleteIfExists(pathLike) {
+  const normalizedPath = normalizeFilePath(pathLike);
+  if (!normalizedPath) {
+    return;
+  }
+
+  try {
+    const exists = await RNFS.exists(normalizedPath);
+    if (exists) {
+      await RNFS.unlink(normalizedPath);
+    }
+  } catch (error) {
+    console.warn('Não foi possível remover arquivo temporário.', error);
+  }
+}
+
 function HeaderActions({onOpenLibrary, onOpenSettings}) {
   return (
     <View style={styles.headerActions}>
@@ -102,6 +218,7 @@ function CameraPreview({
   cameraPosition,
   currentCameraLabel,
   isFocused,
+  isProcessingVideo,
   isRecording,
   onToggleCamera,
   recordingElapsedMs,
@@ -111,17 +228,13 @@ function CameraPreview({
 }) {
   const device = useCameraDevice(cameraPosition);
   const selectedFormat = useMemo(() => {
-    const index = settings.formatIndex === '' ? undefined : Number(settings.formatIndex);
-    if (!device || index === undefined || Number.isNaN(index)) {
-      return undefined;
-    }
-    return device.formats[index];
-  }, [device, settings.formatIndex]);
+    return pickFormatForSettings(device?.formats ?? [], settings);
+  }, [device, settings]);
 
   const cameraProps = useMemo(
     () => ({
       device,
-      isActive: isFocused,
+      isActive: isFocused && !isProcessingVideo,
       audio: settings.audio,
       audioChannels: settings.audioChannels,
       audioSampleRate: parseMaybeNumber(settings.audioSampleRate),
@@ -130,21 +243,23 @@ function CameraPreview({
       video: settings.video,
       preview: settings.preview,
       enableZoomGesture: settings.enableZoomGesture,
-      lowLightBoost: settings.lowLightBoost,
       resizeMode: settings.resizeMode,
-      torch: settings.torch,
-      videoBitRate: settings.videoBitRate,
       photoQualityBalance: settings.photoQualityBalance,
-      videoHdr: settings.videoHdr,
-      photoHdr: settings.photoHdr,
-      fps: parseMaybeNumber(settings.fps),
       zoom: parseMaybeNumber(settings.zoom),
       exposure: parseMaybeNumber(settings.exposure),
-      format: selectedFormat,
+      ...(device?.supportsLowLightBoost ? {lowLightBoost: settings.lowLightBoost} : {}),
+      ...(device?.hasTorch ? {torch: settings.torch} : {}),
+      ...(selectedFormat ? {format: selectedFormat} : {}),
+      ...(selectedFormat ? {videoBitRate: settings.videoBitRate} : {}),
+      ...(selectedFormat && settings.fps !== ''
+        ? {fps: parseMaybeNumber(settings.fps)}
+        : {}),
+      ...(selectedFormat?.supportsVideoHdr ? {videoHdr: settings.videoHdr} : {}),
+      ...(selectedFormat?.supportsPhotoHdr ? {photoHdr: settings.photoHdr} : {}),
     }),
-    [device, isFocused, selectedFormat, settings],
+    [device, isFocused, isProcessingVideo, selectedFormat, settings],
   );
-  const fpsLabel = `FPS: ${cameraProps.fps ?? 'auto'}`;
+  const fpsLabel = `FPS: ${cameraProps?.fps ?? 'auto'}`;
 
   if (device == null) {
     return (
@@ -178,6 +293,7 @@ function CameraPreview({
         <View style={styles.controlsRow}>
           <View style={styles.controlsSideSlot} />
           <Pressable
+            disabled={isProcessingVideo}
             onPress={isRecording ? stopRecording : startRecording}
             style={[styles.recordButton, isRecording && styles.recordButtonActive]}>
             {isRecording ? (
@@ -188,11 +304,11 @@ function CameraPreview({
           </Pressable>
           <Pressable
             accessibilityLabel={`Alternar para câmera ${cameraPosition === 'back' ? 'frontal' : 'traseira'}`}
-            disabled={isRecording}
+            disabled={isRecording || isProcessingVideo}
             onPress={onToggleCamera}
             style={[
               styles.cameraSwitchButton,
-              isRecording && styles.cameraSwitchButtonDisabled,
+              (isRecording || isProcessingVideo) && styles.cameraSwitchButtonDisabled,
             ]}>
             <Icon name="camera-reverse-outline" size={24} color="#fff" />
           </Pressable>
@@ -216,6 +332,7 @@ export default function CameraScreen({navigation}) {
   const {showAlert} = useCustomAlert();
 
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingVideo, setIsProcessingVideo] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [cameraPosition, setCameraPosition] = useState('back');
@@ -297,21 +414,71 @@ export default function CameraScreen({navigation}) {
   ]);
 
   const handleRecordingFinished = useCallback(async video => {
+    const originalPath = video.path;
+    let pathToSave = originalPath;
+    let compressedPath = null;
+    let shouldDeleteOriginal = false;
+
     try {
-      await saveVideoToCameraRoll(video.path);
+      setIsRecording(false);
+      if (settings.compressVideoBeforeSave) {
+        setIsProcessingVideo(true);
+        compressedPath = await compressVideo(originalPath);
+        pathToSave = compressedPath;
+      }
+
+      await saveVideoToCameraRoll(pathToSave);
+      shouldDeleteOriginal = true;
       await loadVideosFromGallery();
     } catch (error) {
       console.error(error);
-      showAlert(
-        'Erro ao salvar vídeo',
-        error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
-      );
+      if (settings.compressVideoBeforeSave) {
+        try {
+          await saveVideoToCameraRoll(originalPath);
+          shouldDeleteOriginal = true;
+          await loadVideosFromGallery();
+          showAlert(
+            'Compressão indisponível',
+            'Não foi possível comprimir este vídeo. A versão original foi salva normalmente.',
+          );
+        } catch (fallbackError) {
+          console.error(fallbackError);
+          showAlert(
+            'Erro ao processar vídeo',
+            fallbackError?.message ??
+              'Não foi possível comprimir nem salvar o vídeo original.',
+          );
+        }
+      } else {
+        showAlert(
+          'Erro ao salvar vídeo',
+          error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
+        );
+      }
     } finally {
+      setIsProcessingVideo(false);
+      if (shouldDeleteOriginal) {
+        await deleteIfExists(compressedPath);
+        await deleteIfExists(originalPath);
+      } else if (compressedPath && compressedPath !== originalPath) {
+        await deleteIfExists(compressedPath);
+      }
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
     }
-  }, [showAlert]);
+  }, [settings.compressVideoBeforeSave, showAlert]);
+
+  const finalizeRecordedVideo = useCallback(video => {
+    handleRecordingFinished(video).catch(error => {
+      console.error('Erro ao finalizar vídeo gravado:', error);
+      setIsProcessingVideo(false);
+      showAlert(
+        'Erro ao processar vídeo',
+        error?.message ?? 'Não foi possível finalizar o vídeo gravado.',
+      );
+    });
+  }, [handleRecordingFinished, showAlert]);
 
   const handleRecordingError = useCallback(error => {
     console.error(error);
@@ -338,7 +505,12 @@ export default function CameraScreen({navigation}) {
       camera.current.startRecording({
         fileType: settings.recordFileType,
         videoCodec: settings.recordVideoCodec,
-        onRecordingFinished: handleRecordingFinished,
+        onRecordingFinished: video => {
+          recordingStartedAtRef.current = null;
+          setRecordingElapsedMs(0);
+          setIsRecording(false);
+          finalizeRecordedVideo(video);
+        },
         onRecordingError: handleRecordingError,
       });
     } catch (error) {
@@ -349,8 +521,8 @@ export default function CameraScreen({navigation}) {
     }
   }, [
     ensurePermissions,
+    finalizeRecordedVideo,
     handleRecordingError,
-    handleRecordingFinished,
     isRecording,
     settings.recordFileType,
     settings.recordVideoCodec,
@@ -438,11 +610,17 @@ export default function CameraScreen({navigation}) {
 
   return (
     <View style={styles.container}>
+      <LoadingModal
+        message="Estamos comprimindo seu vídeo para gerar um arquivo mais leve antes de salvar."
+        title="Comprimindo vídeo"
+        visible={isProcessingVideo}
+      />
       <CameraPreview
         camera={camera}
         cameraPosition={cameraPosition}
         currentCameraLabel={currentCameraLabel}
         isFocused={isFocused}
+        isProcessingVideo={isProcessingVideo}
         isRecording={isRecording}
         onToggleCamera={onToggleCamera}
         recordingElapsedMs={recordingElapsedMs}

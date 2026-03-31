@@ -61,11 +61,51 @@ const RECORD_VIDEO_CODEC_OPTIONS = [
   {label: 'h265', value: 'h265'},
 ];
 
+function getVideoResolutionPresetLabel(preset) {
+  switch (preset) {
+    case '480p':
+      return '480p';
+    case '720p':
+      return '720p';
+    case '1080p':
+      return '1080p';
+    case '2k':
+      return '2K';
+    case '4k':
+      return '4K';
+    default:
+      return 'Auto';
+  }
+}
+
+function buildResolutionOptions(formats) {
+  const heights = new Set((formats || []).map(format => format.videoHeight).filter(Boolean));
+  const options = [{label: 'Auto', value: 'auto'}];
+
+  if (heights.has(480)) {
+    options.push({label: '480p', value: '480p'});
+  }
+  if (heights.has(720)) {
+    options.push({label: '720p', value: '720p'});
+  }
+  if (heights.has(1080)) {
+    options.push({label: '1080p', value: '1080p'});
+  }
+  if (heights.has(1440)) {
+    options.push({label: '2K', value: '2k'});
+  }
+  if (heights.has(2160)) {
+    options.push({label: '4K', value: '4k'});
+  }
+
+  return options;
+}
+
 export default function SettingsScreen() {
   const device = useCameraDevice('back');
   const {settings, setSettings, resetSettings} = useCameraSettings();
-
-  const formats = device?.formats ?? [];
+  const formats = useMemo(() => device?.formats ?? [], [device]);
+  const resolutionOptions = useMemo(() => buildResolutionOptions(formats), [formats]);
 
   const selectedFormatIndex = useMemo(() => {
     const index = settings.formatIndex === '' ? undefined : Number(settings.formatIndex);
@@ -109,6 +149,12 @@ export default function SettingsScreen() {
           description="Mostra o preview da câmera."
           value={settings.preview}
           onValueChange={value => update({preview: value})}
+        />
+        <ToggleRow
+          label="Compressão para upload"
+          description="Após gravar, comprime o vídeo antes de salvar para gerar arquivos mais leves."
+          value={settings.compressVideoBeforeSave}
+          onValueChange={value => update({compressVideoBeforeSave: value})}
         />
       </Card>
 
@@ -236,6 +282,15 @@ export default function SettingsScreen() {
         </Text>
         <View style={{height: 14}} />
 
+        <Text style={styles.label}>Resolução de vídeo</Text>
+        <OptionChips
+          value={settings.videoResolutionPreset}
+          options={resolutionOptions}
+          onChange={value => update({videoResolutionPreset: value, formatIndex: ''})}
+        />
+
+        <View style={{height: 14}} />
+
         <Text style={styles.label}>Formato do arquivo</Text>
         <OptionChips
           value={settings.recordFileType}
@@ -257,7 +312,7 @@ export default function SettingsScreen() {
       <Card>
         <Text style={styles.helper}>
           {device
-            ? `Dispositivo encontrado: ${device.position} · ${formats.length} formatos disponíveis`
+            ? `Dispositivo encontrado: ${device.position} · ${formats.length} formatos disponíveis · resolução atual: ${getVideoResolutionPresetLabel(settings.videoResolutionPreset)}`
             : 'Buscando dispositivo traseiro...'}
         </Text>
 
@@ -270,10 +325,15 @@ export default function SettingsScreen() {
             contentContainerStyle={{gap: 10, paddingVertical: 10}}
             renderItem={({item, index}) => {
               const active = selectedFormatIndex === index;
-              const label = `${item.photoHeight ?? item.videoHeight ?? '?'}p · ${item.maxFps ?? item.minFps ?? '?'} FPS`;
+              const label = `${item.videoHeight ?? '?'}p · ${item.videoWidth ?? '?'}w · ${item.maxFps ?? item.minFps ?? '?'} FPS`;
               return (
                 <Pressable
-                  onPress={() => update({formatIndex: String(index)})}
+                  onPress={() =>
+                    update({
+                      formatIndex: String(index),
+                      videoResolutionPreset: 'auto',
+                    })
+                  }
                   style={[styles.formatChip, active && styles.formatChipActive]}>
                   <Text style={[styles.formatTitle, active && styles.formatTitleActive]}>
                     {label}

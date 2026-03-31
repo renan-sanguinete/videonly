@@ -7,7 +7,10 @@ import com.facebook.react.uimanager.ViewManager
 
 class VideoIntentPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-    return listOf(VideoIntentModule(reactContext))
+    return listOf(
+      VideoIntentModule(reactContext),
+      VideoCompressionModule(reactContext),
+    )
   }
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {

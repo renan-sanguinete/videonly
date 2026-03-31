@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
   audioBitRateKbps: '128',
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
+  videoResolutionPreset: 'auto',
   photo: false,
   video: true,
   enableZoomGesture: true,
