@@ -27,7 +27,7 @@ export default function App() {
               <Stack.Screen
                 name="Camera"
                 component={CameraScreen}
-                options={{title: 'Videonly'}}
+                options={{title: ''}}
               />
               <Stack.Screen
                 name="Settings"

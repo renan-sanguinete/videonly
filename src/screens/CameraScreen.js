@@ -175,7 +175,11 @@ function CameraPreview({
         <Pressable
           onPress={isRecording ? stopRecording : startRecording}
           style={[styles.recordButton, isRecording && styles.recordButtonActive]}>
-          <Text style={styles.recordButtonText}>{isRecording ? 'Parar' : 'Gravar'}</Text>
+          {isRecording ? (
+            <View style={styles.stopIcon} />
+          ) : (
+            <View style={styles.recordIcon} />
+          )}
         </Pressable>
       </View>
     </View>
@@ -530,10 +534,17 @@ const styles = StyleSheet.create({
   recordButtonActive: {
     backgroundColor: '#dc2626',
   },
-  recordButtonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 15,
+  recordIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+  },
+  stopIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#fff',
   },
   secondaryButton: {
     backgroundColor: 'rgba(17,24,39,0.85)',

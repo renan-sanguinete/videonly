@@ -63,7 +63,6 @@ export default function CustomAlertModal({
 
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.eyebrow}>Videonly</Text>
             <Text style={styles.title}>{title}</Text>
             {message ? <Text style={styles.message}>{message}</Text> : null}
           </View>
@@ -121,18 +120,12 @@ const styles = StyleSheet.create({
   header: {
     gap: 10,
   },
-  eyebrow: {
+  title: {
     color: '#38bdf8',
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-  },
-  title: {
-    color: '#f8fafc',
-    fontSize: 22,
-    fontWeight: '800',
-    lineHeight: 28,
   },
   message: {
     color: '#cbd5e1',

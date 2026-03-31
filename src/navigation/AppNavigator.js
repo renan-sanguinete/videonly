@@ -16,7 +16,7 @@ export default function AppNavigator() {
         headerTintColor: '#fff',
         contentStyle: {backgroundColor: '#0b1020'},
       }}>
-      <Stack.Screen name="Camera" component={CameraScreen} options={{title: 'Videonly'}} />
+      <Stack.Screen name="Camera" component={CameraScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{title: 'Configurações'}} />
       <Stack.Screen name="Library" component={LibraryScreen} options={{title: 'Vídeos salvos'}} />
     </Stack.Navigator>
