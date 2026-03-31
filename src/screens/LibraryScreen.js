@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Alert,
   FlatList,
   Image,
   Pressable,
@@ -11,6 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {useCustomAlert} from '../context/CustomAlertContext';
 import {
   deleteVideoFromCameraRoll,
   loadSavedVideosFromCameraRoll,
@@ -33,6 +33,7 @@ function formatVideoDuration(secondsLike) {
 export default function LibraryScreen() {
   const [videos, setVideos] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const {showAlert} = useCustomAlert();
 
   const load = useCallback(async () => {
     try {
@@ -40,12 +41,12 @@ export default function LibraryScreen() {
       setVideos(items);
     } catch (error) {
       console.warn('Erro ao carregar vídeos:', error);
-      Alert.alert(
+      showAlert(
         'Erro ao carregar vídeos',
         error?.message || 'Não foi possível carregar os vídeos da galeria.',
       );
     }
-  }, []);
+  }, [showAlert]);
 
   useFocusEffect(
     useCallback(() => {
@@ -64,7 +65,7 @@ export default function LibraryScreen() {
 
   const onDelete = useCallback(
     item => {
-      Alert.alert(
+      showAlert(
         'Excluir vídeo',
         `Remover ${item.filename || 'este vídeo'}?`,
         [
@@ -77,41 +78,41 @@ export default function LibraryScreen() {
                 await deleteVideoFromCameraRoll(item.uri);
                 await load();
               } catch (error) {
-                Alert.alert('Erro', 'Não foi possível excluir o vídeo.');
+                showAlert('Erro', 'Não foi possível excluir o vídeo.');
               }
             },
           },
         ],
       );
     },
-    [load],
+    [load, showAlert],
   );
 
   const onOpen = useCallback(async item => {
     try {
       await openVideoUri(item.uri);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         'Erro ao abrir vídeo',
         error?.message || 'Não foi possível abrir este vídeo.',
       );
     }
-  }, []);
+  }, [showAlert]);
 
   const onShare = useCallback(async item => {
     try {
       await shareVideo(item);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         'Erro ao compartilhar',
         error?.message || 'Não foi possível compartilhar este vídeo.',
       );
     }
-  }, []);
+  }, [showAlert]);
 
   const onCardPress = useCallback(
     item => {
-      Alert.alert(
+      showAlert(
         item.filename || 'Vídeo',
         'Escolha o que deseja fazer com este vídeo.',
         [
@@ -122,7 +123,7 @@ export default function LibraryScreen() {
         ],
       );
     },
-    [onDelete, onOpen, onShare],
+    [onDelete, onOpen, onShare, showAlert],
   );
 
   return (
@@ -154,7 +155,7 @@ export default function LibraryScreen() {
               </View>
             </View>
 
-            <View style={{ flex: 1 }}>
+            <View style={styles.content}>
               <Text style={styles.name} numberOfLines={1}>
                 {item.filename || 'Sem nome'}
               </Text>
@@ -211,6 +212,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'flex-start',
+  },
+  content: {
+    flex: 1,
   },
   thumbWrap: {
     width: 96,

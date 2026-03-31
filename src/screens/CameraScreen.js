@@ -1,6 +1,5 @@
 import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {
-  Alert,
   FlatList,
   Image,
   Pressable,
@@ -18,6 +17,7 @@ import {
 } from 'react-native-vision-camera';
 
 import {useCameraSettings} from '../context/CameraSettingsContext';
+import {useCustomAlert} from '../context/CustomAlertContext';
 import {
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
@@ -193,6 +193,7 @@ export default function CameraScreen({navigation}) {
     requestPermission: requestMicrophonePermission,
   } = useMicrophonePermission();
   const {settings} = useCameraSettings();
+  const {showAlert} = useCustomAlert();
 
   const [isRecording, setIsRecording] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
@@ -255,7 +256,7 @@ export default function CameraScreen({navigation}) {
     }
 
     if (!cameraOk || !microphoneOk) {
-      Alert.alert(
+      showAlert(
         'Permissões necessárias',
         settings.audio
           ? 'Você precisa permitir câmera e microfone para gravar vídeos com áudio.'
@@ -270,6 +271,7 @@ export default function CameraScreen({navigation}) {
     requestCameraPermission,
     requestMicrophonePermission,
     settings.audio,
+    showAlert,
   ]);
 
   const handleRecordingFinished = useCallback(async video => {
@@ -278,7 +280,7 @@ export default function CameraScreen({navigation}) {
       await loadVideosFromGallery();
     } catch (error) {
       console.error(error);
-      Alert.alert(
+      showAlert(
         'Erro ao salvar vídeo',
         error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
       );
@@ -287,15 +289,15 @@ export default function CameraScreen({navigation}) {
       setRecordingElapsedMs(0);
       setIsRecording(false);
     }
-  }, []);
+  }, [showAlert]);
 
   const handleRecordingError = useCallback(error => {
     console.error(error);
     recordingStartedAtRef.current = null;
     setRecordingElapsedMs(0);
     setIsRecording(false);
-    Alert.alert('Erro de gravação', error?.message ?? 'Não foi possível gravar o vídeo.');
-  }, []);
+    showAlert('Erro de gravação', error?.message ?? 'Não foi possível gravar o vídeo.');
+  }, [showAlert]);
 
   const startRecording = useCallback(async () => {
     if (!camera.current || isRecording) {
@@ -321,7 +323,7 @@ export default function CameraScreen({navigation}) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      Alert.alert('Erro', error?.message ?? 'Falha ao iniciar a gravação.');
+      showAlert('Erro', error?.message ?? 'Falha ao iniciar a gravação.');
     }
   }, [
     ensurePermissions,
@@ -330,6 +332,7 @@ export default function CameraScreen({navigation}) {
     isRecording,
     settings.recordFileType,
     settings.recordVideoCodec,
+    showAlert,
   ]);
 
   const stopRecording = useCallback(async () => {
@@ -342,9 +345,9 @@ export default function CameraScreen({navigation}) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      Alert.alert('Erro', error?.message ?? 'Falha ao parar a gravação.');
+      showAlert('Erro', error?.message ?? 'Falha ao parar a gravação.');
     }
-  }, [isRecording]);
+  }, [isRecording, showAlert]);
 
   const onPermissionPress = useCallback(async () => {
     await ensurePermissions();
@@ -354,38 +357,38 @@ export default function CameraScreen({navigation}) {
     try {
       await openVideoUri(item.uri);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         'Erro ao abrir vídeo',
         error?.message ?? 'Não foi possível abrir este vídeo.',
       );
     }
-  }, []);
+  }, [showAlert]);
 
   const onShareVideo = useCallback(async item => {
     try {
       await shareVideo(item);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         'Erro ao compartilhar',
         error?.message ?? 'Não foi possível compartilhar este vídeo.',
       );
     }
-  }, []);
+  }, [showAlert]);
 
   const onVideoCardPress = useCallback(
     item => {
-      Alert.alert(
+      showAlert(
         item.filename || 'Vídeo',
         'Escolha o que deseja fazer com este vídeo.',
         [
-          {text: 'Cancelar', style: 'cancel'},
           {text: 'Visualizar', onPress: () => onOpenVideo(item)},
           {text: 'Compartilhar', onPress: () => onShareVideo(item)},
           {text: 'Biblioteca', onPress: () => navigation.navigate('Library')},
+          {text: 'Cancelar', style: 'cancel'},
         ],
       );
     },
-    [navigation, onOpenVideo, onShareVideo],
+    [navigation, onOpenVideo, onShareVideo, showAlert],
   );
 
   if (!hasCameraPermission) {
