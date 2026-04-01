@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {FlatList, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {FlatList, Pressable, ScrollView, Text, View} from 'react-native';
 import {useCameraDevice} from 'react-native-vision-camera';
 
 import {
@@ -8,8 +8,9 @@ import {
   OptionChips,
   SectionTitle,
   ToggleRow,
-} from '../components/SettingRow';
-import {useCameraSettings} from '../context/CameraSettingsContext';
+} from '../../components/SettingRow/SettingRow';
+import {useCameraSettings} from '../../context/CameraSettingsContext';
+import {styles} from './styles';
 
 const VIDEO_BIT_RATE_OPTIONS = [
   {label: 'extra-low', value: 'extra-low'},
@@ -183,7 +184,7 @@ export default function SettingsScreen() {
           onChange={value => update({resizeMode: value})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Torch</Text>
         <OptionChips
@@ -192,7 +193,7 @@ export default function SettingsScreen() {
           onChange={value => update({torch: value})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Video bit rate</Text>
         <OptionChips
@@ -201,7 +202,7 @@ export default function SettingsScreen() {
           onChange={value => update({videoBitRate: value})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Photo quality balance</Text>
         <OptionChips
@@ -238,7 +239,7 @@ export default function SettingsScreen() {
         <Text style={styles.helper}>
           No Android nativo, canais, sample rate e bitrate sao aplicados na gravacao. `mp3` nao e suportado pelo pipeline de video e usa fallback para `aac`.
         </Text>
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Codec de audio</Text>
         <OptionChips
@@ -247,7 +248,7 @@ export default function SettingsScreen() {
           onChange={value => update({audioCodec: value})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Canais</Text>
         <OptionChips
@@ -256,7 +257,7 @@ export default function SettingsScreen() {
           onChange={value => update({audioChannels: value})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Sample rate</Text>
         <OptionChips
@@ -265,7 +266,7 @@ export default function SettingsScreen() {
           onChange={value => update({audioSampleRate: value})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <NumberField
           label="Bitrate de audio (kbps)"
@@ -280,7 +281,7 @@ export default function SettingsScreen() {
         <Text style={styles.helper}>
           No Android atual, a VisionCamera permite controlar audio ligado/desligado, formato do arquivo e codec de video.
         </Text>
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Resolução de vídeo</Text>
         <OptionChips
@@ -289,7 +290,7 @@ export default function SettingsScreen() {
           onChange={value => update({videoResolutionPreset: value, formatIndex: ''})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Formato do arquivo</Text>
         <OptionChips
@@ -298,7 +299,7 @@ export default function SettingsScreen() {
           onChange={value => update({recordFileType: value})}
         />
 
-        <View style={{height: 14}} />
+        <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Codec de vídeo</Text>
         <OptionChips
@@ -322,7 +323,7 @@ export default function SettingsScreen() {
             keyExtractor={(_, index) => String(index)}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{gap: 10, paddingVertical: 10}}
+            contentContainerStyle={styles.formatsContent}
             renderItem={({item, index}) => {
               const active = selectedFormatIndex === index;
               const label = `${item.videoHeight ?? '?'}p · ${item.videoWidth ?? '?'}w · ${item.maxFps ?? item.minFps ?? '?'} FPS`;
@@ -354,41 +355,7 @@ export default function SettingsScreen() {
         </Pressable>
       </Card>
 
-      <View style={{height: 24}} />
+      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#0b1020'},
-  content: {padding: 16},
-  title: {color: '#fff', fontSize: 26, fontWeight: '800'},
-  subtitle: {color: '#cbd5e1', marginTop: 8, marginBottom: 10, lineHeight: 20},
-  label: {color: '#f9fafb', fontSize: 15, fontWeight: '700', marginBottom: 10},
-  helper: {color: '#9ca3af', fontSize: 12, lineHeight: 18},
-  formatChip: {
-    width: 170,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-    padding: 12,
-    backgroundColor: '#0f172a',
-    marginRight: 10,
-  },
-  formatChipActive: {
-    backgroundColor: '#1d4ed8',
-    borderColor: '#1d4ed8',
-  },
-  formatTitle: {color: '#fff', fontWeight: '700', marginBottom: 4},
-  formatTitleActive: {color: '#fff'},
-  formatMeta: {color: '#cbd5e1', fontSize: 12},
-  resetButton: {
-    marginTop: 14,
-    alignSelf: 'flex-start',
-    backgroundColor: '#1f2937',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-  },
-  resetText: {color: '#fff', fontWeight: '700'},
-});

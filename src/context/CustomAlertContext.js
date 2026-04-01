@@ -1,6 +1,6 @@
 import React, {createContext, useCallback, useContext, useMemo, useState} from 'react';
 
-import CustomAlertModal from '../components/CustomAlertModal';
+import CustomAlertModal from '../components/CustomAlertModal/CustomAlertModal';
 
 const CustomAlertContext = createContext(null);
 

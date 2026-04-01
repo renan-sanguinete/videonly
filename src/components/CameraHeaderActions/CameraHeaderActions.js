@@ -1,6 +1,8 @@
 import React from 'react';
-import {Pressable, StyleSheet, View} from 'react-native';
+import {Pressable, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+
+import {styles} from './styles';
 
 export default function CameraHeaderActions({
   onOpenLibrary,
@@ -25,16 +27,3 @@ export default function CameraHeaderActions({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  headerIconButton: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

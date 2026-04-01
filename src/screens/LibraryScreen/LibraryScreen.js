@@ -1,21 +1,15 @@
 import React, {useCallback, useState} from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {FlatList, Pressable, RefreshControl, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 
-import VideoCard from '../components/VideoCard';
-import {useCustomAlert} from '../context/CustomAlertContext';
+import VideoCard from '../../components/VideoCard/VideoCard';
+import {useCustomAlert} from '../../context/CustomAlertContext';
 import {
   deleteVideoFromCameraRoll,
   loadSavedVideosFromCameraRoll,
-} from '../utils/cameraRollVideos';
-import {openVideoUri, shareVideo} from '../utils/videoActions';
+} from '../../utils/cameraRollVideos';
+import {openVideoUri, shareVideo} from '../../utils/videoActions';
+import {styles} from './styles';
 
 export default function LibraryScreen() {
   const [videos, setVideos] = useState([]);
@@ -56,7 +50,7 @@ export default function LibraryScreen() {
         'Excluir vídeo',
         `Remover ${item.filename || 'este vídeo'}?`,
         [
-          { text: 'Cancelar', style: 'cancel' },
+          {text: 'Cancelar', style: 'cancel'},
           {
             text: 'Excluir',
             style: 'destructive',
@@ -75,27 +69,33 @@ export default function LibraryScreen() {
     [load, showAlert],
   );
 
-  const onOpen = useCallback(async item => {
-    try {
-      await openVideoUri(item.uri);
-    } catch (error) {
-      showAlert(
-        'Erro ao abrir vídeo',
-        error?.message || 'Não foi possível abrir este vídeo.',
-      );
-    }
-  }, [showAlert]);
+  const onOpen = useCallback(
+    async item => {
+      try {
+        await openVideoUri(item.uri);
+      } catch (error) {
+        showAlert(
+          'Erro ao abrir vídeo',
+          error?.message || 'Não foi possível abrir este vídeo.',
+        );
+      }
+    },
+    [showAlert],
+  );
 
-  const onShare = useCallback(async item => {
-    try {
-      await shareVideo(item);
-    } catch (error) {
-      showAlert(
-        'Erro ao compartilhar',
-        error?.message || 'Não foi possível compartilhar este vídeo.',
-      );
-    }
-  }, [showAlert]);
+  const onShare = useCallback(
+    async item => {
+      try {
+        await shareVideo(item);
+      } catch (error) {
+        showAlert(
+          'Erro ao compartilhar',
+          error?.message || 'Não foi possível compartilhar este vídeo.',
+        );
+      }
+    },
+    [showAlert],
+  );
 
   const onCardPress = useCallback(
     item => {
@@ -140,45 +140,10 @@ export default function LibraryScreen() {
         ListEmptyComponent={
           <View>
             <Text style={styles.emptyTitle}>Nenhum vídeo encontrado</Text>
-            <Text style={styles.emptyText}>
-              Grave um vídeo para vê-lo aqui.
-            </Text>
+            <Text style={styles.emptyText}>Grave um vídeo para vê-lo aqui.</Text>
           </View>
         }
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0b1020' },
-  listContent: { padding: 16, gap: 12 },
-  emptyContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  deleteButton: {
-    backgroundColor: '#7f1d1d',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  emptyTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  emptyText: {
-    color: '#cbd5e1',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
-  },
-});

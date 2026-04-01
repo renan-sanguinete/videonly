@@ -1,5 +1,11 @@
-import React, {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import {FlatList, Pressable, Text, View} from 'react-native';
 import {useIsFocused} from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 import {
@@ -7,18 +13,19 @@ import {
   useMicrophonePermission,
 } from 'react-native-vision-camera';
 
-import {useCameraSettings} from '../context/CameraSettingsContext';
-import LoadingModal from '../components/LoadingModal';
-import CameraHeaderActions from '../components/CameraHeaderActions';
-import CameraPreview from '../components/CameraPreview';
-import VideoCard from '../components/VideoCard';
-import {useCustomAlert} from '../context/CustomAlertContext';
+import {useCameraSettings} from '../../context/CameraSettingsContext';
+import CameraHeaderActions from '../../components/CameraHeaderActions/CameraHeaderActions';
+import CameraPreview from '../../components/CameraPreview/CameraPreview';
+import LoadingModal from '../../components/LoadingModal/LoadingModal';
+import VideoCard from '../../components/VideoCard/VideoCard';
+import {useCustomAlert} from '../../context/CustomAlertContext';
 import {
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
-} from '../utils/cameraRollVideos';
-import {compressVideo} from '../utils/videoCompression';
-import {openVideoUri, shareVideo} from '../utils/videoActions';
+} from '../../utils/cameraRollVideos';
+import {compressVideo} from '../../utils/videoCompression';
+import {openVideoUri, shareVideo} from '../../utils/videoActions';
+import {styles} from './styles';
 
 function normalizeFilePath(pathLike) {
   if (!pathLike) {
@@ -69,7 +76,7 @@ export default function CameraScreen({navigation}) {
       const videos = await loadSavedVideosFromCameraRoll();
       setSavedVideos(videos);
     } catch (error) {
-      console.error("Erro ao carregar vídeos:", error);
+      console.error('Erro ao carregar vídeos:', error);
     }
   };
 
@@ -139,80 +146,92 @@ export default function CameraScreen({navigation}) {
     showAlert,
   ]);
 
-  const handleRecordingFinished = useCallback(async video => {
-    const originalPath = video.path;
-    let pathToSave = originalPath;
-    let compressedPath = null;
-    let shouldDeleteOriginal = false;
+  const handleRecordingFinished = useCallback(
+    async video => {
+      const originalPath = video.path;
+      let pathToSave = originalPath;
+      let compressedPath = null;
+      let shouldDeleteOriginal = false;
 
-    try {
-      setIsRecording(false);
-      if (settings.compressVideoBeforeSave) {
-        setIsProcessingVideo(true);
-        compressedPath = await compressVideo(originalPath);
-        pathToSave = compressedPath;
-      }
+      try {
+        setIsRecording(false);
+        if (settings.compressVideoBeforeSave) {
+          setIsProcessingVideo(true);
+          compressedPath = await compressVideo(originalPath);
+          pathToSave = compressedPath;
+        }
 
-      await saveVideoToCameraRoll(pathToSave);
-      shouldDeleteOriginal = true;
-      await loadVideosFromGallery();
-    } catch (error) {
-      console.error(error);
-      if (settings.compressVideoBeforeSave) {
-        try {
-          await saveVideoToCameraRoll(originalPath);
-          shouldDeleteOriginal = true;
-          await loadVideosFromGallery();
+        await saveVideoToCameraRoll(pathToSave);
+        shouldDeleteOriginal = true;
+        await loadVideosFromGallery();
+      } catch (error) {
+        console.error(error);
+        if (settings.compressVideoBeforeSave) {
+          try {
+            await saveVideoToCameraRoll(originalPath);
+            shouldDeleteOriginal = true;
+            await loadVideosFromGallery();
+            showAlert(
+              'Compressão indisponível',
+              'Não foi possível comprimir este vídeo. A versão original foi salva normalmente.',
+            );
+          } catch (fallbackError) {
+            console.error(fallbackError);
+            showAlert(
+              'Erro ao processar vídeo',
+              fallbackError?.message ??
+                'Não foi possível comprimir nem salvar o vídeo original.',
+            );
+          }
+        } else {
           showAlert(
-            'Compressão indisponível',
-            'Não foi possível comprimir este vídeo. A versão original foi salva normalmente.',
-          );
-        } catch (fallbackError) {
-          console.error(fallbackError);
-          showAlert(
-            'Erro ao processar vídeo',
-            fallbackError?.message ??
-              'Não foi possível comprimir nem salvar o vídeo original.',
+            'Erro ao salvar vídeo',
+            error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
           );
         }
-      } else {
+      } finally {
+        setIsProcessingVideo(false);
+        if (shouldDeleteOriginal) {
+          await deleteIfExists(compressedPath);
+          await deleteIfExists(originalPath);
+        } else if (compressedPath && compressedPath !== originalPath) {
+          await deleteIfExists(compressedPath);
+        }
+        recordingStartedAtRef.current = null;
+        setRecordingElapsedMs(0);
+        setIsRecording(false);
+      }
+    },
+    [settings.compressVideoBeforeSave, showAlert],
+  );
+
+  const finalizeRecordedVideo = useCallback(
+    video => {
+      handleRecordingFinished(video).catch(error => {
+        console.error('Erro ao finalizar vídeo gravado:', error);
+        setIsProcessingVideo(false);
         showAlert(
-          'Erro ao salvar vídeo',
-          error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
+          'Erro ao processar vídeo',
+          error?.message ?? 'Não foi possível finalizar o vídeo gravado.',
         );
-      }
-    } finally {
-      setIsProcessingVideo(false);
-      if (shouldDeleteOriginal) {
-        await deleteIfExists(compressedPath);
-        await deleteIfExists(originalPath);
-      } else if (compressedPath && compressedPath !== originalPath) {
-        await deleteIfExists(compressedPath);
-      }
+      });
+    },
+    [handleRecordingFinished, showAlert],
+  );
+
+  const handleRecordingError = useCallback(
+    error => {
+      console.error(error);
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-    }
-  }, [settings.compressVideoBeforeSave, showAlert]);
-
-  const finalizeRecordedVideo = useCallback(video => {
-    handleRecordingFinished(video).catch(error => {
-      console.error('Erro ao finalizar vídeo gravado:', error);
-      setIsProcessingVideo(false);
       showAlert(
-        'Erro ao processar vídeo',
-        error?.message ?? 'Não foi possível finalizar o vídeo gravado.',
+        'Erro de gravação',
+        error?.message ?? 'Não foi possível gravar o vídeo.',
       );
-    });
-  }, [handleRecordingFinished, showAlert]);
-
-  const handleRecordingError = useCallback(error => {
-    console.error(error);
-    recordingStartedAtRef.current = null;
-    setRecordingElapsedMs(0);
-    setIsRecording(false);
-    showAlert('Erro de gravação', error?.message ?? 'Não foi possível gravar o vídeo.');
-  }, [showAlert]);
+    },
+    [showAlert],
+  );
 
   const startRecording = useCallback(async () => {
     if (!camera.current || isRecording) {
@@ -284,27 +303,33 @@ export default function CameraScreen({navigation}) {
     );
   }, [isRecording, resetSettings]);
 
-  const onOpenVideo = useCallback(async item => {
-    try {
-      await openVideoUri(item.uri);
-    } catch (error) {
-      showAlert(
-        'Erro ao abrir vídeo',
-        error?.message ?? 'Não foi possível abrir este vídeo.',
-      );
-    }
-  }, [showAlert]);
+  const onOpenVideo = useCallback(
+    async item => {
+      try {
+        await openVideoUri(item.uri);
+      } catch (error) {
+        showAlert(
+          'Erro ao abrir vídeo',
+          error?.message ?? 'Não foi possível abrir este vídeo.',
+        );
+      }
+    },
+    [showAlert],
+  );
 
-  const onShareVideo = useCallback(async item => {
-    try {
-      await shareVideo(item);
-    } catch (error) {
-      showAlert(
-        'Erro ao compartilhar',
-        error?.message ?? 'Não foi possível compartilhar este vídeo.',
-      );
-    }
-  }, [showAlert]);
+  const onShareVideo = useCallback(
+    async item => {
+      try {
+        await shareVideo(item);
+      } catch (error) {
+        showAlert(
+          'Erro ao compartilhar',
+          error?.message ?? 'Não foi possível compartilhar este vídeo.',
+        );
+      }
+    },
+    [showAlert],
+  );
 
   const onVideoCardPress = useCallback(
     item => {
@@ -326,9 +351,13 @@ export default function CameraScreen({navigation}) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>Videonly</Text>
-        <Text style={styles.subtitle}>O app precisa de permissão para acessar a câmera.</Text>
+        <Text style={styles.subtitle}>
+          O app precisa de permissão para acessar a câmera.
+        </Text>
         <Pressable style={styles.primaryButton} onPress={onPermissionPress}>
-          <Text style={styles.primaryButtonText}>Permitir câmera e microfone</Text>
+          <Text style={styles.primaryButtonText}>
+            Permitir câmera e microfone
+          </Text>
         </Pressable>
       </View>
     );
@@ -364,11 +393,7 @@ export default function CameraScreen({navigation}) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.savedVideosContent}
           renderItem={({item}) => (
-            <VideoCard
-              compact
-              item={item}
-              onPress={() => onVideoCardPress(item)}
-            />
+            <VideoCard compact item={item} onPress={() => onVideoCardPress(item)} />
           )}
           ListEmptyComponent={
             <Text style={styles.emptyText}>Nenhum vídeo salvo ainda.</Text>
@@ -378,33 +403,3 @@ export default function CameraScreen({navigation}) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#0b1020'},
-  panel: {
-    backgroundColor: '#111827',
-    borderTopWidth: 1,
-    borderTopColor: '#1f2937',
-    padding: 16,
-  },
-  savedVideosContent: {
-    gap: 12,
-  },
-  panelTitle: {
-    color: '#f9fafb',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  emptyText: {color: '#9ca3af'},
-  center: {flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#0b1020'},
-  title: {color: '#fff', fontSize: 28, fontWeight: '800', marginBottom: 8, textAlign: 'center'},
-  subtitle: {color: '#cbd5e1', fontSize: 15, textAlign: 'center', marginBottom: 16, lineHeight: 21},
-  primaryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-  },
-  primaryButtonText: {color: '#fff', fontWeight: '700'},
-});

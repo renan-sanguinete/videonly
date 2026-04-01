@@ -1,9 +1,9 @@
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
-import CameraScreen from '../screens/CameraScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import LibraryScreen from '../screens/LibraryScreen';
+import CameraScreen from '../screens/CameraScreen/CameraScreen';
+import SettingsScreen from '../screens/SettingsScreen/SettingsScreen';
+import LibraryScreen from '../screens/LibraryScreen/LibraryScreen';
 
 const Stack = createNativeStackNavigator();
 
