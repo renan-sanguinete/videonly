@@ -2,6 +2,7 @@ import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   parseCameraNumber,
@@ -22,16 +23,19 @@ export default function CameraPreview({
   settings,
   startRecording,
   stopRecording,
+  torch,
+  isActive,
 }) {
   const device = useCameraDevice(cameraPosition);
   const selectedFormat = useMemo(() => {
     return pickFormatForSettings(device?.formats ?? [], settings);
   }, [device, settings]);
-
+  const insets = useSafeAreaInsets();
   const cameraProps = useMemo(
     () => ({
       device,
-      isActive: isFocused && !isProcessingVideo,
+      torch,
+      isActive,
       audio: settings.audio,
       audioChannels: settings.audioChannels,
       audioSampleRate: parseCameraNumber(settings.audioSampleRate),
@@ -47,7 +51,6 @@ export default function CameraPreview({
       ...(device?.supportsLowLightBoost
         ? {lowLightBoost: settings.lowLightBoost}
         : {}),
-      ...(device?.hasTorch ? {torch: settings.torch} : {}),
       ...(selectedFormat ? {format: selectedFormat} : {}),
       ...(selectedFormat ? {videoBitRate: settings.videoBitRate} : {}),
       ...(selectedFormat && settings.fps !== ''
@@ -56,11 +59,11 @@ export default function CameraPreview({
       ...(selectedFormat?.supportsVideoHdr ? {videoHdr: settings.videoHdr} : {}),
       ...(selectedFormat?.supportsPhotoHdr ? {photoHdr: settings.photoHdr} : {}),
     }),
-    [device, isFocused, isProcessingVideo, selectedFormat, settings],
+    [device, isFocused, isProcessingVideo, selectedFormat, settings, torch],
   );
 
   const fpsLabel = `FPS: ${cameraProps?.fps ?? 'auto'}`;
-
+  console.log(insets)
   if (device == null) {
     return (
       <View style={styles.center}>
@@ -75,7 +78,7 @@ export default function CameraPreview({
   return (
     <View style={styles.cameraWrap}>
       <Camera ref={camera} style={StyleSheet.absoluteFill} {...cameraProps} />
-      <View style={styles.topOverlay}>
+      <View style={[styles.topOverlay, { paddingTop: insets.top ? insets.top + 50 : 60 }]}>
         {isRecording ? (
           <View style={styles.recordingStatus}>
             <View style={styles.badge}>

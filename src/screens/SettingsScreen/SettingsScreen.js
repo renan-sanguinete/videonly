@@ -31,11 +31,6 @@ const RESIZE_MODE_OPTIONS = [
   {label: 'contain', value: 'contain'},
 ];
 
-const TORCH_OPTIONS = [
-  {label: 'off', value: 'off'},
-  {label: 'on', value: 'on'},
-];
-
 const AUDIO_CHANNEL_OPTIONS = [
   {label: 'Stereo (2 canais)', value: 'stereo'},
   {label: 'Mono (1 canal)', value: 'mono'},
@@ -182,15 +177,6 @@ export default function SettingsScreen() {
           value={settings.resizeMode}
           options={RESIZE_MODE_OPTIONS}
           onChange={value => update({resizeMode: value})}
-        />
-
-        <View style={styles.sectionSpacer} />
-
-        <Text style={styles.label}>Torch</Text>
-        <OptionChips
-          value={settings.torch}
-          options={TORCH_OPTIONS}
-          onChange={value => update({torch: value})}
         />
 
         <View style={styles.sectionSpacer} />

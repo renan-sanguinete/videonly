@@ -31,4 +31,13 @@ export const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 20,
   },
+  loadingContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  loadingIndicator: {
+    marginTop: 16,
+  },
 });

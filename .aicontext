@@ -40,5 +40,11 @@
 # - Arquivos que começam com "." (sempre)
 # - package-lock.json (sempre)
 
-src/screens/CameraScreen.js
+src/context/CameraSettingsContext.js
+src/screens/CameraScreen/CameraScreen.js
+src/components/CameraHeaderActions/CameraHeaderActions.js
+src/components/CameraPreview/CameraPreview.js
+src/screens/SettingsScreen/SettingsScreen.js
+src/utils/cameraFormatUtils.js
+src/utils/cameraRollVideos.js
 package.json

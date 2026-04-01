@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {FlatList, Pressable, Text, View} from 'react-native';
+import {AppState, FlatList, Pressable, Text, View} from 'react-native';
 import {useIsFocused} from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 import {
@@ -61,7 +61,7 @@ export default function CameraScreen({navigation}) {
     hasPermission: hasMicrophonePermission,
     requestPermission: requestMicrophonePermission,
   } = useMicrophonePermission();
-  const {settings, resetSettings} = useCameraSettings();
+  const {settings, setSettings, resetSettings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
 
   const [isRecording, setIsRecording] = useState(false);
@@ -70,6 +70,10 @@ export default function CameraScreen({navigation}) {
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [cameraPosition, setCameraPosition] = useState('back');
   const currentCameraLabel = cameraPosition === 'back' ? 'traseira' : 'frontal';
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [cameraSessionKey, setCameraSessionKey] = useState(0);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [activeFlashMode, setActiveFlashMode] = useState('off');
 
   const loadVideosFromGallery = async () => {
     try {
@@ -83,6 +87,19 @@ export default function CameraScreen({navigation}) {
   useEffect(() => {
     loadVideosFromGallery();
   }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', nextState => {
+      setAppState(nextState);
+      if (nextState !== 'active' && isRecording) {
+        stopRecording().catch(() => {});
+      }
+    });
+
+    return () => sub.remove();
+  }, [isRecording, stopRecording]);
+
+  const isCameraActive = isFocused && appState === 'active' && !isProcessingVideo;
 
   useEffect(() => {
     if (!isRecording || !recordingStartedAtRef.current) {
@@ -99,21 +116,58 @@ export default function CameraScreen({navigation}) {
     return () => clearInterval(intervalId);
   }, [isRecording]);
 
-  const renderHeaderRight = useCallback(
+  const onToggleCompressVideo = useCallback(() => {
+  setSettings(prev => ({
+    ...prev,
+    compressVideoBeforeSave: !prev.compressVideoBeforeSave,
+  }));
+}, [setSettings]);
+
+  const onFlashModeChange = () => {
+    setActiveFlashMode(prevMode => (prevMode === 'off' ? 'on' : 'off'));
+  };
+
+  const renderHeader = useCallback(
     () => (
       <CameraHeaderActions
+        flashMode={activeFlashMode}
+        onToggleFlash={onFlashModeChange}
+        isFrontCamera={cameraPosition === 'front'}
+        compressVideoEnabled={settings.compressVideoBeforeSave}
+        onToggleCompressVideo={onToggleCompressVideo}
+        isRecording={isRecording}
         onOpenLibrary={() => navigation.navigate('Library')}
         onOpenSettings={() => navigation.navigate('Settings')}
       />
     ),
-    [navigation],
+    [
+      navigation,
+      activeFlashMode,
+      cameraPosition,
+      settings.compressVideoBeforeSave,
+      onToggleCompressVideo,
+      isRecording,
+    ],
   );
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: renderHeaderRight,
+      headerTitle: () => renderHeader(),
+      headerLeft: () => null,
+      headerRight: () => null,
+      title: '',
+      headerTitleAlign: 'center',
+
+      headerTransparent: true,
+
+      headerStyle: {
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+      },
     });
-  }, [navigation, renderHeaderRight]);
+  }, [navigation, renderHeader]);
 
   const ensurePermissions = useCallback(async () => {
     let cameraOk = hasCameraPermission;
@@ -234,7 +288,7 @@ export default function CameraScreen({navigation}) {
   );
 
   const startRecording = useCallback(async () => {
-    if (!camera.current || isRecording) {
+    if (!camera.current || isRecording && (!isCameraReady || !isCameraActive)) {
       return;
     }
 
@@ -371,17 +425,31 @@ export default function CameraScreen({navigation}) {
         visible={isProcessingVideo}
       />
       <CameraPreview
+        key={cameraSessionKey}
         camera={camera}
         cameraPosition={cameraPosition}
         currentCameraLabel={currentCameraLabel}
         isFocused={isFocused}
         isProcessingVideo={isProcessingVideo}
         isRecording={isRecording}
+        isActive={isCameraActive}
+        torch={activeFlashMode}
+        onInitialized={() => setIsCameraReady(true)}
         onToggleCamera={onToggleCamera}
         recordingElapsedMs={recordingElapsedMs}
         settings={settings}
         startRecording={startRecording}
         stopRecording={stopRecording}
+        onError={error => {
+          console.error('Camera runtime error:', error);
+          setIsCameraReady(false);
+          setIsRecording(false);
+          recordingStartedAtRef.current = null;
+          setRecordingElapsedMs(0);
+
+          // força recriação da sessão se ela entrou em estado ruim
+          setCameraSessionKey(v => v + 1);
+        }}
       />
 
       <View style={styles.panel}>

@@ -1,6 +1,5 @@
-import React, {useCallback, useState} from 'react';
-import {FlatList, Pressable, RefreshControl, Text, View} from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
+import React, {useCallback, useLayoutEffect, useState} from 'react';
+import {ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View} from 'react-native';
 
 import VideoCard from '../../components/VideoCard/VideoCard';
 import {useCustomAlert} from '../../context/CustomAlertContext';
@@ -29,11 +28,9 @@ export default function LibraryScreen() {
     }
   }, [showAlert]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  useLayoutEffect(() => {
+    load();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -115,6 +112,11 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.container}>
+      { videos.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#888" style={styles.loadingIndicator} />
+        </View>
+      ) : (
       <FlatList
         data={videos}
         keyExtractor={item => item.uri}
@@ -144,6 +146,7 @@ export default function LibraryScreen() {
           </View>
         }
       />
+      )}
     </View>
   );
 }
