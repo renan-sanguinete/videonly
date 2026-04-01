@@ -1,34 +1,21 @@
-import React, { useCallback, useState } from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import {useFocusEffect} from '@react-navigation/native';
+
+import VideoCard from '../components/VideoCard';
 import {useCustomAlert} from '../context/CustomAlertContext';
 import {
   deleteVideoFromCameraRoll,
   loadSavedVideosFromCameraRoll,
 } from '../utils/cameraRollVideos';
 import {openVideoUri, shareVideo} from '../utils/videoActions';
-
-function formatVideoDuration(secondsLike) {
-  const totalSeconds = Math.max(0, Math.round(secondsLike || 0));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
-  }
-
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
 
 export default function LibraryScreen() {
   const [videos, setVideos] = useState([]);
@@ -137,49 +124,18 @@ export default function LibraryScreen() {
         contentContainerStyle={
           videos.length === 0 ? styles.emptyContainer : styles.listContent
         }
-        renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => onCardPress(item)}>
-            <View style={styles.thumbWrap}>
-              {item.thumbnailUri ? (
-                <Image source={{uri: item.thumbnailUri}} style={styles.thumb} />
-              ) : (
-                <View style={[styles.thumb, styles.thumbFallback]}>
-                  <Icon name="videocam-outline" size={26} color="#cbd5e1" />
-                </View>
-              )}
-              <View style={styles.playBadge}>
-                <Icon name="play" size={14} color="#fff" />
-              </View>
-              <View style={styles.durationBadge}>
-                <Text style={styles.durationText}>{formatVideoDuration(item.duration)}</Text>
-              </View>
-            </View>
-
-            <View style={styles.content}>
-              <Text style={styles.name} numberOfLines={1}>
-                {item.filename || 'Sem nome'}
-              </Text>
-
-              <Text style={styles.meta}>
-                Duração: {Math.round(item.duration || 0)}s
-              </Text>
-
-              <Text style={styles.meta}>
-                {new Date(item.timestamp * 1000).toLocaleString('pt-BR')}
-              </Text>
-
-              <Text style={styles.path} numberOfLines={2}>
-                {item.uri}
-              </Text>
-            </View>
-
-            <Pressable
-              onPress={() => onDelete(item)}
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteButtonText}>Excluir</Text>
-            </Pressable>
-          </Pressable>
+        renderItem={({item}) => (
+          <VideoCard
+            item={item}
+            onPress={() => onCardPress(item)}
+            showDurationLabel
+            showPath
+            action={
+              <Pressable onPress={() => onDelete(item)} style={styles.deleteButton}>
+                <Text style={styles.deleteButtonText}>Excluir</Text>
+              </Pressable>
+            }
+          />
         )}
         ListEmptyComponent={
           <View>
@@ -202,78 +158,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-  },
-  card: {
-    backgroundColor: '#111827',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#1f2937',
-    padding: 14,
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'flex-start',
-  },
-  content: {
-    flex: 1,
-  },
-  thumbWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#172033',
-    position: 'relative',
-  },
-  thumb: {
-    width: '100%',
-    height: '100%',
-  },
-  thumbFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(15,23,42,0.72)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  durationBadge: {
-    position: 'absolute',
-    left: 8,
-    bottom: 8,
-    backgroundColor: 'rgba(2,6,23,0.78)',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  durationText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  name: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 15,
-    marginBottom: 6,
-  },
-  meta: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  path: {
-    color: '#6b7280',
-    fontSize: 11,
-    marginTop: 8,
-    lineHeight: 16,
   },
   deleteButton: {
     backgroundColor: '#7f1d1d',

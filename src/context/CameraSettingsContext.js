@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS = {
   audioChannels: 'stereo',
   audioSampleRate: '44100',
   audioBitRateKbps: '128',
+  compressVideoBeforeSave: false,
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
   videoResolutionPreset: 'auto',
