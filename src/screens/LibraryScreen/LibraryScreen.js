@@ -20,7 +20,6 @@ export default function LibraryScreen() {
       const items = await loadSavedVideosFromCameraRoll();
       setVideos(items);
     } catch (error) {
-      console.warn('Erro ao carregar vídeos:', error);
       showAlert(
         'Erro ao carregar vídeos',
         error?.message || 'Não foi possível carregar os vídeos da galeria.',

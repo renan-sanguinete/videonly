@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -54,6 +55,10 @@ async function deleteIfExists(pathLike) {
 export default function CameraScreen({navigation}) {
   const camera = useRef(null);
   const recordingStartedAtRef = useRef(null);
+  const appStateRef = useRef(AppState.currentState);
+  const isRecordingRef = useRef(false);
+  const recoveryTimeoutRef = useRef(null);
+  const isUnmountedRef = useRef(false);
   const isFocused = useIsFocused();
   const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
     useCameraPermission();
@@ -74,6 +79,7 @@ export default function CameraScreen({navigation}) {
   const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [activeFlashMode, setActiveFlashMode] = useState('off');
+  const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
 
   const loadVideosFromGallery = async () => {
     try {
@@ -89,17 +95,119 @@ export default function CameraScreen({navigation}) {
   }, []);
 
   useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  useEffect(() => {
+    return () => {
+      isUnmountedRef.current = true;
+      if (recoveryTimeoutRef.current) {
+        clearTimeout(recoveryTimeoutRef.current);
+        recoveryTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const clearPendingRecovery = useCallback(() => {
+    if (recoveryTimeoutRef.current) {
+      clearTimeout(recoveryTimeoutRef.current);
+      recoveryTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleCameraRecovery = useCallback(
+    ({delayMs = 350} = {}) => {
+      clearPendingRecovery();
+      setIsCameraReady(false);
+      setIsRecoveringCamera(true);
+
+      recoveryTimeoutRef.current = setTimeout(() => {
+        recoveryTimeoutRef.current = null;
+
+        if (isUnmountedRef.current) {
+          return;
+        }
+
+        if (appStateRef.current !== 'active' || !isFocused || isProcessingVideo) {
+          setIsRecoveringCamera(false);
+          return;
+        }
+
+        setCameraSessionKey(currentKey => currentKey + 1);
+        setIsRecoveringCamera(false);
+      }, delayMs);
+    },
+    [clearPendingRecovery, isFocused, isProcessingVideo],
+  );
+
+  const forceReleaseCameraSession = useCallback(async () => {
+    clearPendingRecovery();
+    setIsCameraReady(false);
+
+    if (camera.current && isRecordingRef.current) {
+      try {
+        await camera.current.stopRecording();
+      } catch (error) {
+        console.warn('Falha ao parar gravação durante liberação da câmera.', error);
+      }
+
+      setIsRecording(false);
+    }
+
+    camera.current = null;
+    recordingStartedAtRef.current = null;
+    setRecordingElapsedMs(0);
+    setCameraSessionKey(currentKey => currentKey + 1);
+  }, [clearPendingRecovery]);
+
+  useEffect(() => {
     const sub = AppState.addEventListener('change', nextState => {
+      const previousState = appStateRef.current;
+      appStateRef.current = nextState;
       setAppState(nextState);
-      if (nextState !== 'active' && isRecording) {
-        stopRecording().catch(() => {});
+
+      if (nextState !== 'active') {
+        forceReleaseCameraSession().catch(error => {
+          console.warn('Falha ao liberar sessão da câmera ao sair do app.', error);
+        });
+        return;
+      }
+
+      if (previousState !== 'active') {
+        scheduleCameraRecovery({delayMs: 900});
       }
     });
 
     return () => sub.remove();
-  }, [isRecording, stopRecording]);
+  }, [forceReleaseCameraSession, scheduleCameraRecovery]);
 
-  const isCameraActive = isFocused && appState === 'active' && !isProcessingVideo;
+  const isCameraActive = useMemo(
+    () =>
+      isFocused &&
+      appState === 'active' &&
+      !isProcessingVideo &&
+      !isRecoveringCamera,
+    [appState, isFocused, isProcessingVideo, isRecoveringCamera],
+  );
+
+  useEffect(() => {
+    if (!isFocused) {
+      forceReleaseCameraSession().catch(error => {
+        console.warn('Falha ao liberar sessão da câmera ao perder foco.', error);
+      });
+      return;
+    }
+
+    if (appState === 'active' && !isProcessingVideo) {
+      scheduleCameraRecovery({delayMs: 250});
+    }
+  }, [
+    appState,
+    forceReleaseCameraSession,
+    isFocused,
+    isProcessingVideo,
+    scheduleCameraRecovery,
+  ]);
 
   useEffect(() => {
     if (!isRecording || !recordingStartedAtRef.current) {
@@ -117,11 +225,11 @@ export default function CameraScreen({navigation}) {
   }, [isRecording]);
 
   const onToggleCompressVideo = useCallback(() => {
-  setSettings(prev => ({
-    ...prev,
-    compressVideoBeforeSave: !prev.compressVideoBeforeSave,
-  }));
-}, [setSettings]);
+    setSettings(prev => ({
+      ...prev,
+      compressVideoBeforeSave: !prev.compressVideoBeforeSave,
+    }));
+  }, [setSettings]);
 
   const onFlashModeChange = () => {
     setActiveFlashMode(prevMode => (prevMode === 'off' ? 'on' : 'off'));
@@ -219,7 +327,6 @@ export default function CameraScreen({navigation}) {
         shouldDeleteOriginal = true;
         await loadVideosFromGallery();
       } catch (error) {
-        console.error(error);
         if (settings.compressVideoBeforeSave) {
           try {
             await saveVideoToCameraRoll(originalPath);
@@ -230,7 +337,6 @@ export default function CameraScreen({navigation}) {
               'Não foi possível comprimir este vídeo. A versão original foi salva normalmente.',
             );
           } catch (fallbackError) {
-            console.error(fallbackError);
             showAlert(
               'Erro ao processar vídeo',
               fallbackError?.message ??
@@ -262,7 +368,6 @@ export default function CameraScreen({navigation}) {
   const finalizeRecordedVideo = useCallback(
     video => {
       handleRecordingFinished(video).catch(error => {
-        console.error('Erro ao finalizar vídeo gravado:', error);
         setIsProcessingVideo(false);
         showAlert(
           'Erro ao processar vídeo',
@@ -275,20 +380,35 @@ export default function CameraScreen({navigation}) {
 
   const handleRecordingError = useCallback(
     error => {
-      console.error(error);
+      const errorCode = error?.code ?? null;
+
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      showAlert(
-        'Erro de gravação',
-        error?.message ?? 'Não foi possível gravar o vídeo.',
-      );
+
+      if (
+        errorCode === 'capture/no-data' ||
+        errorCode === 'device/camera-already-in-use' ||
+        errorCode === 'system/camera-is-restricted'
+      ) {
+        scheduleCameraRecovery({
+          delayMs: errorCode === 'system/camera-is-restricted' ? 1500 : 900,
+        });
+      }
+
+      showAlert('Erro de gravação', error?.message ?? 'Não foi possível gravar o vídeo.');
     },
-    [showAlert],
+    [scheduleCameraRecovery, showAlert],
   );
 
   const startRecording = useCallback(async () => {
-    if (!camera.current || isRecording && (!isCameraReady || !isCameraActive)) {
+    if (
+      !camera.current ||
+      isRecording ||
+      !isCameraReady ||
+      !isCameraActive ||
+      isRecoveringCamera
+    ) {
       return;
     }
 
@@ -322,7 +442,10 @@ export default function CameraScreen({navigation}) {
     ensurePermissions,
     finalizeRecordedVideo,
     handleRecordingError,
+    isCameraActive,
+    isCameraReady,
     isRecording,
+    isRecoveringCamera,
     settings.recordFileType,
     settings.recordVideoCodec,
     showAlert,
@@ -351,6 +474,7 @@ export default function CameraScreen({navigation}) {
       return;
     }
 
+    setIsCameraReady(false);
     resetSettings();
     setCameraPosition(currentPosition =>
       currentPosition === 'back' ? 'front' : 'back',
@@ -434,21 +558,30 @@ export default function CameraScreen({navigation}) {
         isRecording={isRecording}
         isActive={isCameraActive}
         torch={activeFlashMode}
-        onInitialized={() => setIsCameraReady(true)}
+        onInitialized={() => {
+          setIsCameraReady(true);
+        }}
         onToggleCamera={onToggleCamera}
         recordingElapsedMs={recordingElapsedMs}
         settings={settings}
         startRecording={startRecording}
         stopRecording={stopRecording}
         onError={error => {
-          console.error('Camera runtime error:', error);
+          const errorCode = error?.code ?? null;
+
           setIsCameraReady(false);
           setIsRecording(false);
           recordingStartedAtRef.current = null;
           setRecordingElapsedMs(0);
 
-          // força recriação da sessão se ela entrou em estado ruim
-          setCameraSessionKey(v => v + 1);
+          scheduleCameraRecovery({
+            delayMs:
+              errorCode === 'system/camera-is-restricted'
+                ? 1500
+                : errorCode === 'device/camera-already-in-use'
+                  ? 1200
+                  : 700,
+          });
         }}
       />
 

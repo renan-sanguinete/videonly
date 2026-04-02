@@ -2,7 +2,7 @@ import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   parseCameraNumber,
@@ -15,9 +15,10 @@ export default function CameraPreview({
   camera,
   cameraPosition,
   currentCameraLabel,
-  isFocused,
   isProcessingVideo,
   isRecording,
+  onError,
+  onInitialized,
   onToggleCamera,
   recordingElapsedMs,
   settings,
@@ -31,6 +32,10 @@ export default function CameraPreview({
     return pickFormatForSettings(device?.formats ?? [], settings);
   }, [device, settings]);
   const insets = useSafeAreaInsets();
+  const topOverlayStyle = useMemo(
+    () => [styles.topOverlay, {paddingTop: insets.top ? insets.top + 50 : 60}],
+    [insets.top],
+  );
   const cameraProps = useMemo(
     () => ({
       device,
@@ -59,11 +64,11 @@ export default function CameraPreview({
       ...(selectedFormat?.supportsVideoHdr ? {videoHdr: settings.videoHdr} : {}),
       ...(selectedFormat?.supportsPhotoHdr ? {photoHdr: settings.photoHdr} : {}),
     }),
-    [device, isFocused, isProcessingVideo, selectedFormat, settings, torch],
+    [device, isActive, selectedFormat, settings, torch],
   );
 
   const fpsLabel = `FPS: ${cameraProps?.fps ?? 'auto'}`;
-  console.log(insets)
+
   if (device == null) {
     return (
       <View style={styles.center}>
@@ -77,8 +82,14 @@ export default function CameraPreview({
 
   return (
     <View style={styles.cameraWrap}>
-      <Camera ref={camera} style={StyleSheet.absoluteFill} {...cameraProps} />
-      <View style={[styles.topOverlay, { paddingTop: insets.top ? insets.top + 50 : 60 }]}>
+      <Camera
+        ref={camera}
+        style={StyleSheet.absoluteFill}
+        onError={onError}
+        onInitialized={onInitialized}
+        {...cameraProps}
+      />
+      <View style={topOverlayStyle}>
         {isRecording ? (
           <View style={styles.recordingStatus}>
             <View style={styles.badge}>
