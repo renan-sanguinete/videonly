@@ -83,11 +83,12 @@ export function CameraSettingsProvider({children}) {
 
   const value = useMemo(
     () => ({
+      isHydrated,
       settings,
       setSettings,
       resetSettings,
     }),
-    [settings],
+    [isHydrated, settings],
   );
 
   return (

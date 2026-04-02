@@ -51,7 +51,7 @@ export function formatElapsedTime(milliseconds) {
     .join(':');
 }
 
-export function generateVideoFileName() {
+export function generateVideoFileName(extension) {
   const now = new Date();
 
   const pad = n => String(n).padStart(2, '0');
@@ -64,5 +64,5 @@ export function generateVideoFileName() {
   const minutes = pad(now.getMinutes());
   const seconds = pad(now.getSeconds());
 
-  return `video-${year}${month}${day}-${hours}${minutes}${seconds}.mp4`;
+  return `video-${year}${month}${day}-${hours}${minutes}${seconds}.${extension}`;
 }

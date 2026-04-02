@@ -72,7 +72,7 @@ export default function CameraScreen({navigation}) {
     hasPermission: hasMicrophonePermission,
     requestPermission: requestMicrophonePermission,
   } = useMicrophonePermission();
-  const {settings, setSettings, resetSettings} = useCameraSettings();
+  const {isHydrated, settings, setSettings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
 
   const [isRecording, setIsRecording] = useState(false);
@@ -110,6 +110,8 @@ export default function CameraScreen({navigation}) {
   }, [isRecording]);
 
   useEffect(() => {
+    isUnmountedRef.current = false;
+
     return () => {
       isUnmountedRef.current = true;
       if (recoveryTimeoutRef.current) {
@@ -121,10 +123,15 @@ export default function CameraScreen({navigation}) {
 
   useFocusEffect(
     useCallback(() => {
+      if (!isHydrated) {
+        return undefined;
+      }
+
       loadVideosFromGallery({showLoader: true}).catch(error => {
         console.warn('Falha ao atualizar vídeos ao focar a câmera.', error);
       });
-    }, [loadVideosFromGallery]),
+      return undefined;
+    }, [isHydrated, loadVideosFromGallery]),
   );
 
   const clearPendingRecovery = useCallback(() => {
@@ -346,7 +353,12 @@ export default function CameraScreen({navigation}) {
   ]);
 
   useEffect(() => {
-    if (hasBootstrappedInitialFlowRef.current || !isFocused || appState !== 'active') {
+    if (
+      !isHydrated ||
+      hasBootstrappedInitialFlowRef.current ||
+      !isFocused ||
+      appState !== 'active'
+    ) {
       return;
     }
 
@@ -367,12 +379,13 @@ export default function CameraScreen({navigation}) {
     };
 
     bootstrapPermissions();
-  }, [appState, ensurePermissions, isFocused, loadVideosFromGallery]);
+  }, [appState, ensurePermissions, isFocused, isHydrated, loadVideosFromGallery]);
 
   const handleRecordingFinished = useCallback(
     async video => {
       const originalPath = video.path;
-      const newFileName = generateVideoFileName();
+      const extension = settings.recordFileType === 'mp4' ? 'mp4' : 'mov';
+      const newFileName = generateVideoFileName(extension);
       const newPath = `${RNFS.CachesDirectoryPath}/${newFileName}`;
       await RNFS.moveFile(originalPath, newPath);
 
@@ -384,7 +397,7 @@ export default function CameraScreen({navigation}) {
         setIsRecording(false);
         if (settings.compressVideoBeforeSave) {
           setIsProcessingVideo(true);
-          compressedPath = await compressVideo(newPath);
+          compressedPath = await compressVideo(newPath, extension);
           pathToSave = compressedPath;
         }
 
@@ -427,7 +440,12 @@ export default function CameraScreen({navigation}) {
         setIsRecording(false);
       }
     },
-    [loadVideosFromGallery, settings.compressVideoBeforeSave, showAlert],
+    [
+      loadVideosFromGallery,
+      settings.compressVideoBeforeSave,
+      settings.recordFileType,
+      showAlert,
+    ],
   );
 
   const finalizeRecordedVideo = useCallback(
@@ -540,11 +558,10 @@ export default function CameraScreen({navigation}) {
     }
 
     setIsCameraReady(false);
-    resetSettings();
     setCameraPosition(currentPosition =>
       currentPosition === 'back' ? 'front' : 'back',
     );
-  }, [isRecording, resetSettings]);
+  }, [isRecording]);
 
   const onOpenVideo = useCallback(
     async item => {
@@ -589,6 +606,15 @@ export default function CameraScreen({navigation}) {
     },
     [navigation, onOpenVideo, onShareVideo, showAlert],
   );
+
+  if (!isHydrated) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="small" color="#cbd5e1" />
+        <Text style={styles.subtitle}>Carregando configurações...</Text>
+      </View>
+    );
+  }
 
   if (!hasCameraPermission) {
     return (

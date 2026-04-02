@@ -30,14 +30,14 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
   override fun getName(): String = "VideoCompressionModule"
 
   @ReactMethod
-  fun compressVideo(inputPath: String, promise: Promise) {
+  fun compressVideo(inputPath: String, extension: String, promise: Promise) {
     if (activePromise != null) {
       promise.reject("compression_in_progress", "Já existe uma compressão em andamento.")
       return
     }
 
     val inputUri = toUri(inputPath)
-    val outputFile = createOutputFile()
+    val outputFile = createOutputFile(extension)
     val targetBitrate = resolveTargetBitrate(inputUri)
 
     activePromise = promise
@@ -93,7 +93,7 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun createOutputFile(): File {
+  private fun createOutputFile(extension: String): File {
     val outputDir = File(reactApplicationContext.cacheDir, "compressed-videos")
     if (!outputDir.exists()) {
       outputDir.mkdirs()
@@ -102,7 +102,9 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
     val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
     val timestamp = LocalDateTime.now().format(formatter)
 
-    return File(outputDir, "videonly-compressed-$timestamp.mp4")
+    val safeExtension = extension.lowercase()
+
+    return File(outputDir, "videonly-compressed-$timestamp.$safeExtension")
   }
 
   private fun toUri(pathLike: String): Uri {
