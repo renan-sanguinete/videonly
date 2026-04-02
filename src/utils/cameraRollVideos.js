@@ -60,7 +60,7 @@ export async function loadSavedVideosFromCameraRoll() {
   }
 
   const baseParams = {
-    first: 100,
+    first: 10,
     assetType: 'Videos',
     include: ['filename', 'fileSize', 'playableDuration', 'imageSize'],
   };

@@ -10,6 +10,7 @@ import {AppState, FlatList, Pressable, Text, View} from 'react-native';
 import {useIsFocused} from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 import {
+  Camera,
   useCameraPermission,
   useMicrophonePermission,
 } from 'react-native-vision-camera';
@@ -59,6 +60,8 @@ export default function CameraScreen({navigation}) {
   const isRecordingRef = useRef(false);
   const recoveryTimeoutRef = useRef(null);
   const isUnmountedRef = useRef(false);
+  const hasBootstrappedInitialFlowRef = useRef(false);
+  const isRequestingPermissionsRef = useRef(false);
   const isFocused = useIsFocused();
   const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
     useCameraPermission();
@@ -89,10 +92,6 @@ export default function CameraScreen({navigation}) {
       console.error('Erro ao carregar vídeos:', error);
     }
   };
-
-  useEffect(() => {
-    loadVideosFromGallery();
-  }, []);
 
   useEffect(() => {
     isRecordingRef.current = isRecording;
@@ -277,28 +276,46 @@ export default function CameraScreen({navigation}) {
     });
   }, [navigation, renderHeader]);
 
-  const ensurePermissions = useCallback(async () => {
+  const ensurePermissions = useCallback(async ({showMissingAlert = true} = {}) => {
+    if (isRequestingPermissionsRef.current) {
+      return false;
+    }
+
+    isRequestingPermissionsRef.current = true;
+
     let cameraOk = hasCameraPermission;
     let microphoneOk = hasMicrophonePermission || !settings.audio;
 
-    if (!cameraOk) {
-      cameraOk = (await requestCameraPermission()) === 'granted';
-    }
+    try {
+      if (!cameraOk) {
+        cameraOk = (await requestCameraPermission()) === 'granted';
+      }
 
-    if (settings.audio && !microphoneOk) {
-      microphoneOk = (await requestMicrophonePermission()) === 'granted';
-    }
+      if (settings.audio && !microphoneOk) {
+        microphoneOk = (await requestMicrophonePermission()) === 'granted';
+      }
 
-    if (!cameraOk || !microphoneOk) {
-      showAlert(
-        'Permissões necessárias',
-        settings.audio
-          ? 'Você precisa permitir câmera e microfone para gravar vídeos com áudio.'
-          : 'Você precisa permitir câmera para gravar vídeos.',
-      );
-    }
+      const cameraStatus = await Camera.getCameraPermissionStatus();
+      const microphoneStatus = settings.audio
+        ? await Camera.getMicrophonePermissionStatus()
+        : 'granted';
 
-    return cameraOk && microphoneOk;
+      cameraOk = cameraStatus === 'granted';
+      microphoneOk = microphoneStatus === 'granted';
+
+      if ((!cameraOk || !microphoneOk) && showMissingAlert) {
+        showAlert(
+          'Permissões necessárias',
+          settings.audio
+            ? 'Você precisa permitir câmera e microfone para gravar vídeos com áudio.'
+            : 'Você precisa permitir câmera para gravar vídeos.',
+        );
+      }
+
+      return cameraOk && microphoneOk;
+    } finally {
+      isRequestingPermissionsRef.current = false;
+    }
   }, [
     hasCameraPermission,
     hasMicrophonePermission,
@@ -307,6 +324,30 @@ export default function CameraScreen({navigation}) {
     settings.audio,
     showAlert,
   ]);
+
+  useEffect(() => {
+    if (hasBootstrappedInitialFlowRef.current || !isFocused || appState !== 'active') {
+      return;
+    }
+
+    hasBootstrappedInitialFlowRef.current = true;
+
+    const bootstrapPermissions = async () => {
+      try {
+        await loadVideosFromGallery();
+      } catch (error) {
+        console.warn('Não foi possível carregar vídeos na inicialização.', error);
+      }
+
+      try {
+        await ensurePermissions({showMissingAlert: false});
+      } catch (error) {
+        console.warn('Falha ao solicitar permissões iniciais de câmera.', error);
+      }
+    };
+
+    bootstrapPermissions();
+  }, [appState, ensurePermissions, isFocused]);
 
   const handleRecordingFinished = useCallback(
     async video => {
