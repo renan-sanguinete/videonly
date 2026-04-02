@@ -7,9 +7,12 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#1f2937',
     padding: 16,
+    minHeight: 148,
+    maxHeight: 148,
   },
   savedVideosContent: {
     gap: 12,
+    paddingRight: 8,
   },
   panelTitle: {
     color: '#f9fafb',
@@ -18,6 +21,17 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyText: {color: '#9ca3af'},
+  savedVideosLoading: {
+    flex: 1,
+    minHeight: 78,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  savedVideosLoadingText: {
+    color: '#cbd5e1',
+    fontSize: 13,
+  },
   center: {
     flex: 1,
     alignItems: 'center',

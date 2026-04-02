@@ -69,8 +69,8 @@ export const styles = StyleSheet.create({
     height: 56,
   },
   recordButton: {
-    width: 92,
-    height: 92,
+    width: 60,
+    height: 60,
     borderRadius: 46,
     alignItems: 'center',
     justifyContent: 'center',
@@ -81,21 +81,12 @@ export const styles = StyleSheet.create({
   recordButtonActive: {
     backgroundColor: '#dc2626',
   },
-  recordIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#fff',
-  },
-  stopIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  recordButtonInner: {
     backgroundColor: '#fff',
   },
   cameraSwitchButton: {
-    width: 56,
-    height: 56,
+    width: 40,
+    height: 40,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',

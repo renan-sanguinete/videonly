@@ -6,14 +6,15 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {AppState, FlatList, Pressable, Text, View} from 'react-native';
-import {useIsFocused} from '@react-navigation/native';
+import {ActivityIndicator, AppState, FlatList, Pressable, Text, View} from 'react-native';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 import {
   Camera,
   useCameraPermission,
   useMicrophonePermission,
 } from 'react-native-vision-camera';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useCameraSettings} from '../../context/CameraSettingsContext';
 import CameraHeaderActions from '../../components/CameraHeaderActions/CameraHeaderActions';
@@ -63,6 +64,7 @@ export default function CameraScreen({navigation}) {
   const hasBootstrappedInitialFlowRef = useRef(false);
   const isRequestingPermissionsRef = useRef(false);
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
   const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
     useCameraPermission();
   const {
@@ -75,6 +77,7 @@ export default function CameraScreen({navigation}) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
+  const [isLoadingSavedVideos, setIsLoadingSavedVideos] = useState(true);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [cameraPosition, setCameraPosition] = useState('back');
   const currentCameraLabel = cameraPosition === 'back' ? 'traseira' : 'frontal';
@@ -84,14 +87,22 @@ export default function CameraScreen({navigation}) {
   const [activeFlashMode, setActiveFlashMode] = useState('off');
   const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
 
-  const loadVideosFromGallery = async () => {
+  const loadVideosFromGallery = useCallback(async ({showLoader = false} = {}) => {
+    if (showLoader) {
+      setIsLoadingSavedVideos(true);
+    }
+
     try {
       const videos = await loadSavedVideosFromCameraRoll();
       setSavedVideos(videos);
     } catch (error) {
       console.error('Erro ao carregar vídeos:', error);
+    } finally {
+      if (!isUnmountedRef.current) {
+        setIsLoadingSavedVideos(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     isRecordingRef.current = isRecording;
@@ -106,6 +117,14 @@ export default function CameraScreen({navigation}) {
       }
     };
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadVideosFromGallery({showLoader: true}).catch(error => {
+        console.warn('Falha ao atualizar vídeos ao focar a câmera.', error);
+      });
+    }, [loadVideosFromGallery]),
+  );
 
   const clearPendingRecovery = useCallback(() => {
     if (recoveryTimeoutRef.current) {
@@ -334,7 +353,7 @@ export default function CameraScreen({navigation}) {
 
     const bootstrapPermissions = async () => {
       try {
-        await loadVideosFromGallery();
+        await loadVideosFromGallery({showLoader: true});
       } catch (error) {
         console.warn('Não foi possível carregar vídeos na inicialização.', error);
       }
@@ -347,7 +366,7 @@ export default function CameraScreen({navigation}) {
     };
 
     bootstrapPermissions();
-  }, [appState, ensurePermissions, isFocused]);
+  }, [appState, ensurePermissions, isFocused, loadVideosFromGallery]);
 
   const handleRecordingFinished = useCallback(
     async video => {
@@ -403,7 +422,7 @@ export default function CameraScreen({navigation}) {
         setIsRecording(false);
       }
     },
-    [settings.compressVideoBeforeSave, showAlert],
+    [loadVideosFromGallery, settings.compressVideoBeforeSave, showAlert],
   );
 
   const finalizeRecordedVideo = useCallback(
@@ -594,7 +613,6 @@ export default function CameraScreen({navigation}) {
         camera={camera}
         cameraPosition={cameraPosition}
         currentCameraLabel={currentCameraLabel}
-        isFocused={isFocused}
         isProcessingVideo={isProcessingVideo}
         isRecording={isRecording}
         isActive={isCameraActive}
@@ -626,21 +644,28 @@ export default function CameraScreen({navigation}) {
         }}
       />
 
-      <View style={styles.panel}>
+      <View style={[styles.panel, {paddingBottom: Math.max(insets.bottom, 12)}]}>
         <Text style={styles.panelTitle}>Vídeos salvos</Text>
-        <FlatList
-          data={savedVideos}
-          keyExtractor={item => item.uri}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.savedVideosContent}
-          renderItem={({item}) => (
-            <VideoCard compact item={item} onPress={() => onVideoCardPress(item)} />
-          )}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>Nenhum vídeo salvo ainda.</Text>
-          }
-        />
+        {isLoadingSavedVideos ? (
+          <View style={styles.savedVideosLoading}>
+            <ActivityIndicator size="small" color="#cbd5e1" />
+            <Text style={styles.savedVideosLoadingText}>Carregando vídeos...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={savedVideos}
+            keyExtractor={item => item.uri}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.savedVideosContent}
+            renderItem={({item}) => (
+              <VideoCard compact item={item} onPress={() => onVideoCardPress(item)} />
+            )}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>Nenhum vídeo salvo ainda.</Text>
+            }
+          />
+        )}
       </View>
     </View>
   );

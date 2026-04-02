@@ -1,5 +1,5 @@
-import React, {useMemo} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useRef, useEffect, useMemo} from 'react';
+import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -36,6 +36,38 @@ export default function CameraPreview({
     () => [styles.topOverlay, {paddingTop: insets.top ? insets.top + 50 : 60}],
     [insets.top],
   );
+  const progressNative = useRef(new Animated.Value(0)).current;
+  const progressJS = useRef(new Animated.Value(0)).current;  
+
+  const animatedBorderRadius = progressJS.interpolate({
+    inputRange: [0, 1],
+    outputRange: [15, 6],
+  });
+  const animatedInnerScale = progressNative.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.53, 1],
+  });
+  const animatedOuterScale = progressNative.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 0.85, 1],
+  });
+
+  useEffect(() => {
+    Animated.timing(progressNative, {
+      toValue: isRecording ? 1 : 0,
+      duration: 220,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+
+    Animated.timing(progressJS, {
+      toValue: isRecording ? 1 : 0,
+      duration: 220,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [isRecording]);
+
   const cameraProps = useMemo(
     () => ({
       device,
@@ -112,16 +144,28 @@ export default function CameraPreview({
           <View style={styles.controlsSideSlot} />
           <Pressable
             disabled={isProcessingVideo}
-            onPress={isRecording ? stopRecording : startRecording}
-            style={[
-              styles.recordButton,
-              isRecording && styles.recordButtonActive,
-            ]}>
-            {isRecording ? (
-              <View style={styles.stopIcon} />
-            ) : (
-              <View style={styles.recordIcon} />
-            )}
+            onPress={isRecording ? stopRecording : startRecording}>
+            <Animated.View
+              style={[
+                styles.recordButton,
+                {
+                  
+                  transform: [{scale: animatedOuterScale}],
+                },
+              ]}>
+              <Animated.View
+                style={[
+                  styles.recordButtonInner,
+                  {
+                    backgroundColor: '#fff',
+                    width: 30,
+                    height: 30,
+                    borderRadius: animatedBorderRadius,
+                    transform: [{scale: animatedInnerScale}],
+                  },
+                ]}
+              />
+            </Animated.View>
           </Pressable>
           <Pressable
             accessibilityLabel={`Alternar para câmera ${
@@ -134,7 +178,7 @@ export default function CameraPreview({
               (isRecording || isProcessingVideo) &&
                 styles.cameraSwitchButtonDisabled,
             ]}>
-            <Icon name="camera-reverse-outline" size={24} color="#fff" />
+            <Icon name="camera-reverse-outline" size={20} color="#fff" />
           </Pressable>
         </View>
       </View>
