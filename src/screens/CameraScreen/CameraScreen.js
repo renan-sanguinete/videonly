@@ -28,6 +28,7 @@ import {
 } from '../../utils/cameraRollVideos';
 import {compressVideo} from '../../utils/videoCompression';
 import {openVideoUri, shareVideo} from '../../utils/videoActions';
+import {generateVideoFileName} from '../../utils/videoFormatters';
 import {styles} from './styles';
 
 function normalizeFilePath(pathLike) {
@@ -371,7 +372,11 @@ export default function CameraScreen({navigation}) {
   const handleRecordingFinished = useCallback(
     async video => {
       const originalPath = video.path;
-      let pathToSave = originalPath;
+      const newFileName = generateVideoFileName();
+      const newPath = `${RNFS.CachesDirectoryPath}/${newFileName}`;
+      await RNFS.moveFile(originalPath, newPath);
+
+      let pathToSave = newPath;
       let compressedPath = null;
       let shouldDeleteOriginal = false;
 
@@ -379,7 +384,7 @@ export default function CameraScreen({navigation}) {
         setIsRecording(false);
         if (settings.compressVideoBeforeSave) {
           setIsProcessingVideo(true);
-          compressedPath = await compressVideo(originalPath);
+          compressedPath = await compressVideo(newPath);
           pathToSave = compressedPath;
         }
 
@@ -644,7 +649,7 @@ export default function CameraScreen({navigation}) {
         }}
       />
 
-      <View style={[styles.panel, {paddingBottom: Math.max(insets.bottom, 12)}]}>
+      <View style={[styles.panel, {paddingBottom: Math.max(insets.bottom + 6, 12)}]}>
         <Text style={styles.panelTitle}>Vídeos salvos</Text>
         {isLoadingSavedVideos ? (
           <View style={styles.savedVideosLoading}>

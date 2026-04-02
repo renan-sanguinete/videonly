@@ -17,6 +17,8 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import java.io.File
 import java.util.UUID
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(UnstableApi::class)
 class VideoCompressionModule(reactContext: ReactApplicationContext) :
@@ -97,7 +99,10 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
       outputDir.mkdirs()
     }
 
-    return File(outputDir, "videonly-compressed-${UUID.randomUUID()}.mp4")
+    val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+    val timestamp = LocalDateTime.now().format(formatter)
+
+    return File(outputDir, "videonly-compressed-$timestamp.mp4")
   }
 
   private fun toUri(pathLike: String): Uri {
