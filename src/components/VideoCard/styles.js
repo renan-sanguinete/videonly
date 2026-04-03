@@ -29,7 +29,7 @@ export const styles = StyleSheet.create({
     position: 'relative',
   },
   compactThumbWrap: {
-    height: 48,
+    height: 64,
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#172033',
@@ -84,6 +84,11 @@ export const styles = StyleSheet.create({
     color: '#cbd5e1',
     fontSize: 10,
     marginBottom: 2,
+  },
+  compactMeta: {
+    color: '#cbd5e1',
+    fontSize: 9,
+    paddingLeft: 2,
   },
   path: {
     color: '#6b7280',

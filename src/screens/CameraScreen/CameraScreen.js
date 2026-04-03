@@ -708,7 +708,7 @@ export default function CameraScreen({navigation}) {
         }}
       />
 
-      <View style={[styles.panel, {paddingBottom: Math.max(insets.bottom + 6, 12)}]}>
+      <View style={[styles.panel, {marginBottom: Math.max(insets.bottom, 12)}]}>
         <Text style={styles.panelTitle}>Videos salvos</Text>
         {isLoadingSavedVideos ? (
           <View style={styles.savedVideosLoading}>

@@ -158,7 +158,6 @@ export default function LibraryScreen() {
               item={item}
               onPress={() => onCardPress(item)}
               showDurationLabel
-              showPath
               action={
                 <Pressable onPress={() => onDelete(item)} style={styles.deleteButton}>
                   <Text style={styles.deleteButtonText}>Excluir</Text>
