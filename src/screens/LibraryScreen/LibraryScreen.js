@@ -1,8 +1,20 @@
 import React, {useCallback, useLayoutEffect, useState} from 'react';
-import {ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View} from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
+  RefreshControl,
+  Text,
+  View,
+} from 'react-native';
 
 import VideoCard from '../../components/VideoCard/VideoCard';
 import {useCustomAlert} from '../../context/CustomAlertContext';
+import {
+  canManageAndroidMedia,
+  openAndroidManageMediaSettings,
+} from '../../utils/appPermissions';
 import {
   deleteVideoFromCameraRoll,
   loadSavedVideosFromCameraRoll,
@@ -21,8 +33,8 @@ export default function LibraryScreen() {
       setVideos(items);
     } catch (error) {
       showAlert(
-        'Erro ao carregar vídeos',
-        error?.message || 'Não foi possível carregar os vídeos da galeria.',
+        'Erro ao carregar videos',
+        error?.message || 'Nao foi possivel carregar os videos da galeria.',
       );
     }
   }, [showAlert]);
@@ -42,25 +54,47 @@ export default function LibraryScreen() {
 
   const onDelete = useCallback(
     item => {
-      showAlert(
-        'Excluir vídeo',
-        `Remover ${item.filename || 'este vídeo'}?`,
-        [
-          {text: 'Cancelar', style: 'cancel'},
-          {
-            text: 'Excluir',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteVideoFromCameraRoll(item.uri);
-                await load();
-              } catch (error) {
-                showAlert('Erro', 'Não foi possível excluir o vídeo.');
+      showAlert('Excluir video', `Remover ${item.filename || 'este video'}?`, [
+        {text: 'Cancelar', style: 'cancel'},
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await deleteVideoFromCameraRoll(item.uri);
+              await load();
+
+              if (
+                Platform.OS === 'android' &&
+                Platform.Version >= 31 &&
+                !result?.bypassedSystemPrompt &&
+                !(await canManageAndroidMedia())
+              ) {
+                showAlert(
+                  'Permissao extra para excluir',
+                  'Sem o acesso especial "Gerenciar midia", o Android pode continuar mostrando uma confirmacao adicional ao excluir videos.',
+                  [
+                    {text: 'Fechar', style: 'cancel'},
+                    {
+                      text: 'Abrir configuracoes',
+                      onPress: () => {
+                        openAndroidManageMediaSettings().catch(openError => {
+                          console.warn(
+                            'Falha ao abrir configuracoes de gerenciamento de midia.',
+                            openError,
+                          );
+                        });
+                      },
+                    },
+                  ],
+                );
               }
-            },
+            } catch (error) {
+              showAlert('Erro', 'Nao foi possivel excluir o video.');
+            }
           },
-        ],
-      );
+        },
+      ]);
     },
     [load, showAlert],
   );
@@ -71,8 +105,8 @@ export default function LibraryScreen() {
         await openVideoUri(item.uri);
       } catch (error) {
         showAlert(
-          'Erro ao abrir vídeo',
-          error?.message || 'Não foi possível abrir este vídeo.',
+          'Erro ao abrir video',
+          error?.message || 'Nao foi possivel abrir este video.',
         );
       }
     },
@@ -86,7 +120,7 @@ export default function LibraryScreen() {
       } catch (error) {
         showAlert(
           'Erro ao compartilhar',
-          error?.message || 'Não foi possível compartilhar este vídeo.',
+          error?.message || 'Nao foi possivel compartilhar este video.',
         );
       }
     },
@@ -95,56 +129,50 @@ export default function LibraryScreen() {
 
   const onCardPress = useCallback(
     item => {
-      showAlert(
-        item.filename || 'Vídeo',
-        'Escolha o que deseja fazer com este vídeo.',
-        [
-          {text: 'Cancelar', style: 'cancel'},
-          {text: 'Visualizar', onPress: () => onOpen(item)},
-          {text: 'Compartilhar', onPress: () => onShare(item)},
-          {text: 'Excluir', style: 'destructive', onPress: () => onDelete(item)},
-        ],
-      );
+      showAlert(item.filename || 'Video', 'Escolha o que deseja fazer com este video.', [
+        {text: 'Cancelar', style: 'cancel'},
+        {text: 'Visualizar', onPress: () => onOpen(item)},
+        {text: 'Compartilhar', onPress: () => onShare(item)},
+        {text: 'Excluir', style: 'destructive', onPress: () => onDelete(item)},
+      ]);
     },
     [onDelete, onOpen, onShare, showAlert],
   );
 
   return (
     <View style={styles.container}>
-      { videos.length === 0 ? (
+      {videos.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#888" style={styles.loadingIndicator} />
         </View>
       ) : (
-      <FlatList
-        data={videos}
-        keyExtractor={item => item.uri}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        contentContainerStyle={
-          videos.length === 0 ? styles.emptyContainer : styles.listContent
-        }
-        renderItem={({item}) => (
-          <VideoCard
-            item={item}
-            onPress={() => onCardPress(item)}
-            showDurationLabel
-            showPath
-            action={
-              <Pressable onPress={() => onDelete(item)} style={styles.deleteButton}>
-                <Text style={styles.deleteButtonText}>Excluir</Text>
-              </Pressable>
-            }
-          />
-        )}
-        ListEmptyComponent={
-          <View>
-            <Text style={styles.emptyTitle}>Nenhum vídeo encontrado</Text>
-            <Text style={styles.emptyText}>Grave um vídeo para vê-lo aqui.</Text>
-          </View>
-        }
-      />
+        <FlatList
+          data={videos}
+          keyExtractor={item => item.uri}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={
+            videos.length === 0 ? styles.emptyContainer : styles.listContent
+          }
+          renderItem={({item}) => (
+            <VideoCard
+              item={item}
+              onPress={() => onCardPress(item)}
+              showDurationLabel
+              showPath
+              action={
+                <Pressable onPress={() => onDelete(item)} style={styles.deleteButton}>
+                  <Text style={styles.deleteButtonText}>Excluir</Text>
+                </Pressable>
+              }
+            />
+          )}
+          ListEmptyComponent={
+            <View>
+              <Text style={styles.emptyTitle}>Nenhum video encontrado</Text>
+              <Text style={styles.emptyText}>Grave um video para ve-lo aqui.</Text>
+            </View>
+          }
+        />
       )}
     </View>
   );
