@@ -11,6 +11,10 @@ export const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'flex-start',
   },
+  selectedCard: {
+    borderColor: '#38bdf8',
+    backgroundColor: '#0f1d31',
+  },
   compactCard: {
     width: 112,
     backgroundColor: '#0f172a',

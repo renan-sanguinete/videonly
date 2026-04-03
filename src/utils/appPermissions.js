@@ -119,7 +119,7 @@ export async function openAndroidManageMediaSettings() {
   try {
     return (await MediaManagementModule.openManageMediaSettings()) === true;
   } catch (error) {
-    console.warn('Nao foi possivel abrir configuracoes de gerenciamento de midia.', error);
+    console.warn('Nao foi possivel abrir configurações de gerenciamento de midia.', error);
     return false;
   }
 }

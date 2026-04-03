@@ -58,7 +58,7 @@ export default function CameraHeaderActions({
           <Icon name="images-outline" size={24} color="#fff" />
         </Pressable>
         <Pressable
-          accessibilityLabel="Abrir configuracoes"
+          accessibilityLabel="Abrir configurações"
           hitSlop={10}
           onPress={onOpenSettings}
           style={styles.headerIconButton}>

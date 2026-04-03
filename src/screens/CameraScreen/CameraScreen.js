@@ -644,7 +644,7 @@ export default function CameraScreen({navigation}) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="small" color="#cbd5e1" />
-        <Text style={styles.subtitle}>Carregando configuracoes...</Text>
+        <Text style={styles.subtitle}>Carregando configurações...</Text>
       </View>
     );
   }
