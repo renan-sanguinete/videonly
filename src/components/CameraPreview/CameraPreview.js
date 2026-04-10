@@ -149,7 +149,7 @@ export default function CameraPreview({
         <Text style={styles.fpsText}>{fpsLabel}</Text>
       </View>
 
-      {isRecording ? (
+      {isRecording && settings.showAudioStatus ? (
         <View style={styles.audioStatusWrap}>
           <View
             style={[

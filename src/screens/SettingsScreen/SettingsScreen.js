@@ -266,6 +266,15 @@ export default function SettingsScreen() {
 
         <View style={styles.sectionSpacer} />
 
+        <ToggleRow
+          label="Mostrar status de audio"
+          description="Exibe durante a gravacao o banner com a fonte de audio e risco de processamento."
+          value={settings.showAudioStatus}
+          onValueChange={value => update({showAudioStatus: value})}
+        />
+
+        <View style={styles.sectionSpacer} />
+
         <AudioSourcePicker
           selectedSource={settings.audioSource}
           onSourceChange={value => update({audioSource: value})}

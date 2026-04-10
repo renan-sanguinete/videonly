@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
   audioSampleRate: '48000',
   audioBitRateKbps: '128',
   audioSource: UNPROCESSED_AUDIO_SOURCE,
+  showAudioStatus: false,
   compressVideoBeforeSave: false,
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
@@ -41,6 +42,9 @@ function normalizePersistedSettings(parsedSettings) {
   const normalized = {...parsedSettings};
   if (normalized.audioSource === undefined || normalized.audioSource === null) {
     normalized.audioSource = UNPROCESSED_AUDIO_SOURCE;
+  }
+  if (normalized.showAudioStatus === undefined || normalized.showAudioStatus === null) {
+    normalized.showAudioStatus = true;
   }
 
   return normalized;
