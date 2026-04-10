@@ -387,9 +387,19 @@ export default function CameraScreen({navigation}) {
       const extension = settings.recordFileType === 'mp4' ? 'mp4' : 'mov';
       const newFileName = generateVideoFileName(extension);
       const newPath = `${RNFS.CachesDirectoryPath}/${newFileName}`;
-      await RNFS.moveFile(originalPath, newPath);
+      let sourcePath = originalPath;
 
-      let pathToSave = newPath;
+      try {
+        if (originalPath !== newPath) {
+          await deleteIfExists(newPath);
+          await RNFS.moveFile(originalPath, newPath);
+          sourcePath = newPath;
+        }
+      } catch (moveError) {
+        console.warn('Não foi possível renomear o vídeo gravado. Usando arquivo original.', moveError);
+      }
+
+      let pathToSave = sourcePath;
       let compressedPath = null;
       let shouldDeleteOriginal = false;
 
@@ -397,7 +407,7 @@ export default function CameraScreen({navigation}) {
         setIsRecording(false);
         if (settings.compressVideoBeforeSave) {
           setIsProcessingVideo(true);
-          compressedPath = await compressVideo(newPath, extension);
+          compressedPath = await compressVideo(sourcePath, extension);
           pathToSave = compressedPath;
         }
 
@@ -407,7 +417,7 @@ export default function CameraScreen({navigation}) {
       } catch (error) {
         if (settings.compressVideoBeforeSave) {
           try {
-            await saveVideoToCameraRoll(originalPath);
+            await saveVideoToCameraRoll(sourcePath);
             shouldDeleteOriginal = true;
             await loadVideosFromGallery();
             showAlert(
@@ -431,8 +441,8 @@ export default function CameraScreen({navigation}) {
         setIsProcessingVideo(false);
         if (shouldDeleteOriginal) {
           await deleteIfExists(compressedPath);
-          await deleteIfExists(originalPath);
-        } else if (compressedPath && compressedPath !== originalPath) {
+          await deleteIfExists(sourcePath);
+        } else if (compressedPath && compressedPath !== sourcePath) {
           await deleteIfExists(compressedPath);
         }
         recordingStartedAtRef.current = null;

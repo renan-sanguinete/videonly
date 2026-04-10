@@ -48,6 +48,38 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
     maxWidth: '66%',
   },
+  audioStatusWrap: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 112,
+    zIndex: 10,
+  },
+  audioStatusPill: {
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    gap: 2,
+  },
+  audioStatusPillSafe: {
+    backgroundColor: 'rgba(5, 46, 22, 0.9)',
+    borderColor: '#166534',
+  },
+  audioStatusPillWarning: {
+    backgroundColor: 'rgba(120, 53, 15, 0.92)',
+    borderColor: '#ea580c',
+  },
+  audioStatusPillTitle: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  audioStatusPillText: {
+    color: '#e5e7eb',
+    fontSize: 12,
+    lineHeight: 17,
+  },
   controls: {
     position: 'absolute',
     bottom: 24,
@@ -83,6 +115,8 @@ export const styles = StyleSheet.create({
   },
   recordButtonInner: {
     backgroundColor: '#fff',
+    width: 30,
+    height: 30,
   },
   cameraSwitchButton: {
     width: 40,

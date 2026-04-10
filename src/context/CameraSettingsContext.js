@@ -1,5 +1,6 @@
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {UNPROCESSED_AUDIO_SOURCE} from '../constants/audioSources';
 
 const CameraSettingsContext = createContext(null);
 const CAMERA_SETTINGS_STORAGE_KEY = '@videonly/camera-settings';
@@ -8,8 +9,9 @@ const DEFAULT_SETTINGS = {
   audio: true,
   audioCodec: 'aac',
   audioChannels: 'stereo',
-  audioSampleRate: '44100',
+  audioSampleRate: '48000',
   audioBitRateKbps: '128',
+  audioSource: UNPROCESSED_AUDIO_SOURCE,
   compressVideoBeforeSave: false,
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
@@ -31,6 +33,19 @@ const DEFAULT_SETTINGS = {
   formatIndex: '',
 };
 
+function normalizePersistedSettings(parsedSettings) {
+  if (!parsedSettings || typeof parsedSettings !== 'object') {
+    return null;
+  }
+
+  const normalized = {...parsedSettings};
+  if (normalized.audioSource === undefined || normalized.audioSource === null) {
+    normalized.audioSource = UNPROCESSED_AUDIO_SOURCE;
+  }
+
+  return normalized;
+}
+
 export function CameraSettingsProvider({children}) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -45,7 +60,7 @@ export function CameraSettingsProvider({children}) {
           return;
         }
 
-        const parsedSettings = JSON.parse(storedValue);
+        const parsedSettings = normalizePersistedSettings(JSON.parse(storedValue));
         if (!isMounted || !parsedSettings || typeof parsedSettings !== 'object') {
           return;
         }

@@ -9,7 +9,9 @@ import {
   SectionTitle,
   ToggleRow,
 } from '../../components/SettingRow/SettingRow';
+import AudioSourcePicker from '../../components/AudioSourcePicker/AudioSourcePicker';
 import {useCameraSettings} from '../../context/CameraSettingsContext';
+import {getAudioSourceOption, UNPROCESSED_AUDIO_SOURCE} from '../../constants/audioSources';
 import {styles} from './styles';
 
 const VIDEO_BIT_RATE_OPTIONS = [
@@ -112,6 +114,7 @@ export default function SettingsScreen() {
   }, [settings.formatIndex]);
 
   const update = patch => setSettings(prev => ({...prev, ...patch}));
+  const currentAudioSource = getAudioSourceOption(settings.audioSource);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -260,6 +263,32 @@ export default function SettingsScreen() {
           onChangeText={text => update({audioBitRateKbps: text})}
           placeholder="ex.: 128"
         />
+
+        <View style={styles.sectionSpacer} />
+
+        <AudioSourcePicker
+          selectedSource={settings.audioSource}
+          onSourceChange={value => update({audioSource: value})}
+        />
+
+        <View style={styles.sectionSpacer} />
+
+        <View
+          style={[
+            styles.audioStatusBox,
+            settings.audioSource === UNPROCESSED_AUDIO_SOURCE
+              ? styles.audioStatusBoxSafe
+              : styles.audioStatusBoxWarning,
+          ]}>
+          <Text style={styles.audioStatusTitle}>
+            Fonte ativa: {currentAudioSource.label}
+          </Text>
+          <Text style={styles.audioStatusText}>
+            {settings.audioSource === UNPROCESSED_AUDIO_SOURCE
+              ? 'Modo recomendado para reduzir clipping e preservar dinamica em ambientes com muito volume.'
+              : 'Esta fonte pode aplicar processamento automatico. Em shows e baladas, isso aumenta o risco de distorcao e som abafado.'}
+          </Text>
+        </View>
       </Card>
 
       <SectionTitle>Gravação</SectionTitle>

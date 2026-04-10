@@ -8,6 +8,10 @@ import {
   parseCameraNumber,
   pickFormatForSettings,
 } from '../../utils/cameraFormatUtils';
+import {
+  getAudioSourceOption,
+  UNPROCESSED_AUDIO_SOURCE,
+} from '../../constants/audioSources';
 import {formatElapsedTime} from '../../utils/videoFormatters';
 import {styles} from './styles';
 
@@ -66,7 +70,7 @@ export default function CameraPreview({
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
     }).start();
-  }, [isRecording]);
+  }, [isRecording, progressJS, progressNative]);
 
   const cameraProps = useMemo(
     () => ({
@@ -77,6 +81,7 @@ export default function CameraPreview({
       audioChannels: settings.audioChannels,
       audioSampleRate: parseCameraNumber(settings.audioSampleRate),
       audioBitRateKbps: parseCameraNumber(settings.audioBitRateKbps),
+      audioSource: parseCameraNumber(settings.audioSource),
       photo: settings.photo,
       video: settings.video,
       preview: settings.preview,
@@ -100,6 +105,11 @@ export default function CameraPreview({
   );
 
   const fpsLabel = `FPS: ${cameraProps?.fps ?? 'auto'}`;
+  const currentAudioSource = getAudioSourceOption(settings.audioSource);
+  const showAudioRiskWarning =
+    isRecording &&
+    settings.audio &&
+    settings.audioSource !== UNPROCESSED_AUDIO_SOURCE;
 
   if (device == null) {
     return (
@@ -139,6 +149,27 @@ export default function CameraPreview({
         <Text style={styles.fpsText}>{fpsLabel}</Text>
       </View>
 
+      {isRecording ? (
+        <View style={styles.audioStatusWrap}>
+          <View
+            style={[
+              styles.audioStatusPill,
+              showAudioRiskWarning
+                ? styles.audioStatusPillWarning
+                : styles.audioStatusPillSafe,
+            ]}>
+            <Text style={styles.audioStatusPillTitle}>
+              Audio: {currentAudioSource.shortLabel}
+            </Text>
+            <Text style={styles.audioStatusPillText}>
+              {showAudioRiskWarning
+                ? 'Processamento ativo: em ambientes muito altos, pode gerar clipping ou som abafado.'
+                : 'Sem processamento ativo para preservar dinamica e reduzir distorcao.'}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.controls}>
         <View style={styles.controlsRow}>
           <View style={styles.controlsSideSlot} />
@@ -157,9 +188,6 @@ export default function CameraPreview({
                 style={[
                   styles.recordButtonInner,
                   {
-                    backgroundColor: '#fff',
-                    width: 30,
-                    height: 30,
                     borderRadius: animatedBorderRadius,
                     transform: [{scale: animatedInnerScale}],
                   },

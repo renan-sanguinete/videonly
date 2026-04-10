@@ -26,6 +26,30 @@ export const styles = StyleSheet.create({
   formatTitle: {color: '#fff', fontWeight: '700', marginBottom: 4},
   formatTitleActive: {color: '#fff'},
   formatMeta: {color: '#cbd5e1', fontSize: 12},
+  audioStatusBox: {
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+  },
+  audioStatusBoxSafe: {
+    backgroundColor: '#052e16',
+    borderColor: '#166534',
+  },
+  audioStatusBoxWarning: {
+    backgroundColor: '#3f1d0d',
+    borderColor: '#9a3412',
+  },
+  audioStatusTitle: {
+    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  audioStatusText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    lineHeight: 18,
+  },
   resetButton: {
     marginTop: 14,
     alignSelf: 'flex-start',
