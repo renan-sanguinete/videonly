@@ -14,13 +14,19 @@ export default function VideoCard({
   onPress,
   action,
   compact = false,
-  showPath = false,
+  disabled = false,
+  selected = false,
   showDurationLabel = false,
   style,
 }) {
   return (
     <Pressable
-      style={[compact ? styles.compactCard : styles.card, style]}
+      disabled={disabled}
+      style={[
+        compact ? styles.compactCard : styles.card,
+        selected ? styles.selectedCard : null,
+        style,
+      ]}
       onPress={onPress}>
       <View style={[compact ? styles.compactThumbWrap : styles.thumbWrap]}>
         {item.thumbnailUri ? (
@@ -51,25 +57,14 @@ export default function VideoCard({
           </Text>
         ) : null}
 
-        {showDurationLabel ? (
+        {!compact && showDurationLabel ? (
           <Text style={styles.meta}>Duração: {Math.round(item.duration || 0)}s</Text>
         ) : null}
 
         {!compact ? (
           <Text style={styles.meta}>{formatDate(item.timestamp * 1000)}</Text>
         ) : null}
-        {compact ? <Text style={styles.meta}>{formatSize(item.size)}</Text> : null}
-        {compact ? (
-          <Text style={styles.meta}>
-            {formatDate(item.mtime || item.timestamp * 1000)}
-          </Text>
-        ) : null}
-
-        {showPath ? (
-          <Text style={styles.path} numberOfLines={2}>
-            {item.uri}
-          </Text>
-        ) : null}
+        <Text style={[compact ? styles.compactMeta : styles.meta]}>{formatSize(item.size)}</Text>
       </View>
 
       {action || null}

@@ -7,8 +7,8 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#1f2937',
     padding: 16,
-    minHeight: 148,
-    maxHeight: 148,
+    minHeight: 164,
+    maxHeight: 164,
   },
   savedVideosContent: {
     gap: 12,

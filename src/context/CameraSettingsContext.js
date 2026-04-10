@@ -67,7 +67,7 @@ export function CameraSettingsProvider({children}) {
 
         setSettings(prev => ({...prev, ...parsedSettings}));
       } catch (error) {
-        console.warn('Nao foi possivel carregar as configuracoes salvas.', error);
+        console.warn('Nao foi possivel carregar as configurações salvas.', error);
       } finally {
         if (isMounted) {
           setIsHydrated(true);
@@ -88,7 +88,7 @@ export function CameraSettingsProvider({children}) {
     }
 
     AsyncStorage.setItem(CAMERA_SETTINGS_STORAGE_KEY, JSON.stringify(settings)).catch(error => {
-      console.warn('Nao foi possivel salvar as configuracoes.', error);
+      console.warn('Nao foi possivel salvar as configurações.', error);
     });
   }, [isHydrated, settings]);
 

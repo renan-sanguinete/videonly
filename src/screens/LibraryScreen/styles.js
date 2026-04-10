@@ -9,16 +9,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  deleteButton: {
-    backgroundColor: '#7f1d1d',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
   emptyTitle: {
     color: '#fff',
     fontSize: 18,
@@ -39,5 +29,32 @@ export const styles = StyleSheet.create({
   },
   loadingIndicator: {
     marginTop: 16,
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: '#64748b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#0f172a',
+  },
+  checkboxSelected: {
+    backgroundColor: '#0ea5e9',
+    borderColor: '#38bdf8',
+  },
+  checkboxDisabled: {
+    opacity: 0.5,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  headerIconButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
   },
 });

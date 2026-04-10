@@ -6,28 +6,37 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {ActivityIndicator, AppState, FlatList, Pressable, Text, View} from 'react-native';
+import {
+  ActivityIndicator,
+  AppState,
+  FlatList,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import RNFS from 'react-native-fs';
-import {
-  Camera,
-  useCameraPermission,
-  useMicrophonePermission,
-} from 'react-native-vision-camera';
+import {useCameraPermission} from 'react-native-vision-camera';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import {useCameraSettings} from '../../context/CameraSettingsContext';
 import CameraHeaderActions from '../../components/CameraHeaderActions/CameraHeaderActions';
 import CameraPreview from '../../components/CameraPreview/CameraPreview';
 import LoadingModal from '../../components/LoadingModal/LoadingModal';
 import VideoCard from '../../components/VideoCard/VideoCard';
+import {useCameraSettings} from '../../context/CameraSettingsContext';
 import {useCustomAlert} from '../../context/CustomAlertContext';
+import {
+  canManageAndroidMedia,
+  ensureStartupPermissions,
+  openAndroidManageMediaSettings,
+} from '../../utils/appPermissions';
 import {
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
 } from '../../utils/cameraRollVideos';
-import {compressVideo} from '../../utils/videoCompression';
 import {openVideoUri, shareVideo} from '../../utils/videoActions';
+import {compressVideo} from '../../utils/videoCompression';
 import {generateVideoFileName} from '../../utils/videoFormatters';
 import {styles} from './styles';
 
@@ -51,7 +60,7 @@ async function deleteIfExists(pathLike) {
       await RNFS.unlink(normalizedPath);
     }
   } catch (error) {
-    console.warn('Não foi possível remover arquivo temporário.', error);
+    console.warn('Nao foi possivel remover arquivo temporario.', error);
   }
 }
 
@@ -63,15 +72,11 @@ export default function CameraScreen({navigation}) {
   const recoveryTimeoutRef = useRef(null);
   const isUnmountedRef = useRef(false);
   const hasBootstrappedInitialFlowRef = useRef(false);
+  const hasPromptedManageMediaRef = useRef(false);
   const isRequestingPermissionsRef = useRef(false);
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
-    useCameraPermission();
-  const {
-    hasPermission: hasMicrophonePermission,
-    requestPermission: requestMicrophonePermission,
-  } = useMicrophonePermission();
+  const {hasPermission: hasCameraPermission} = useCameraPermission();
   const {isHydrated, settings, setSettings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
 
@@ -97,7 +102,7 @@ export default function CameraScreen({navigation}) {
       const videos = await loadSavedVideosFromCameraRoll();
       setSavedVideos(videos);
     } catch (error) {
-      console.error('Erro ao carregar vídeos:', error);
+      console.error('Erro ao carregar videos:', error);
     } finally {
       if (!isUnmountedRef.current) {
         setIsLoadingSavedVideos(false);
@@ -128,8 +133,9 @@ export default function CameraScreen({navigation}) {
       }
 
       loadVideosFromGallery({showLoader: true}).catch(error => {
-        console.warn('Falha ao atualizar vídeos ao focar a câmera.', error);
+        console.warn('Falha ao atualizar videos ao focar a camera.', error);
       });
+
       return undefined;
     }, [isHydrated, loadVideosFromGallery]),
   );
@@ -174,7 +180,7 @@ export default function CameraScreen({navigation}) {
       try {
         await camera.current.stopRecording();
       } catch (error) {
-        console.warn('Falha ao parar gravação durante liberação da câmera.', error);
+        console.warn('Falha ao parar gravacao durante liberacao da camera.', error);
       }
 
       setIsRecording(false);
@@ -194,7 +200,7 @@ export default function CameraScreen({navigation}) {
 
       if (nextState !== 'active') {
         forceReleaseCameraSession().catch(error => {
-          console.warn('Falha ao liberar sessão da câmera ao sair do app.', error);
+          console.warn('Falha ao liberar sessao da camera ao sair do app.', error);
         });
         return;
       }
@@ -219,7 +225,7 @@ export default function CameraScreen({navigation}) {
   useEffect(() => {
     if (!isFocused) {
       forceReleaseCameraSession().catch(error => {
-        console.warn('Falha ao liberar sessão da câmera ao perder foco.', error);
+        console.warn('Falha ao liberar sessao da camera ao perder foco.', error);
       });
       return;
     }
@@ -291,9 +297,7 @@ export default function CameraScreen({navigation}) {
       headerRight: () => null,
       title: '',
       headerTitleAlign: 'center',
-
       headerTransparent: true,
-
       headerStyle: {
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         elevation: 0,
@@ -310,47 +314,62 @@ export default function CameraScreen({navigation}) {
 
     isRequestingPermissionsRef.current = true;
 
-    let cameraOk = hasCameraPermission;
-    let microphoneOk = hasMicrophonePermission || !settings.audio;
-
     try {
-      if (!cameraOk) {
-        cameraOk = (await requestCameraPermission()) === 'granted';
-      }
+      const {cameraOk, galleryOk, microphoneOk} = await ensureStartupPermissions({
+        includeMicrophone: settings.audio,
+        request: true,
+      });
 
-      if (settings.audio && !microphoneOk) {
-        microphoneOk = (await requestMicrophonePermission()) === 'granted';
-      }
-
-      const cameraStatus = await Camera.getCameraPermissionStatus();
-      const microphoneStatus = settings.audio
-        ? await Camera.getMicrophonePermissionStatus()
-        : 'granted';
-
-      cameraOk = cameraStatus === 'granted';
-      microphoneOk = microphoneStatus === 'granted';
-
-      if ((!cameraOk || !microphoneOk) && showMissingAlert) {
+      if ((!cameraOk || !microphoneOk || !galleryOk) && showMissingAlert) {
         showAlert(
-          'Permissões necessárias',
+          'Permissoes necessarias',
           settings.audio
-            ? 'Você precisa permitir câmera e microfone para gravar vídeos com áudio.'
-            : 'Você precisa permitir câmera para gravar vídeos.',
+            ? 'Voce precisa permitir camera, microfone e acesso a galeria para gravar e salvar videos com audio.'
+            : 'Voce precisa permitir camera e acesso a galeria para gravar e salvar videos.',
         );
       }
 
-      return cameraOk && microphoneOk;
+      return cameraOk && microphoneOk && galleryOk;
     } finally {
       isRequestingPermissionsRef.current = false;
     }
-  }, [
-    hasCameraPermission,
-    hasMicrophonePermission,
-    requestCameraPermission,
-    requestMicrophonePermission,
-    settings.audio,
-    showAlert,
-  ]);
+  }, [settings.audio, showAlert]);
+
+  const promptManageMediaAccess = useCallback(async () => {
+    if (
+      hasPromptedManageMediaRef.current ||
+      Platform.OS !== 'android' ||
+      Platform.Version < 31
+    ) {
+      return;
+    }
+
+    const canManageMedia = await canManageAndroidMedia();
+    if (canManageMedia) {
+      return;
+    }
+
+    hasPromptedManageMediaRef.current = true;
+
+    showAlert(
+      'Permissão de gerenciamento de mídia',
+      'Para obter acesso de exclusão de mídia, habilite o acesso em "Gerenciar mídia".',
+      [
+        {text: 'Agora não', style: 'cancel'},
+        {
+          text: 'Abrir configurações',
+          onPress: () => {
+            openAndroidManageMediaSettings().catch(error => {
+              console.warn(
+                'Falha ao abrir configurações de gerenciamento de mídia.',
+                error,
+              );
+            });
+          },
+        },
+      ],
+    );
+  }, [showAlert]);
 
   useEffect(() => {
     if (
@@ -366,20 +385,33 @@ export default function CameraScreen({navigation}) {
 
     const bootstrapPermissions = async () => {
       try {
-        await loadVideosFromGallery({showLoader: true});
+        await ensurePermissions({showMissingAlert: false});
       } catch (error) {
-        console.warn('Não foi possível carregar vídeos na inicialização.', error);
+        console.warn('Falha ao solicitar permissoes iniciais.', error);
       }
 
       try {
-        await ensurePermissions({showMissingAlert: false});
+        await loadVideosFromGallery({showLoader: true});
       } catch (error) {
-        console.warn('Falha ao solicitar permissões iniciais de câmera.', error);
+        console.warn('Nao foi possivel carregar videos na inicializacao.', error);
+      }
+
+      try {
+        await promptManageMediaAccess();
+      } catch (error) {
+        console.warn('Falha ao sugerir acesso especial de gerenciamento de midia.', error);
       }
     };
 
     bootstrapPermissions();
-  }, [appState, ensurePermissions, isFocused, isHydrated, loadVideosFromGallery]);
+  }, [
+    appState,
+    ensurePermissions,
+    isFocused,
+    isHydrated,
+    loadVideosFromGallery,
+    promptManageMediaAccess,
+  ]);
 
   const handleRecordingFinished = useCallback(
     async video => {
@@ -421,20 +453,20 @@ export default function CameraScreen({navigation}) {
             shouldDeleteOriginal = true;
             await loadVideosFromGallery();
             showAlert(
-              'Compressão indisponível',
-              'Não foi possível comprimir este vídeo. A versão original foi salva normalmente.',
+              'Compressao indisponivel',
+              'Nao foi possivel comprimir este video. A versao original foi salva normalmente.',
             );
           } catch (fallbackError) {
             showAlert(
-              'Erro ao processar vídeo',
+              'Erro ao processar video',
               fallbackError?.message ??
-                'Não foi possível comprimir nem salvar o vídeo original.',
+                'Nao foi possivel comprimir nem salvar o video original.',
             );
           }
         } else {
           showAlert(
-            'Erro ao salvar vídeo',
-            error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
+            'Erro ao salvar video',
+            error?.message ?? 'Nao foi possivel salvar o video na galeria.',
           );
         }
       } finally {
@@ -463,8 +495,8 @@ export default function CameraScreen({navigation}) {
       handleRecordingFinished(video).catch(error => {
         setIsProcessingVideo(false);
         showAlert(
-          'Erro ao processar vídeo',
-          error?.message ?? 'Não foi possível finalizar o vídeo gravado.',
+          'Erro ao processar video',
+          error?.message ?? 'Nao foi possivel finalizar o video gravado.',
         );
       });
     },
@@ -489,7 +521,7 @@ export default function CameraScreen({navigation}) {
         });
       }
 
-      showAlert('Erro de gravação', error?.message ?? 'Não foi possível gravar o vídeo.');
+      showAlert('Erro de gravacao', error?.message ?? 'Nao foi possivel gravar o video.');
     },
     [scheduleCameraRecovery, showAlert],
   );
@@ -529,7 +561,7 @@ export default function CameraScreen({navigation}) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      showAlert('Erro', error?.message ?? 'Falha ao iniciar a gravação.');
+      showAlert('Erro', error?.message ?? 'Falha ao iniciar a gravacao.');
     }
   }, [
     ensurePermissions,
@@ -548,13 +580,14 @@ export default function CameraScreen({navigation}) {
     if (!camera.current || !isRecording) {
       return;
     }
+
     try {
       await camera.current.stopRecording();
     } catch (error) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      showAlert('Erro', error?.message ?? 'Falha ao parar a gravação.');
+      showAlert('Erro', error?.message ?? 'Falha ao parar a gravacao.');
     }
   }, [isRecording, showAlert]);
 
@@ -579,8 +612,8 @@ export default function CameraScreen({navigation}) {
         await openVideoUri(item.uri);
       } catch (error) {
         showAlert(
-          'Erro ao abrir vídeo',
-          error?.message ?? 'Não foi possível abrir este vídeo.',
+          'Erro ao abrir video',
+          error?.message ?? 'Nao foi possivel abrir este video.',
         );
       }
     },
@@ -594,7 +627,7 @@ export default function CameraScreen({navigation}) {
       } catch (error) {
         showAlert(
           'Erro ao compartilhar',
-          error?.message ?? 'Não foi possível compartilhar este vídeo.',
+          error?.message ?? 'Nao foi possivel compartilhar este video.',
         );
       }
     },
@@ -604,8 +637,8 @@ export default function CameraScreen({navigation}) {
   const onVideoCardPress = useCallback(
     item => {
       showAlert(
-        item.filename || 'Vídeo',
-        'Escolha o que deseja fazer com este vídeo.',
+        item.filename || 'Video',
+        'Escolha o que deseja fazer com este video.',
         [
           {text: 'Visualizar', onPress: () => onOpenVideo(item)},
           {text: 'Compartilhar', onPress: () => onShareVideo(item)},
@@ -631,11 +664,11 @@ export default function CameraScreen({navigation}) {
       <View style={styles.center}>
         <Text style={styles.title}>Videonly</Text>
         <Text style={styles.subtitle}>
-          O app precisa de permissão para acessar a câmera.
+          O app precisa de permissao para acessar a camera.
         </Text>
         <Pressable style={styles.primaryButton} onPress={onPermissionPress}>
           <Text style={styles.primaryButtonText}>
-            Permitir câmera e microfone
+            Permitir camera, audio e galeria
           </Text>
         </Pressable>
       </View>
@@ -645,8 +678,8 @@ export default function CameraScreen({navigation}) {
   return (
     <View style={styles.container}>
       <LoadingModal
-        message="Estamos comprimindo seu vídeo para gerar um arquivo mais leve antes de salvar."
-        title="Comprimindo vídeo"
+        message="Estamos comprimindo seu video para gerar um arquivo mais leve antes de salvar."
+        title="Comprimindo video"
         visible={isProcessingVideo}
       />
       <CameraPreview
@@ -685,12 +718,12 @@ export default function CameraScreen({navigation}) {
         }}
       />
 
-      <View style={[styles.panel, {paddingBottom: Math.max(insets.bottom + 6, 12)}]}>
-        <Text style={styles.panelTitle}>Vídeos salvos</Text>
+      <View style={[styles.panel, {marginBottom: Math.max(insets.bottom, 12)}]}>
+        <Text style={styles.panelTitle}>Videos salvos</Text>
         {isLoadingSavedVideos ? (
           <View style={styles.savedVideosLoading}>
             <ActivityIndicator size="small" color="#cbd5e1" />
-            <Text style={styles.savedVideosLoadingText}>Carregando vídeos...</Text>
+            <Text style={styles.savedVideosLoadingText}>Carregando videos...</Text>
           </View>
         ) : (
           <FlatList
@@ -703,7 +736,7 @@ export default function CameraScreen({navigation}) {
               <VideoCard compact item={item} onPress={() => onVideoCardPress(item)} />
             )}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>Nenhum vídeo salvo ainda.</Text>
+              <Text style={styles.emptyText}>Nenhum video salvo ainda.</Text>
             }
           />
         )}
