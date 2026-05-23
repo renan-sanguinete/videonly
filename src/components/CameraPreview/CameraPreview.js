@@ -83,12 +83,10 @@ export default function CameraPreview({
       audioBitRateKbps: parseCameraNumber(settings.audioBitRateKbps),
       audioGain: parseCameraNumber(settings.audioGain),
       audioSource: parseCameraNumber(settings.audioSource),
-      photo: settings.photo,
       video: settings.video,
       preview: settings.preview,
       enableZoomGesture: settings.enableZoomGesture,
       resizeMode: settings.resizeMode,
-      photoQualityBalance: settings.photoQualityBalance,
       zoom: parseCameraNumber(settings.zoom),
       exposure: parseCameraNumber(settings.exposure),
       ...(device?.supportsLowLightBoost
@@ -100,7 +98,6 @@ export default function CameraPreview({
         ? {fps: parseCameraNumber(settings.fps)}
         : {}),
       ...(selectedFormat?.supportsVideoHdr ? {videoHdr: settings.videoHdr} : {}),
-      ...(selectedFormat?.supportsPhotoHdr ? {photoHdr: settings.photoHdr} : {}),
     }),
     [device, isActive, selectedFormat, settings, torch],
   );

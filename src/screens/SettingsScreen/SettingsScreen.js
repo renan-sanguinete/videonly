@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {FlatList, Pressable, ScrollView, Text, View} from 'react-native';
+import {Pressable, ScrollView, Text, View} from 'react-native';
 import {useCameraDevice} from 'react-native-vision-camera';
 
 import {
@@ -25,12 +25,6 @@ const VIDEO_BIT_RATE_OPTIONS = [
   {label: 'normal', value: 'normal'},
   {label: 'high', value: 'high'},
   {label: 'extra-high', value: 'extra-high'},
-];
-
-const PHOTO_BALANCE_OPTIONS = [
-  {label: 'speed', value: 'speed'},
-  {label: 'balanced', value: 'balanced'},
-  {label: 'quality', value: 'quality'},
 ];
 
 const RESIZE_MODE_OPTIONS = [
@@ -71,23 +65,6 @@ const RECORD_VIDEO_CODEC_OPTIONS = [
   {label: 'h265', value: 'h265'},
 ];
 
-function getVideoResolutionPresetLabel(preset) {
-  switch (preset) {
-    case '480p':
-      return '480p';
-    case '720p':
-      return '720p';
-    case '1080p':
-      return '1080p';
-    case '2k':
-      return '2K';
-    case '4k':
-      return '4K';
-    default:
-      return 'Auto';
-  }
-}
-
 function buildResolutionOptions(formats) {
   const heights = new Set((formats || []).map(format => format.videoHeight).filter(Boolean));
   const options = [{label: 'Auto', value: 'auto'}];
@@ -117,14 +94,6 @@ export default function SettingsScreen() {
   const formats = useMemo(() => device?.formats ?? [], [device]);
   const resolutionOptions = useMemo(() => buildResolutionOptions(formats), [formats]);
 
-  const selectedFormatIndex = useMemo(() => {
-    const index = settings.formatIndex === '' ? undefined : Number(settings.formatIndex);
-    if (index === undefined || Number.isNaN(index)) {
-      return '';
-    }
-    return index;
-  }, [settings.formatIndex]);
-
   const update = patch => setSettings(prev => ({...prev, ...patch}));
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
   const audioRisk = getAudioRiskLevel(settings);
@@ -149,7 +118,7 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Configurações da câmera</Text>
       <Text style={styles.subtitle}>
-        Os ajustes abaixo influenciam a captura de vídeo e foto.
+        Os ajustes abaixo influenciam a captura de vídeo.
       </Text>
 
       <SectionTitle>Captura</SectionTitle>
@@ -165,12 +134,6 @@ export default function SettingsScreen() {
           description="Habilita gravação com áudio. Exige permissão de microfone."
           value={settings.audio}
           onValueChange={value => update({audio: value})}
-        />
-        <ToggleRow
-          label="Foto"
-          description="Deixa o modo de foto disponível."
-          value={settings.photo}
-          onValueChange={value => update({photo: value})}
         />
         <ToggleRow
           label="Preview"
@@ -218,15 +181,6 @@ export default function SettingsScreen() {
           value={settings.videoBitRate}
           options={VIDEO_BIT_RATE_OPTIONS}
           onChange={value => update({videoBitRate: value})}
-        />
-
-        <View style={styles.sectionSpacer} />
-
-        <Text style={styles.label}>Photo quality balance</Text>
-        <OptionChips
-          value={settings.photoQualityBalance}
-          options={PHOTO_BALANCE_OPTIONS}
-          onChange={value => update({photoQualityBalance: value})}
         />
       </Card>
 
@@ -363,7 +317,7 @@ export default function SettingsScreen() {
       <SectionTitle>Gravação</SectionTitle>
       <Card>
         <Text style={styles.helper}>
-          No Android atual, a VisionCamera permite controlar audio ligado/desligado, formato do arquivo e codec de video.
+          No Android atual, a VisionCamera permite controlar audio ligado/desligado, resolucao, formato do arquivo e codec de video.
         </Text>
         <View style={styles.sectionSpacer} />
 
@@ -391,49 +345,6 @@ export default function SettingsScreen() {
           options={RECORD_VIDEO_CODEC_OPTIONS}
           onChange={value => update({recordVideoCodec: value})}
         />
-      </Card>
-
-      <SectionTitle>Formato do dispositivo</SectionTitle>
-      <Card>
-        <Text style={styles.helper}>
-          {device
-            ? `Dispositivo encontrado: ${device.position} · ${formats.length} formatos disponíveis · resolução atual: ${getVideoResolutionPresetLabel(settings.videoResolutionPreset)}`
-            : 'Buscando dispositivo traseiro...'}
-        </Text>
-
-        {formats.length > 0 ? (
-          <FlatList
-            data={formats}
-            keyExtractor={(_, index) => String(index)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.formatsContent}
-            renderItem={({item, index}) => {
-              const active = selectedFormatIndex === index;
-              const label = `${item.videoHeight ?? '?'}p · ${item.videoWidth ?? '?'}w · ${item.maxFps ?? item.minFps ?? '?'} FPS`;
-              return (
-                <Pressable
-                  onPress={() =>
-                    update({
-                      formatIndex: String(index),
-                      videoResolutionPreset: 'auto',
-                    })
-                  }
-                  style={[styles.formatChip, active && styles.formatChipActive]}>
-                  <Text style={[styles.formatTitle, active && styles.formatTitleActive]}>
-                    {label}
-                  </Text>
-                  <Text style={styles.formatMeta}>
-                    {item.supportsVideoHdr ? 'HDR vídeo' : 'SDR'} · {item.supportsPhotoHdr ? 'HDR foto' : 'foto SDR'}
-                  </Text>
-                </Pressable>
-              );
-            }}
-          />
-        ) : (
-          <Text style={styles.helper}>Sem formatos detectados.</Text>
-        )}
-
         <Pressable style={styles.resetButton} onPress={resetSettings}>
           <Text style={styles.resetText}>Restaurar padrões</Text>
         </Pressable>

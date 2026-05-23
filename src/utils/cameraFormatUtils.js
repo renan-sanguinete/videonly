@@ -63,8 +63,7 @@ export function pickFormatForSettings(formats, settings) {
     settings.videoResolutionPreset !== 'auto' ||
     requestedFps !== undefined ||
     settings.videoBitRate !== 'normal' ||
-    settings.videoHdr ||
-    settings.photoHdr;
+    settings.videoHdr;
 
   if (!requiresFormat) {
     return undefined;
@@ -94,14 +93,12 @@ export function pickFormatForSettings(formats, settings) {
           requestedFps >= format.minFps &&
           requestedFps <= format.maxFps);
       const videoHdrMatches = !settings.videoHdr || format.supportsVideoHdr;
-      const photoHdrMatches = !settings.photoHdr || format.supportsPhotoHdr;
       const resolutionMatches =
         targetHeight === undefined || format.videoHeight === targetHeight;
 
       return (
         fpsMatches &&
         videoHdrMatches &&
-        photoHdrMatches &&
         resolutionMatches
       );
     }) || formats[0]
