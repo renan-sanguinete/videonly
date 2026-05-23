@@ -1,6 +1,6 @@
-import React, {useMemo} from 'react';
-import {Pressable, ScrollView, Text, View} from 'react-native';
-import {useCameraDevice} from 'react-native-vision-camera';
+import React, { useMemo } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useCameraDevice } from 'react-native-vision-camera';
 
 import {
   Card,
@@ -12,77 +12,82 @@ import {
 import AudioSourcePicker from '../../components/AudioSourcePicker/AudioSourcePicker';
 import {
   AUDIO_PROFILE_OPTIONS,
-  getAudioProfileSettings,
+  applyAudioProfile,
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
-import {useCameraSettings} from '../../context/CameraSettingsContext';
-import {getAudioSourceOption, UNPROCESSED_AUDIO_SOURCE} from '../../constants/audioSources';
-import {styles} from './styles';
+import { useCameraSettings } from '../../context/CameraSettingsContext';
+import {
+  getAudioSourceOption,
+  UNPROCESSED_AUDIO_SOURCE,
+} from '../../constants/audioSources';
+import { styles } from './styles';
 
 const VIDEO_BIT_RATE_OPTIONS = [
-  {label: 'extra-low', value: 'extra-low'},
-  {label: 'low', value: 'low'},
-  {label: 'normal', value: 'normal'},
-  {label: 'high', value: 'high'},
-  {label: 'extra-high', value: 'extra-high'},
+  { label: 'extra-low', value: 'extra-low' },
+  { label: 'low', value: 'low' },
+  { label: 'normal', value: 'normal' },
+  { label: 'high', value: 'high' },
+  { label: 'extra-high', value: 'extra-high' },
 ];
 
 const RESIZE_MODE_OPTIONS = [
-  {label: 'cover', value: 'cover'},
-  {label: 'contain', value: 'contain'},
+  { label: 'cover', value: 'cover' },
+  { label: 'contain', value: 'contain' },
 ];
 
 const AUDIO_CHANNEL_OPTIONS = [
-  {label: 'Stereo (2 canais)', value: 'stereo'},
-  {label: 'Mono (1 canal)', value: 'mono'},
+  { label: 'Stereo (2 canais)', value: 'stereo' },
+  { label: 'Mono (1 canal)', value: 'mono' },
 ];
 
 const AUDIO_CODEC_OPTIONS = [
-  {label: 'AAC', value: 'aac'},
-  {label: 'MP3 (fallback AAC no Android)', value: 'mp3'},
+  { label: 'AAC', value: 'aac' },
+  { label: 'MP3 (fallback AAC no Android)', value: 'mp3' },
 ];
 
 const AUDIO_SAMPLE_RATE_OPTIONS = [
-  {label: '32000 Hz', value: '32000'},
-  {label: '44100 Hz', value: '44100'},
-  {label: '48000 Hz', value: '48000'},
+  { label: '32000 Hz', value: '32000' },
+  { label: '44100 Hz', value: '44100' },
+  { label: '48000 Hz', value: '48000' },
 ];
 
 const AUDIO_GAIN_OPTIONS = [
-  {label: 'Padrao (0 dB)', value: 0},
-  {label: 'Reduzido (-6 dB)', value: -6},
-  {label: 'Show ao vivo (-9 dB)', value: -9},
-  {label: 'Maximo reduzido (-12 dB)', value: -12},
+  { label: 'Padrao (0 dB)', value: 0 },
+  { label: 'Reduzido (-6 dB)', value: -6 },
+  { label: 'Show ao vivo (-9 dB)', value: -9 },
+  { label: 'Maximo reduzido (-12 dB)', value: -12 },
 ];
 
 const RECORD_FILE_TYPE_OPTIONS = [
-  {label: 'mp4', value: 'mp4'},
-  {label: 'mov', value: 'mov'},
+  { label: 'mp4', value: 'mp4' },
+  { label: 'mov', value: 'mov' },
 ];
 
 const RECORD_VIDEO_CODEC_OPTIONS = [
-  {label: 'h264', value: 'h264'},
-  {label: 'h265', value: 'h265'},
+  { label: 'h264', value: 'h264' },
+  { label: 'h265', value: 'h265' },
 ];
 
 function buildResolutionOptions(formats) {
-  const heights = new Set((formats || []).map(format => format.videoHeight).filter(Boolean));
-  const options = [{label: 'Auto', value: 'auto'}];
+  const heights = new Set(
+    (formats || []).map(format => format.videoHeight).filter(Boolean),
+  );
+  const options = [{ label: 'Auto', value: 'auto' }];
 
   if (heights.has(480)) {
-    options.push({label: '480p', value: '480p'});
+    options.push({ label: '480p', value: '480p' });
   }
   if (heights.has(720)) {
-    options.push({label: '720p', value: '720p'});
+    options.push({ label: '720p', value: '720p' });
   }
   if (heights.has(1080)) {
-    options.push({label: '1080p', value: '1080p'});
+    options.push({ label: '1080p', value: '1080p' });
   }
   if (heights.has(1440)) {
-    options.push({label: '2K', value: '2k'});
+    options.push({ label: '2K', value: '2k' });
   }
   if (heights.has(2160)) {
-    options.push({label: '4K', value: '4k'});
+    options.push({ label: '4K', value: '4k' });
   }
 
   return options;
@@ -90,11 +95,14 @@ function buildResolutionOptions(formats) {
 
 export default function SettingsScreen() {
   const device = useCameraDevice('back');
-  const {settings, setSettings, resetSettings} = useCameraSettings();
+  const { settings, setSettings, resetSettings } = useCameraSettings();
   const formats = useMemo(() => device?.formats ?? [], [device]);
-  const resolutionOptions = useMemo(() => buildResolutionOptions(formats), [formats]);
+  const resolutionOptions = useMemo(
+    () => buildResolutionOptions(formats),
+    [formats],
+  );
 
-  const update = patch => setSettings(prev => ({...prev, ...patch}));
+  const update = patch => setSettings(prev => ({ ...prev, ...patch }));
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
   const audioRisk = getAudioRiskLevel(settings);
 
@@ -106,12 +114,7 @@ export default function SettingsScreen() {
     }));
 
   const onAudioProfileChange = value => {
-    const profileSettings = getAudioProfileSettings(value);
-    setSettings(prev => ({
-      ...prev,
-      audioProfile: value,
-      ...profileSettings,
-    }));
+    setSettings(prev => applyAudioProfile(prev, value));
   };
 
   return (
@@ -122,13 +125,13 @@ export default function SettingsScreen() {
           label="Áudio"
           description="Habilita gravação com áudio. Exige permissão de microfone."
           value={settings.audio}
-          onValueChange={value => update({audio: value})}
+          onValueChange={value => update({ audio: value })}
         />
         <ToggleRow
           label="Compressão para upload"
           description="Após gravar, comprime o vídeo antes de salvar para gerar arquivos mais leves."
           value={settings.compressVideoBeforeSave}
-          onValueChange={value => update({compressVideoBeforeSave: value})}
+          onValueChange={value => update({ compressVideoBeforeSave: value })}
         />
       </Card>
 
@@ -138,13 +141,13 @@ export default function SettingsScreen() {
           label="Zoom por gesto"
           description="Ativa o pinch-to-zoom."
           value={settings.enableZoomGesture}
-          onValueChange={value => update({enableZoomGesture: value})}
+          onValueChange={value => update({ enableZoomGesture: value })}
         />
         <ToggleRow
           label="Low light boost"
           description="Pode ajudar em ambientes escuros."
           value={settings.lowLightBoost}
-          onValueChange={value => update({lowLightBoost: value})}
+          onValueChange={value => update({ lowLightBoost: value })}
         />
       </Card>
 
@@ -154,7 +157,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.resizeMode}
           options={RESIZE_MODE_OPTIONS}
-          onChange={value => update({resizeMode: value})}
+          onChange={value => update({ resizeMode: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -163,7 +166,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.videoBitRate}
           options={VIDEO_BIT_RATE_OPTIONS}
-          onChange={value => update({videoBitRate: value})}
+          onChange={value => update({ videoBitRate: value })}
         />
       </Card>
 
@@ -172,19 +175,19 @@ export default function SettingsScreen() {
         <NumberField
           label="FPS"
           value={settings.fps}
-          onChangeText={text => update({fps: text})}
+          onChangeText={text => update({ fps: text })}
           placeholder="ex.: 30"
         />
         <NumberField
           label="Zoom"
           value={settings.zoom}
-          onChangeText={text => update({zoom: text})}
+          onChangeText={text => update({ zoom: text })}
           placeholder="ex.: 1"
         />
         <NumberField
           label="Exposure"
           value={settings.exposure}
-          onChangeText={text => update({exposure: text})}
+          onChangeText={text => update({ exposure: text })}
           placeholder="ex.: 0"
         />
       </Card>
@@ -208,7 +211,8 @@ export default function SettingsScreen() {
             audioRisk.level === 'high'
               ? styles.audioStatusBoxWarning
               : styles.audioStatusBoxSafe,
-          ]}>
+          ]}
+        >
           <Text style={styles.audioStatusTitle}>{audioRisk.title}</Text>
           <Text style={styles.audioStatusText}>{audioRisk.description}</Text>
         </View>
@@ -219,7 +223,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.audioCodec}
           options={AUDIO_CODEC_OPTIONS}
-          onChange={value => updateAudioSetting({audioCodec: value})}
+          onChange={value => updateAudioSetting({ audioCodec: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -228,7 +232,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.audioChannels}
           options={AUDIO_CHANNEL_OPTIONS}
-          onChange={value => updateAudioSetting({audioChannels: value})}
+          onChange={value => updateAudioSetting({ audioChannels: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -237,7 +241,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.audioSampleRate}
           options={AUDIO_SAMPLE_RATE_OPTIONS}
-          onChange={value => updateAudioSetting({audioSampleRate: value})}
+          onChange={value => updateAudioSetting({ audioSampleRate: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -246,7 +250,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.audioGain}
           options={AUDIO_GAIN_OPTIONS}
-          onChange={value => updateAudioSetting({audioGain: value})}
+          onChange={value => updateAudioSetting({ audioGain: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -254,7 +258,7 @@ export default function SettingsScreen() {
         <NumberField
           label="Bitrate de audio (kbps)"
           value={settings.audioBitRateKbps}
-          onChangeText={text => updateAudioSetting({audioBitRateKbps: text})}
+          onChangeText={text => updateAudioSetting({ audioBitRateKbps: text })}
           placeholder="ex.: 128"
         />
 
@@ -264,14 +268,16 @@ export default function SettingsScreen() {
           label="Mostrar status de áudio"
           description="Exibe durante a gravação o banner com a fonte de áudio e risco de processamento."
           value={settings.showAudioStatus}
-          onValueChange={value => updateAudioSetting({showAudioStatus: value})}
+          onValueChange={value =>
+            updateAudioSetting({ showAudioStatus: value })
+          }
         />
 
         <View style={styles.sectionSpacer} />
 
         <AudioSourcePicker
           selectedSource={settings.audioSource}
-          onSourceChange={value => updateAudioSetting({audioSource: value})}
+          onSourceChange={value => updateAudioSetting({ audioSource: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -282,7 +288,8 @@ export default function SettingsScreen() {
             settings.audioSource === UNPROCESSED_AUDIO_SOURCE
               ? styles.audioStatusBoxSafe
               : styles.audioStatusBoxWarning,
-          ]}>
+          ]}
+        >
           <Text style={styles.audioStatusTitle}>
             Fonte ativa: {currentAudioSource.label}
           </Text>
@@ -302,7 +309,9 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.videoResolutionPreset}
           options={resolutionOptions}
-          onChange={value => update({videoResolutionPreset: value, formatIndex: ''})}
+          onChange={value =>
+            update({ videoResolutionPreset: value, formatIndex: '' })
+          }
         />
 
         <View style={styles.sectionSpacer} />
@@ -311,7 +320,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.recordFileType}
           options={RECORD_FILE_TYPE_OPTIONS}
-          onChange={value => update({recordFileType: value})}
+          onChange={value => update({ recordFileType: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -320,7 +329,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.recordVideoCodec}
           options={RECORD_VIDEO_CODEC_OPTIONS}
-          onChange={value => update({recordVideoCodec: value})}
+          onChange={value => update({ recordVideoCodec: value })}
         />
         <Pressable style={styles.resetButton} onPress={resetSettings}>
           <Text style={styles.resetText}>Restaurar padrões</Text>

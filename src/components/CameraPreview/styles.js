@@ -1,7 +1,7 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-  cameraWrap: {flex: 1, backgroundColor: '#000'},
+  cameraWrap: { flex: 1, backgroundColor: '#000' },
   topOverlay: {
     position: 'absolute',
     top: 14,
@@ -20,7 +20,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
-  badgeText: {color: '#dc2626', fontWeight: '700', fontSize: 12},
+  badgeText: { color: '#dc2626', fontWeight: '700', fontSize: 12 },
   recordingStatus: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -55,6 +55,10 @@ export const styles = StyleSheet.create({
     bottom: 112,
     zIndex: 10,
   },
+  audioQuickMenuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 11,
+  },
   audioStatusPill: {
     borderRadius: 16,
     paddingVertical: 10,
@@ -87,7 +91,7 @@ export const styles = StyleSheet.create({
     right: 16,
     gap: 12,
     alignItems: 'center',
-    zIndex: 10,
+    zIndex: 12,
   },
   controlsRow: {
     width: '100%',
@@ -99,6 +103,94 @@ export const styles = StyleSheet.create({
   controlsSideSlot: {
     width: 56,
     height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  audioProfileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(17, 24, 39, 0.42)',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  audioProfileButtonLive: {
+    backgroundColor: 'rgba(34, 197, 94, 0.28)',
+    borderColor: '#4ade80',
+  },
+  audioProfileButtonCustom: {
+    backgroundColor: 'rgba(96, 165, 250, 0.28)',
+    borderColor: '#60a5fa',
+  },
+  audioQuickMenu: {
+    position: 'absolute',
+    bottom: 60,
+    left: -4,
+    width: 196,
+    borderRadius: 18,
+    padding: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.96)',
+    borderWidth: 1,
+    borderColor: '#334155',
+    gap: 8,
+    shadowColor: '#020617',
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
+  audioQuickMenuTitle: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  audioQuickMenuSubtitle: {
+    color: '#94a3b8',
+    fontSize: 12,
+    marginTop: -2,
+  },
+  audioQuickOption: {
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    gap: 3,
+  },
+  audioQuickOptionSelectedStandard: {
+    backgroundColor: 'transparent',
+    borderColor: '#ffffff',
+  },
+  audioQuickOptionSelectedLive: {
+    backgroundColor: 'rgba(34, 197, 94, 0.24)',
+    borderColor: '#4ade80',
+  },
+  audioQuickOptionSelectedCustom: {
+    backgroundColor: 'rgba(59, 130, 246, 0.24)',
+    borderColor: '#60a5fa',
+  },
+  audioQuickOptionLabel: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  audioQuickOptionLabelSelectedStandard: {
+    color: '#ffffff',
+  },
+  audioQuickOptionLabelSelectedLive: {
+    color: '#f0fdf4',
+  },
+  audioQuickOptionLabelSelectedCustom: {
+    color: '#eff6ff',
+  },
+  audioQuickOptionDescription: {
+    color: '#cbd5e1',
+    fontSize: 11,
+    lineHeight: 15,
   },
   recordButton: {
     width: 60,

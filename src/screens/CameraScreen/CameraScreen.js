@@ -15,20 +15,20 @@ import {
   Text,
   View,
 } from 'react-native';
-import {useFocusEffect, useIsFocused} from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 import {
   useCameraPermission,
   useMicrophonePermission,
 } from 'react-native-vision-camera';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CameraHeaderActions from '../../components/CameraHeaderActions/CameraHeaderActions';
 import CameraPreview from '../../components/CameraPreview/CameraPreview';
 import LoadingModal from '../../components/LoadingModal/LoadingModal';
 import VideoCard from '../../components/VideoCard/VideoCard';
-import {useCameraSettings} from '../../context/CameraSettingsContext';
-import {useCustomAlert} from '../../context/CustomAlertContext';
+import { useCameraSettings } from '../../context/CameraSettingsContext';
+import { useCustomAlert } from '../../context/CustomAlertContext';
 import {
   canManageAndroidMedia,
   ensureCameraPermission,
@@ -38,22 +38,25 @@ import {
   getCameraRollVideoPermissionStatus,
   openAndroidManageMediaSettings,
 } from '../../utils/appPermissions';
-import {usePermissionQueue} from '../../hooks/usePermissionQueue';
+import { usePermissionQueue } from '../../hooks/usePermissionQueue';
 import {
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
 } from '../../utils/cameraRollVideos';
-import {openVideoUri, shareVideo} from '../../utils/videoActions';
-import {compressVideo} from '../../utils/videoCompression';
-import {generateVideoFileName} from '../../utils/videoFormatters';
-import {styles} from './styles';
+import { openVideoUri, shareVideo } from '../../utils/videoActions';
+import { compressVideo } from '../../utils/videoCompression';
+import { generateVideoFileName } from '../../utils/videoFormatters';
+import { applyAudioProfile } from '../../constants/audioProfiles';
+import { styles } from './styles';
 
 function normalizeFilePath(pathLike) {
   if (!pathLike) {
     return null;
   }
 
-  return pathLike.startsWith('file://') ? pathLike.replace('file://', '') : pathLike;
+  return pathLike.startsWith('file://')
+    ? pathLike.replace('file://', '')
+    : pathLike;
 }
 
 async function deleteIfExists(pathLike) {
@@ -72,7 +75,7 @@ async function deleteIfExists(pathLike) {
   }
 }
 
-export default function CameraScreen({navigation}) {
+export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
   const recordingStartedAtRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
@@ -84,11 +87,12 @@ export default function CameraScreen({navigation}) {
   const isRequestingPermissionsRef = useRef(false);
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const {hasPermission: hasCameraPermission} = useCameraPermission();
-  const {hasPermission: hasMicrophonePermission} = useMicrophonePermission();
-  const {isReady: isPermissionFlowReady, enqueuePermission} = usePermissionQueue();
-  const {isHydrated, settings, setSettings} = useCameraSettings();
-  const {showAlert} = useCustomAlert();
+  const { hasPermission: hasCameraPermission } = useCameraPermission();
+  const { hasPermission: hasMicrophonePermission } = useMicrophonePermission();
+  const { isReady: isPermissionFlowReady, enqueuePermission } =
+    usePermissionQueue();
+  const { isHydrated, settings, setSettings } = useCameraSettings();
+  const { showAlert } = useCustomAlert();
 
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
@@ -103,24 +107,28 @@ export default function CameraScreen({navigation}) {
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [activeFlashMode, setActiveFlashMode] = useState('off');
   const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
-  const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] = useState(false);
+  const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
+    useState(false);
 
-  const loadVideosFromGallery = useCallback(async ({showLoader = false} = {}) => {
-    if (showLoader) {
-      setIsLoadingSavedVideos(true);
-    }
-
-    try {
-      const videos = await loadSavedVideosFromCameraRoll();
-      setSavedVideos(videos);
-    } catch (error) {
-      console.error('Erro ao carregar videos:', error);
-    } finally {
-      if (!isUnmountedRef.current) {
-        setIsLoadingSavedVideos(false);
+  const loadVideosFromGallery = useCallback(
+    async ({ showLoader = false } = {}) => {
+      if (showLoader) {
+        setIsLoadingSavedVideos(true);
       }
-    }
-  }, []);
+
+      try {
+        const videos = await loadSavedVideosFromCameraRoll();
+        setSavedVideos(videos);
+      } catch (error) {
+        console.error('Erro ao carregar videos:', error);
+      } finally {
+        if (!isUnmountedRef.current) {
+          setIsLoadingSavedVideos(false);
+        }
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     isRecordingRef.current = isRecording;
@@ -140,11 +148,15 @@ export default function CameraScreen({navigation}) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!isHydrated || !hasCompletedInitialBootstrap || !hasGalleryPermission) {
+      if (
+        !isHydrated ||
+        !hasCompletedInitialBootstrap ||
+        !hasGalleryPermission
+      ) {
         return undefined;
       }
 
-      loadVideosFromGallery({showLoader: true}).catch(error => {
+      loadVideosFromGallery({ showLoader: true }).catch(error => {
         console.warn('Falha ao atualizar videos ao focar a camera.', error);
       });
 
@@ -165,7 +177,7 @@ export default function CameraScreen({navigation}) {
   }, []);
 
   const scheduleCameraRecovery = useCallback(
-    ({delayMs = 350} = {}) => {
+    ({ delayMs = 350 } = {}) => {
       clearPendingRecovery();
       setIsCameraReady(false);
       setIsRecoveringCamera(true);
@@ -177,7 +189,11 @@ export default function CameraScreen({navigation}) {
           return;
         }
 
-        if (appStateRef.current !== 'active' || !isFocused || isProcessingVideo) {
+        if (
+          appStateRef.current !== 'active' ||
+          !isFocused ||
+          isProcessingVideo
+        ) {
           setIsRecoveringCamera(false);
           return;
         }
@@ -197,7 +213,10 @@ export default function CameraScreen({navigation}) {
       try {
         await camera.current.stopRecording();
       } catch (error) {
-        console.warn('Falha ao parar gravacao durante liberacao da camera.', error);
+        console.warn(
+          'Falha ao parar gravacao durante liberacao da camera.',
+          error,
+        );
       }
 
       setIsRecording(false);
@@ -217,7 +236,10 @@ export default function CameraScreen({navigation}) {
 
       if (nextState !== 'active') {
         forceReleaseCameraSession().catch(error => {
-          console.warn('Falha ao liberar sessao da camera ao sair do app.', error);
+          console.warn(
+            'Falha ao liberar sessao da camera ao sair do app.',
+            error,
+          );
         });
         return;
       }
@@ -235,7 +257,7 @@ export default function CameraScreen({navigation}) {
             console.warn('Falha ao sincronizar permissao da galeria.', error);
           });
 
-        scheduleCameraRecovery({delayMs: 900});
+        scheduleCameraRecovery({ delayMs: 900 });
       }
     });
 
@@ -263,13 +285,16 @@ export default function CameraScreen({navigation}) {
   useEffect(() => {
     if (!isFocused) {
       forceReleaseCameraSession().catch(error => {
-        console.warn('Falha ao liberar sessao da camera ao perder foco.', error);
+        console.warn(
+          'Falha ao liberar sessao da camera ao perder foco.',
+          error,
+        );
       });
       return;
     }
 
     if (appState === 'active' && !isProcessingVideo) {
-      scheduleCameraRecovery({delayMs: 250});
+      scheduleCameraRecovery({ delayMs: 250 });
     }
   }, [
     appState,
@@ -300,6 +325,28 @@ export default function CameraScreen({navigation}) {
       compressVideoBeforeSave: !prev.compressVideoBeforeSave,
     }));
   }, [setSettings]);
+
+  const onApplyAudioProfile = useCallback(
+    value => {
+      setSettings(prev => applyAudioProfile(prev, value));
+    },
+    [setSettings],
+  );
+
+  const onOpenCustomAudioSettings = useCallback(() => {
+    showAlert(
+      'Ajustes personalizados',
+      'As edições do modo personalizado são feitas na tela de Configurações.',
+      [
+        { text: 'Agora não', style: 'cancel' },
+        {
+          text: 'Ir para Configurações',
+          onPress: () => navigation.navigate('Settings'),
+        },
+      ],
+      { cancelable: true },
+    );
+  }, [navigation, showAlert]);
 
   const onFlashModeChange = () => {
     setActiveFlashMode(prevMode => (prevMode === 'off' ? 'on' : 'off'));
@@ -345,33 +392,41 @@ export default function CameraScreen({navigation}) {
     });
   }, [navigation, renderHeader]);
 
-  const ensurePermissions = useCallback(async ({showMissingAlert = true} = {}) => {
-    if (isRequestingPermissionsRef.current) {
-      return false;
-    }
-
-    isRequestingPermissionsRef.current = true;
-
-    try {
-      const {cameraOk, galleryOk, microphoneOk} = await ensureStartupPermissions({
-        includeMicrophone: settings.audio,
-        request: true,
-      });
-      console.log('Permissoes iniciais:', {cameraOk, galleryOk, microphoneOk});
-      if ((!cameraOk || !microphoneOk || !galleryOk) && showMissingAlert) {
-        showAlert(
-          'Permissoes necessarias',
-          settings.audio
-            ? 'Voce precisa permitir camera, microfone e acesso a galeria para gravar e salvar videos com audio.'
-            : 'Voce precisa permitir camera e acesso a galeria para gravar e salvar videos.',
-        );
+  const ensurePermissions = useCallback(
+    async ({ showMissingAlert = true } = {}) => {
+      if (isRequestingPermissionsRef.current) {
+        return false;
       }
 
-      return cameraOk && microphoneOk && galleryOk;
-    } finally {
-      isRequestingPermissionsRef.current = false;
-    }
-  }, [settings.audio, showAlert]);
+      isRequestingPermissionsRef.current = true;
+
+      try {
+        const { cameraOk, galleryOk, microphoneOk } =
+          await ensureStartupPermissions({
+            includeMicrophone: settings.audio,
+            request: true,
+          });
+        console.log('Permissoes iniciais:', {
+          cameraOk,
+          galleryOk,
+          microphoneOk,
+        });
+        if ((!cameraOk || !microphoneOk || !galleryOk) && showMissingAlert) {
+          showAlert(
+            'Permissoes necessarias',
+            settings.audio
+              ? 'Voce precisa permitir camera, microfone e acesso a galeria para gravar e salvar videos com audio.'
+              : 'Voce precisa permitir camera e acesso a galeria para gravar e salvar videos.',
+          );
+        }
+
+        return cameraOk && microphoneOk && galleryOk;
+      } finally {
+        isRequestingPermissionsRef.current = false;
+      }
+    },
+    [settings.audio, showAlert],
+  );
 
   const promptManageMediaAccess = useCallback(async () => {
     if (
@@ -393,7 +448,7 @@ export default function CameraScreen({navigation}) {
       'Permissão de gerenciamento de mídia',
       'Para obter acesso de exclusão de mídia, habilite o acesso em "Gerenciar mídia".',
       [
-        {text: 'Agora não', style: 'cancel'},
+        { text: 'Agora não', style: 'cancel' },
         {
           text: 'Abrir configurações',
           onPress: () => {
@@ -433,10 +488,13 @@ export default function CameraScreen({navigation}) {
       enqueuePermission(
         'startup-camera',
         async () => {
-          await ensureCameraPermission({request: true});
+          await ensureCameraPermission({ request: true });
         },
         error => {
-          console.warn('Falha ao solicitar permissao inicial de camera.', error);
+          console.warn(
+            'Falha ao solicitar permissao inicial de camera.',
+            error,
+          );
         },
       );
     }
@@ -445,10 +503,13 @@ export default function CameraScreen({navigation}) {
       enqueuePermission(
         'startup-microphone',
         async () => {
-          await ensureMicrophonePermission({request: true});
+          await ensureMicrophonePermission({ request: true });
         },
         error => {
-          console.warn('Falha ao solicitar permissao inicial de microfone.', error);
+          console.warn(
+            'Falha ao solicitar permissao inicial de microfone.',
+            error,
+          );
         },
       );
     }
@@ -456,7 +517,9 @@ export default function CameraScreen({navigation}) {
     enqueuePermission(
       'startup-gallery',
       async () => {
-        galleryPermissionGranted = await ensureCameraRollVideoPermission({request: true});
+        galleryPermissionGranted = await ensureCameraRollVideoPermission({
+          request: true,
+        });
         setHasGalleryPermission(galleryPermissionGranted);
       },
       error => {
@@ -473,10 +536,13 @@ export default function CameraScreen({navigation}) {
           return;
         }
 
-        await loadVideosFromGallery({showLoader: true});
+        await loadVideosFromGallery({ showLoader: true });
       },
       error => {
-        console.warn('Nao foi possivel carregar videos na inicializacao.', error);
+        console.warn(
+          'Nao foi possivel carregar videos na inicializacao.',
+          error,
+        );
       },
     );
 
@@ -528,7 +594,10 @@ export default function CameraScreen({navigation}) {
           sourcePath = newPath;
         }
       } catch (moveError) {
-        console.warn('Não foi possível renomear o vídeo gravado. Usando arquivo original.', moveError);
+        console.warn(
+          'Não foi possível renomear o vídeo gravado. Usando arquivo original.',
+          moveError,
+        );
       }
 
       let pathToSave = sourcePath;
@@ -621,7 +690,10 @@ export default function CameraScreen({navigation}) {
         });
       }
 
-      showAlert('Erro de gravacao', error?.message ?? 'Nao foi possivel gravar o video.');
+      showAlert(
+        'Erro de gravacao',
+        error?.message ?? 'Nao foi possivel gravar o video.',
+      );
     },
     [scheduleCameraRecovery, showAlert],
   );
@@ -703,7 +775,7 @@ export default function CameraScreen({navigation}) {
 
         const galleryStatus = await getCameraRollVideoPermissionStatus();
         setHasGalleryPermission(galleryStatus.granted);
-        await loadVideosFromGallery({showLoader: true});
+        await loadVideosFromGallery({ showLoader: true });
         await promptManageMediaAccess();
 
         if (!isUnmountedRef.current) {
@@ -714,7 +786,12 @@ export default function CameraScreen({navigation}) {
         console.warn('Falha ao processar fila manual de permissoes.', error);
       },
     );
-  }, [enqueuePermission, ensurePermissions, loadVideosFromGallery, promptManageMediaAccess]);
+  }, [
+    enqueuePermission,
+    ensurePermissions,
+    loadVideosFromGallery,
+    promptManageMediaAccess,
+  ]);
 
   const onToggleCamera = useCallback(() => {
     if (isRecording) {
@@ -761,10 +838,10 @@ export default function CameraScreen({navigation}) {
         item.filename || 'Video',
         'Escolha o que deseja fazer com este video.',
         [
-          {text: 'Visualizar', onPress: () => onOpenVideo(item)},
-          {text: 'Compartilhar', onPress: () => onShareVideo(item)},
-          {text: 'Biblioteca', onPress: () => navigation.navigate('Library')},
-          {text: 'Cancelar', style: 'cancel'},
+          { text: 'Visualizar', onPress: () => onOpenVideo(item) },
+          { text: 'Compartilhar', onPress: () => onShareVideo(item) },
+          { text: 'Biblioteca', onPress: () => navigation.navigate('Library') },
+          { text: 'Cancelar', style: 'cancel' },
         ],
       );
     },
@@ -784,7 +861,9 @@ export default function CameraScreen({navigation}) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="small" color="#cbd5e1" />
-        <Text style={styles.subtitle}>Inicializando camera e permissoes...</Text>
+        <Text style={styles.subtitle}>
+          Inicializando camera e permissoes...
+        </Text>
       </View>
     );
   }
@@ -829,6 +908,8 @@ export default function CameraScreen({navigation}) {
         settings={settings}
         startRecording={startRecording}
         stopRecording={stopRecording}
+        onApplyAudioProfile={onApplyAudioProfile}
+        onOpenCustomAudioSettings={onOpenCustomAudioSettings}
         onError={error => {
           const errorCode = error?.code ?? null;
 
@@ -842,18 +923,22 @@ export default function CameraScreen({navigation}) {
               errorCode === 'system/camera-is-restricted'
                 ? 1500
                 : errorCode === 'device/camera-already-in-use'
-                  ? 1200
-                  : 700,
+                ? 1200
+                : 700,
           });
         }}
       />
 
-      <View style={[styles.panel, {marginBottom: Math.max(insets.bottom, 12)}]}>
+      <View
+        style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
+      >
         <Text style={styles.panelTitle}>Videos salvos</Text>
         {isLoadingSavedVideos ? (
           <View style={styles.savedVideosLoading}>
             <ActivityIndicator size="small" color="#cbd5e1" />
-            <Text style={styles.savedVideosLoadingText}>Carregando videos...</Text>
+            <Text style={styles.savedVideosLoadingText}>
+              Carregando videos...
+            </Text>
           </View>
         ) : (
           <FlatList
@@ -862,8 +947,12 @@ export default function CameraScreen({navigation}) {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.savedVideosContent}
-            renderItem={({item}) => (
-              <VideoCard compact item={item} onPress={() => onVideoCardPress(item)} />
+            renderItem={({ item }) => (
+              <VideoCard
+                compact
+                item={item}
+                onPress={() => onVideoCardPress(item)}
+              />
             )}
             ListEmptyComponent={
               <Text style={styles.emptyText}>Nenhum video salvo ainda.</Text>

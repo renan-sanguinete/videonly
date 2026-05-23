@@ -1,9 +1,9 @@
-import {UNPROCESSED_AUDIO_SOURCE} from './audioSources';
+import { UNPROCESSED_AUDIO_SOURCE } from './audioSources';
 
 export const AUDIO_PROFILE_OPTIONS = [
   {
     value: 'standard',
-    label: 'Padrao',
+    label: 'Padrão',
     description: 'Mais neutro para uso geral e ambientes normais.',
     settings: {
       audioChannels: 'stereo',
@@ -16,7 +16,8 @@ export const AUDIO_PROFILE_OPTIONS = [
   {
     value: 'live-safe',
     label: 'Show ao vivo',
-    description: 'Prioriza menos processamento e mais folga para ambientes muito altos.',
+    description:
+      'Prioriza menos processamento para ambientes muito altos.',
     settings: {
       audioChannels: 'mono',
       audioSampleRate: '48000',
@@ -28,7 +29,7 @@ export const AUDIO_PROFILE_OPTIONS = [
   {
     value: 'custom',
     label: 'Personalizado',
-    description: 'Mantem os ajustes manuais escolhidos por voce.',
+    description: 'Mantém os ajustes manuais escolhidos por você.',
     settings: {},
   },
 ];
@@ -44,6 +45,20 @@ export function getAudioProfileSettings(value) {
   return getAudioProfileOption(value).settings;
 }
 
+export function buildAudioProfilePatch(value) {
+  return {
+    audioProfile: value,
+    ...getAudioProfileSettings(value),
+  };
+}
+
+export function applyAudioProfile(settings, value) {
+  return {
+    ...settings,
+    ...buildAudioProfilePatch(value),
+  };
+}
+
 export function matchesAudioProfile(settings, profileValue) {
   const profileSettings = getAudioProfileSettings(profileValue);
   const entries = Object.entries(profileSettings);
@@ -52,7 +67,9 @@ export function matchesAudioProfile(settings, profileValue) {
     return false;
   }
 
-  return entries.every(([key, expectedValue]) => settings[key] === expectedValue);
+  return entries.every(
+    ([key, expectedValue]) => settings[key] === expectedValue,
+  );
 }
 
 export function getDerivedAudioProfile(settings) {
@@ -84,7 +101,7 @@ export function getAudioRiskLevel(settings) {
       level: 'low',
       title: 'Risco reduzido',
       description:
-        'Sem processamento e em mono: melhor combinacao atual do app para preservar dinamica e segurar graves fortes.',
+        'Sem processamento e em mono: melhor combinação atual do app para preservar dinâmica e segurar graves fortes.',
     };
   }
 

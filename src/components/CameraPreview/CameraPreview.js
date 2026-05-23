@@ -1,19 +1,27 @@
-import React, {useRef, useEffect, useMemo} from 'react';
-import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {Camera, useCameraDevice} from 'react-native-vision-camera';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { Camera, useCameraDevice } from 'react-native-vision-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   parseCameraNumber,
   pickFormatForSettings,
 } from '../../utils/cameraFormatUtils';
+import { getAudioSourceOption } from '../../constants/audioSources';
 import {
-  getAudioSourceOption,
-} from '../../constants/audioSources';
-import {getAudioRiskLevel} from '../../constants/audioProfiles';
-import {formatElapsedTime} from '../../utils/videoFormatters';
-import {styles} from './styles';
+  AUDIO_PROFILE_OPTIONS,
+  getAudioRiskLevel,
+} from '../../constants/audioProfiles';
+import { formatElapsedTime } from '../../utils/videoFormatters';
+import { styles } from './styles';
 
 export default function CameraPreview({
   camera,
@@ -30,18 +38,24 @@ export default function CameraPreview({
   stopRecording,
   torch,
   isActive,
+  onApplyAudioProfile,
+  onOpenCustomAudioSettings,
 }) {
   const device = useCameraDevice(cameraPosition);
+  const [isAudioMenuOpen, setIsAudioMenuOpen] = useState(false);
   const selectedFormat = useMemo(() => {
     return pickFormatForSettings(device?.formats ?? [], settings);
   }, [device, settings]);
   const insets = useSafeAreaInsets();
   const topOverlayStyle = useMemo(
-    () => [styles.topOverlay, {paddingTop: insets.top ? insets.top + 50 : 60}],
+    () => [
+      styles.topOverlay,
+      { paddingTop: insets.top ? insets.top + 50 : 60 },
+    ],
     [insets.top],
   );
   const progressNative = useRef(new Animated.Value(0)).current;
-  const progressJS = useRef(new Animated.Value(0)).current;  
+  const progressJS = useRef(new Animated.Value(0)).current;
 
   const animatedBorderRadius = progressJS.interpolate({
     inputRange: [0, 1],
@@ -90,14 +104,16 @@ export default function CameraPreview({
       zoom: parseCameraNumber(settings.zoom),
       exposure: parseCameraNumber(settings.exposure),
       ...(device?.supportsLowLightBoost
-        ? {lowLightBoost: settings.lowLightBoost}
+        ? { lowLightBoost: settings.lowLightBoost }
         : {}),
-      ...(selectedFormat ? {format: selectedFormat} : {}),
-      ...(selectedFormat ? {videoBitRate: settings.videoBitRate} : {}),
+      ...(selectedFormat ? { format: selectedFormat } : {}),
+      ...(selectedFormat ? { videoBitRate: settings.videoBitRate } : {}),
       ...(selectedFormat && settings.fps !== ''
-        ? {fps: parseCameraNumber(settings.fps)}
+        ? { fps: parseCameraNumber(settings.fps) }
         : {}),
-      ...(selectedFormat?.supportsVideoHdr ? {videoHdr: settings.videoHdr} : {}),
+      ...(selectedFormat?.supportsVideoHdr
+        ? { videoHdr: settings.videoHdr }
+        : {}),
     }),
     [device, isActive, selectedFormat, settings, torch],
   );
@@ -105,12 +121,61 @@ export default function CameraPreview({
   const fpsLabel = `FPS: ${cameraProps?.fps ?? 'auto'}`;
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
   const audioRisk = getAudioRiskLevel(settings);
-  const showAudioRiskWarning = isRecording && settings.audio && audioRisk.level === 'high';
+  const showAudioRiskWarning =
+    isRecording && settings.audio && audioRisk.level === 'high';
+  const quickAudioProfiles = useMemo(() => AUDIO_PROFILE_OPTIONS, []);
+  const isAudioControlDisabled = isRecording || isProcessingVideo;
+  const isLiveSafeProfile = settings.audioProfile === 'live-safe';
+  const isCustomProfile = settings.audioProfile === 'custom';
+
+  const audioProfileButtonStyle = useMemo(() => {
+    if (isCustomProfile) {
+      return styles.audioProfileButtonCustom;
+    }
+
+    if (isLiveSafeProfile) {
+      return styles.audioProfileButtonLive;
+    }
+
+    return null;
+  }, [isCustomProfile, isLiveSafeProfile]);
+
+  useEffect(() => {
+    if (isAudioControlDisabled && isAudioMenuOpen) {
+      setIsAudioMenuOpen(false);
+    }
+  }, [isAudioControlDisabled, isAudioMenuOpen]);
+
+  const getQuickOptionSelectedStyle = optionValue => {
+    if (optionValue === 'custom') {
+      return styles.audioQuickOptionSelectedCustom;
+    }
+
+    if (optionValue === 'live-safe') {
+      return styles.audioQuickOptionSelectedLive;
+    }
+
+    return styles.audioQuickOptionSelectedStandard;
+  };
+
+  const getQuickOptionSelectedLabelStyle = optionValue => {
+    if (optionValue === 'custom') {
+      return styles.audioQuickOptionLabelSelectedCustom;
+    }
+
+    if (optionValue === 'live-safe') {
+      return styles.audioQuickOptionLabelSelectedLive;
+    }
+
+    return styles.audioQuickOptionLabelSelectedStandard;
+  };
 
   if (device == null) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Buscando câmera {currentCameraLabel}...</Text>
+        <Text style={styles.title}>
+          Buscando câmera {currentCameraLabel}...
+        </Text>
         <Text style={styles.subtitle}>
           Se o aparelho não tiver câmera compatível, nada será exibido.
         </Text>
@@ -120,6 +185,12 @@ export default function CameraPreview({
 
   return (
     <View style={styles.cameraWrap}>
+      {isAudioMenuOpen ? (
+        <Pressable
+          onPress={() => setIsAudioMenuOpen(false)}
+          style={styles.audioQuickMenuBackdrop}
+        />
+      ) : null}
       <Camera
         ref={camera}
         style={StyleSheet.absoluteFill}
@@ -153,7 +224,8 @@ export default function CameraPreview({
               showAudioRiskWarning
                 ? styles.audioStatusPillWarning
                 : styles.audioStatusPillSafe,
-            ]}>
+            ]}
+          >
             <Text style={styles.audioStatusPillTitle}>
               Audio: {currentAudioSource.shortLabel} · {audioRisk.title}
             </Text>
@@ -166,24 +238,83 @@ export default function CameraPreview({
 
       <View style={styles.controls}>
         <View style={styles.controlsRow}>
-          <View style={styles.controlsSideSlot} />
+          <View style={styles.controlsSideSlot}>
+            {isAudioMenuOpen ? (
+              <View style={styles.audioQuickMenu}>
+                <Text style={styles.audioQuickMenuTitle}>Captação</Text>
+                {quickAudioProfiles.map(option => {
+                  const isSelected = settings.audioProfile === option.value;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        if (option.value === 'custom') {
+                          onOpenCustomAudioSettings();
+                          setIsAudioMenuOpen(false);
+                          return;
+                        }
+
+                        onApplyAudioProfile(option.value);
+                        setIsAudioMenuOpen(false);
+                      }}
+                      style={[
+                        styles.audioQuickOption,
+                        isSelected && getQuickOptionSelectedStyle(option.value),
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.audioQuickOptionLabel,
+                          isSelected &&
+                            getQuickOptionSelectedLabelStyle(option.value),
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text style={styles.audioQuickOptionDescription}>
+                        {option.description}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+            <Pressable
+              accessibilityLabel="Abrir configuracoes de captacao"
+              disabled={isAudioControlDisabled}
+              onPress={() => setIsAudioMenuOpen(currentValue => !currentValue)}
+              style={[
+                styles.audioProfileButton,
+                isAudioControlDisabled && styles.cameraSwitchButtonDisabled,
+                audioProfileButtonStyle,
+              ]}
+            >
+              <Icon
+                name={settings.audio ? 'mic' : 'mic-off-outline'}
+                size={20}
+                color="#fff"
+              />
+            </Pressable>
+          </View>
           <Pressable
             disabled={isProcessingVideo}
-            onPress={isRecording ? stopRecording : startRecording}>
+            onPress={isRecording ? stopRecording : startRecording}
+          >
             <Animated.View
               style={[
                 styles.recordButton,
                 {
-                  
-                  transform: [{scale: animatedOuterScale}],
+                  transform: [{ scale: animatedOuterScale }],
                 },
-              ]}>
+              ]}
+            >
               <Animated.View
                 style={[
                   styles.recordButtonInner,
                   {
                     borderRadius: animatedBorderRadius,
-                    transform: [{scale: animatedInnerScale}],
+                    transform: [{ scale: animatedInnerScale }],
                   },
                 ]}
               />
@@ -199,7 +330,8 @@ export default function CameraPreview({
               styles.cameraSwitchButton,
               (isRecording || isProcessingVideo) &&
                 styles.cameraSwitchButtonDisabled,
-            ]}>
+            ]}
+          >
             <Icon name="camera-reverse-outline" size={20} color="#fff" />
           </Pressable>
         </View>
