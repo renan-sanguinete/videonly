@@ -2,10 +2,10 @@ export const AUDIO_SOURCE_OPTIONS = [
   {
     value: 0,
     key: 'DEFAULT',
-    label: 'Padrao',
-    shortLabel: 'Padrao',
-    description: 'Processamento automatico do Android.',
-    helper: 'Bom para uso geral quando voce nao precisa controlar o pipeline de audio.',
+    label: 'Padrão',
+    shortLabel: 'Padrão',
+    description: 'Processamento automático.',
+    helper: 'Bom para uso geral quando você não precisa de muito controle do áudio.',
     isRecommended: false,
   },
   {
@@ -14,7 +14,7 @@ export const AUDIO_SOURCE_OPTIONS = [
     label: 'Microfone',
     shortLabel: 'Mic',
     description: 'Captura do microfone com ajustes do sistema.',
-    helper: 'Pode aplicar ganho automatico, cancelamento de eco e supressao de ruido.',
+    helper: 'Pode aplicar ganho automático, cancelamento de eco e supressão de ruído.',
     isRecommended: false,
   },
   {
@@ -22,8 +22,8 @@ export const AUDIO_SOURCE_OPTIONS = [
     key: 'CAMCORDER',
     label: 'Camera',
     shortLabel: 'Camera',
-    description: 'Modo otimizado para gravacao casual de video.',
-    helper: 'Costuma soar bem em cenarios comuns, mas pode achatar dinamica em ambientes muito altos.',
+    description: 'Modo otimizado para gravação casual de vídeo.',
+    helper: 'Costuma ser bom em cenários comuns, mas pode achatar dinâmica em ambientes muito altos.',
     isRecommended: false,
   },
   {
@@ -32,7 +32,7 @@ export const AUDIO_SOURCE_OPTIONS = [
     label: 'Reconhecimento de voz',
     shortLabel: 'Voz',
     description: 'Favorece fala e inteligibilidade.',
-    helper: 'Nao e indicado para musica alta ou ambientes com muito grave.',
+    helper: 'Não é indicado para música alta ou ambientes com muito grave.',
     isRecommended: false,
   },
   {
@@ -40,8 +40,8 @@ export const AUDIO_SOURCE_OPTIONS = [
     key: 'UNPROCESSED',
     label: 'Sem processamento',
     shortLabel: 'Sem proc.',
-    description: 'Captura o audio mais puro possivel do microfone.',
-    helper: 'Melhor escolha para shows, baladas e lugares com alto SPL. Requer Android 7.0+.',
+    description: 'Captura o áudio mais puro possível do microfone.',
+    helper: 'Melhor escolha para shows, baladas e lugares com som alto.',
     isRecommended: true,
   },
 ];

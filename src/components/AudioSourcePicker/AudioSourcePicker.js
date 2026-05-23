@@ -9,9 +9,9 @@ import {
 export default function AudioSourcePicker({selectedSource, onSourceChange}) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Fonte de audio</Text>
+      <Text style={styles.title}>Fonte de áudio</Text>
       <Text style={styles.subtitle}>
-        Para shows, baladas e ambientes muito altos, prefira Sem processamento.
+        Para shows, baladas e ambientes muito altos, prefira a opção Sem processamento.
       </Text>
 
       {AUDIO_SOURCE_OPTIONS.map(option => {
@@ -53,10 +53,10 @@ export default function AudioSourcePicker({selectedSource, onSourceChange}) {
       })}
 
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>Protecao contra clipping</Text>
+        <Text style={styles.infoTitle}>Proteção contra clipping</Text>
         <Text style={styles.infoText}>
-          Nesta fase, a melhor prevencao e combinar Sem processamento com captacao em mono.
-          Isso reduz o risco de audio abafado, graves cortados e distorcao em ambientes de alto volume.
+          Nesta fase, a melhor prevenção é combinar Sem processamento com captação em mono.
+          Isso reduz o risco de áudio abafado, graves cortados e distorção em ambientes de alto volume.
         </Text>
       </View>
     </View>

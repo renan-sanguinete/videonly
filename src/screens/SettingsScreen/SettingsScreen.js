@@ -116,11 +116,6 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Configurações da câmera</Text>
-      <Text style={styles.subtitle}>
-        Os ajustes abaixo influenciam a captura de vídeo.
-      </Text>
-
       <SectionTitle>Captura</SectionTitle>
       <Card>
         <ToggleRow
@@ -153,13 +148,13 @@ export default function SettingsScreen() {
       <Card>
         <ToggleRow
           label="Zoom por gesto"
-          description="Ativa o pinch-to-zoom nativo."
+          description="Ativa o pinch-to-zoom."
           value={settings.enableZoomGesture}
           onValueChange={value => update({enableZoomGesture: value})}
         />
         <ToggleRow
           label="Low light boost"
-          description="Pode ajudar em ambientes escuros, dependendo do aparelho."
+          description="Pode ajudar em ambientes escuros."
           value={settings.lowLightBoost}
           onValueChange={value => update({lowLightBoost: value})}
         />
@@ -206,14 +201,11 @@ export default function SettingsScreen() {
         />
       </Card>
 
-      <SectionTitle>Audio da gravacao</SectionTitle>
+      <SectionTitle>Áudio</SectionTitle>
       <Card>
-        <Text style={styles.helper}>
-          Para reduzir distorcao em shows, a protecao mais efetiva aqui e evitar processamento automatico e gravar em mono. Sample rate e bitrate ajudam na consistencia, mas nao corrigem clipping sozinhos.
-        </Text>
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Preset de captacao</Text>
+        <Text style={styles.label}>Configurações de Captação</Text>
         <OptionChips
           value={settings.audioProfile}
           options={AUDIO_PROFILE_OPTIONS}
@@ -235,7 +227,7 @@ export default function SettingsScreen() {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Codec de audio</Text>
+        <Text style={styles.label}>Codec de áudio</Text>
         <OptionChips
           value={settings.audioCodec}
           options={AUDIO_CODEC_OPTIONS}
@@ -262,7 +254,7 @@ export default function SettingsScreen() {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Ganho de audio</Text>
+        <Text style={styles.label}>Ganho de áudio</Text>
         <OptionChips
           value={settings.audioGain}
           options={AUDIO_GAIN_OPTIONS}
@@ -281,8 +273,8 @@ export default function SettingsScreen() {
         <View style={styles.sectionSpacer} />
 
         <ToggleRow
-          label="Mostrar status de audio"
-          description="Exibe durante a gravacao o banner com a fonte de audio e risco de processamento."
+          label="Mostrar status de áudio"
+          description="Exibe durante a gravação o banner com a fonte de áudio e risco de processamento."
           value={settings.showAudioStatus}
           onValueChange={value => updateAudioSetting({showAudioStatus: value})}
         />
@@ -308,17 +300,14 @@ export default function SettingsScreen() {
           </Text>
           <Text style={styles.audioStatusText}>
             {settings.audioSource === UNPROCESSED_AUDIO_SOURCE
-              ? 'Modo recomendado para reduzir clipping e preservar dinamica em ambientes com muito volume.'
-              : 'Esta fonte pode aplicar processamento automatico. Em shows e baladas, isso aumenta o risco de distorcao e som abafado.'}
+              ? 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume.'
+              : 'Esta fonte pode aplicar processamento automático. Em shows e baladas, isso aumenta o risco de distorção e som abafado.'}
           </Text>
         </View>
       </Card>
 
       <SectionTitle>Gravação</SectionTitle>
       <Card>
-        <Text style={styles.helper}>
-          No Android atual, a VisionCamera permite controlar audio ligado/desligado, resolucao, formato do arquivo e codec de video.
-        </Text>
         <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Resolução de vídeo</Text>
