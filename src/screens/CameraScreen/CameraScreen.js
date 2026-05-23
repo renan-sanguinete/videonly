@@ -333,6 +333,16 @@ export default function CameraScreen({ navigation }) {
     [setSettings],
   );
 
+  const onSetAudioEnabled = useCallback(
+    value => {
+      setSettings(prev => ({
+        ...prev,
+        audio: value,
+      }));
+    },
+    [setSettings],
+  );
+
   const onOpenCustomAudioSettings = useCallback(() => {
     showAlert(
       'Ajustes personalizados',
@@ -909,6 +919,7 @@ export default function CameraScreen({ navigation }) {
         startRecording={startRecording}
         stopRecording={stopRecording}
         onApplyAudioProfile={onApplyAudioProfile}
+        onSetAudioEnabled={onSetAudioEnabled}
         onOpenCustomAudioSettings={onOpenCustomAudioSettings}
         onError={error => {
           const errorCode = error?.code ?? null;

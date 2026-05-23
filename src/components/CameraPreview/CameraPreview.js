@@ -39,6 +39,7 @@ export default function CameraPreview({
   torch,
   isActive,
   onApplyAudioProfile,
+  onSetAudioEnabled,
   onOpenCustomAudioSettings,
 }) {
   const device = useCameraDevice(cameraPosition);
@@ -124,6 +125,21 @@ export default function CameraPreview({
   const showAudioRiskWarning =
     isRecording && settings.audio && audioRisk.level === 'high';
   const quickAudioProfiles = useMemo(() => AUDIO_PROFILE_OPTIONS, []);
+  const audioToggleOptions = useMemo(
+    () => [
+      {
+        value: 'enable',
+        label: 'Habilitar áudio',
+        description: 'Volta a gravar com áudio usando a configuração atual.',
+      },
+      {
+        value: 'keep-off',
+        label: 'Manter desativado',
+        description: 'Continua gravando sem captação de áudio.',
+      },
+    ],
+    [],
+  );
   const isAudioControlDisabled = isRecording || isProcessingVideo;
   const isLiveSafeProfile = settings.audioProfile === 'live-safe';
   const isCustomProfile = settings.audioProfile === 'custom';
@@ -241,43 +257,81 @@ export default function CameraPreview({
           <View style={styles.controlsSideSlot}>
             {isAudioMenuOpen ? (
               <View style={styles.audioQuickMenu}>
-                <Text style={styles.audioQuickMenuTitle}>Captação</Text>
-                {quickAudioProfiles.map(option => {
-                  const isSelected = settings.audioProfile === option.value;
+                <Text style={styles.audioQuickMenuTitle}>
+                  {settings.audio ? 'Captação' : 'Áudio'}
+                </Text>
+                {settings.audio
+                  ? quickAudioProfiles.map(option => {
+                      const isSelected = settings.audioProfile === option.value;
 
-                  return (
-                    <Pressable
-                      key={option.value}
-                      onPress={() => {
-                        if (option.value === 'custom') {
-                          onOpenCustomAudioSettings();
-                          setIsAudioMenuOpen(false);
-                          return;
-                        }
+                      return (
+                        <Pressable
+                          key={option.value}
+                          onPress={() => {
+                            if (option.value === 'custom') {
+                              onOpenCustomAudioSettings();
+                              setIsAudioMenuOpen(false);
+                              return;
+                            }
 
-                        onApplyAudioProfile(option.value);
-                        setIsAudioMenuOpen(false);
-                      }}
-                      style={[
-                        styles.audioQuickOption,
-                        isSelected && getQuickOptionSelectedStyle(option.value),
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.audioQuickOptionLabel,
-                          isSelected &&
-                            getQuickOptionSelectedLabelStyle(option.value),
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                      <Text style={styles.audioQuickOptionDescription}>
-                        {option.description}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                            onApplyAudioProfile(option.value);
+                            setIsAudioMenuOpen(false);
+                          }}
+                          style={[
+                            styles.audioQuickOption,
+                            isSelected &&
+                              getQuickOptionSelectedStyle(option.value),
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.audioQuickOptionLabel,
+                              isSelected &&
+                                getQuickOptionSelectedLabelStyle(option.value),
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                          <Text style={styles.audioQuickOptionDescription}>
+                            {option.description}
+                          </Text>
+                        </Pressable>
+                      );
+                    })
+                  : audioToggleOptions.map(option => {
+                      const isSelected = option.value === 'keep-off';
+
+                      return (
+                        <Pressable
+                          key={option.value}
+                          onPress={() => {
+                            if (option.value === 'enable') {
+                              onSetAudioEnabled(true);
+                            }
+
+                            setIsAudioMenuOpen(false);
+                          }}
+                          style={[
+                            styles.audioQuickOption,
+                            isSelected &&
+                              styles.audioQuickOptionSelectedStandard,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.audioQuickOptionLabel,
+                              isSelected &&
+                                styles.audioQuickOptionLabelSelectedStandard,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                          <Text style={styles.audioQuickOptionDescription}>
+                            {option.description}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
               </View>
             ) : null}
             <Pressable
