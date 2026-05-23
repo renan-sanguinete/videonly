@@ -55,8 +55,8 @@ export default function AudioSourcePicker({selectedSource, onSourceChange}) {
       <View style={styles.infoBox}>
         <Text style={styles.infoTitle}>Protecao contra clipping</Text>
         <Text style={styles.infoText}>
-          Nesta fase, a melhor prevencao e evitar o processamento automatico do Android.
-          Isso reduz risco de audio abafado, graves cortados e distorcao em ambientes de alto volume.
+          Nesta fase, a melhor prevencao e combinar Sem processamento com captacao em mono.
+          Isso reduz o risco de audio abafado, graves cortados e distorcao em ambientes de alto volume.
         </Text>
       </View>
     </View>

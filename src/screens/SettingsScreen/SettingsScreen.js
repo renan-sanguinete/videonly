@@ -10,6 +10,11 @@ import {
   ToggleRow,
 } from '../../components/SettingRow/SettingRow';
 import AudioSourcePicker from '../../components/AudioSourcePicker/AudioSourcePicker';
+import {
+  AUDIO_PROFILE_OPTIONS,
+  getAudioProfileSettings,
+  getAudioRiskLevel,
+} from '../../constants/audioProfiles';
 import {useCameraSettings} from '../../context/CameraSettingsContext';
 import {getAudioSourceOption, UNPROCESSED_AUDIO_SOURCE} from '../../constants/audioSources';
 import {styles} from './styles';
@@ -47,6 +52,13 @@ const AUDIO_SAMPLE_RATE_OPTIONS = [
   {label: '32000 Hz', value: '32000'},
   {label: '44100 Hz', value: '44100'},
   {label: '48000 Hz', value: '48000'},
+];
+
+const AUDIO_GAIN_OPTIONS = [
+  {label: 'Padrao (0 dB)', value: 0},
+  {label: 'Reduzido (-6 dB)', value: -6},
+  {label: 'Show ao vivo (-9 dB)', value: -9},
+  {label: 'Maximo reduzido (-12 dB)', value: -12},
 ];
 
 const RECORD_FILE_TYPE_OPTIONS = [
@@ -115,6 +127,23 @@ export default function SettingsScreen() {
 
   const update = patch => setSettings(prev => ({...prev, ...patch}));
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
+  const audioRisk = getAudioRiskLevel(settings);
+
+  const updateAudioSetting = patch =>
+    setSettings(prev => ({
+      ...prev,
+      ...patch,
+      audioProfile: 'custom',
+    }));
+
+  const onAudioProfileChange = value => {
+    const profileSettings = getAudioProfileSettings(value);
+    setSettings(prev => ({
+      ...prev,
+      audioProfile: value,
+      ...profileSettings,
+    }));
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -226,15 +255,37 @@ export default function SettingsScreen() {
       <SectionTitle>Audio da gravacao</SectionTitle>
       <Card>
         <Text style={styles.helper}>
-          No Android nativo, canais, sample rate e bitrate sao aplicados na gravacao. `mp3` nao e suportado pelo pipeline de video e usa fallback para `aac`.
+          Para reduzir distorcao em shows, a protecao mais efetiva aqui e evitar processamento automatico e gravar em mono. Sample rate e bitrate ajudam na consistencia, mas nao corrigem clipping sozinhos.
         </Text>
+        <View style={styles.sectionSpacer} />
+
+        <Text style={styles.label}>Preset de captacao</Text>
+        <OptionChips
+          value={settings.audioProfile}
+          options={AUDIO_PROFILE_OPTIONS}
+          onChange={onAudioProfileChange}
+        />
+
+        <View style={styles.sectionSpacer} />
+
+        <View
+          style={[
+            styles.audioStatusBox,
+            audioRisk.level === 'high'
+              ? styles.audioStatusBoxWarning
+              : styles.audioStatusBoxSafe,
+          ]}>
+          <Text style={styles.audioStatusTitle}>{audioRisk.title}</Text>
+          <Text style={styles.audioStatusText}>{audioRisk.description}</Text>
+        </View>
+
         <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Codec de audio</Text>
         <OptionChips
           value={settings.audioCodec}
           options={AUDIO_CODEC_OPTIONS}
-          onChange={value => update({audioCodec: value})}
+          onChange={value => updateAudioSetting({audioCodec: value})}
         />
 
         <View style={styles.sectionSpacer} />
@@ -243,7 +294,7 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.audioChannels}
           options={AUDIO_CHANNEL_OPTIONS}
-          onChange={value => update({audioChannels: value})}
+          onChange={value => updateAudioSetting({audioChannels: value})}
         />
 
         <View style={styles.sectionSpacer} />
@@ -252,7 +303,16 @@ export default function SettingsScreen() {
         <OptionChips
           value={settings.audioSampleRate}
           options={AUDIO_SAMPLE_RATE_OPTIONS}
-          onChange={value => update({audioSampleRate: value})}
+          onChange={value => updateAudioSetting({audioSampleRate: value})}
+        />
+
+        <View style={styles.sectionSpacer} />
+
+        <Text style={styles.label}>Ganho de audio</Text>
+        <OptionChips
+          value={settings.audioGain}
+          options={AUDIO_GAIN_OPTIONS}
+          onChange={value => updateAudioSetting({audioGain: value})}
         />
 
         <View style={styles.sectionSpacer} />
@@ -260,7 +320,7 @@ export default function SettingsScreen() {
         <NumberField
           label="Bitrate de audio (kbps)"
           value={settings.audioBitRateKbps}
-          onChangeText={text => update({audioBitRateKbps: text})}
+          onChangeText={text => updateAudioSetting({audioBitRateKbps: text})}
           placeholder="ex.: 128"
         />
 
@@ -270,14 +330,14 @@ export default function SettingsScreen() {
           label="Mostrar status de audio"
           description="Exibe durante a gravacao o banner com a fonte de audio e risco de processamento."
           value={settings.showAudioStatus}
-          onValueChange={value => update({showAudioStatus: value})}
+          onValueChange={value => updateAudioSetting({showAudioStatus: value})}
         />
 
         <View style={styles.sectionSpacer} />
 
         <AudioSourcePicker
           selectedSource={settings.audioSource}
-          onSourceChange={value => update({audioSource: value})}
+          onSourceChange={value => updateAudioSetting({audioSource: value})}
         />
 
         <View style={styles.sectionSpacer} />

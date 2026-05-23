@@ -1,18 +1,21 @@
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {UNPROCESSED_AUDIO_SOURCE} from '../constants/audioSources';
+import {getDerivedAudioProfile} from '../constants/audioProfiles';
 
 const CameraSettingsContext = createContext(null);
 const CAMERA_SETTINGS_STORAGE_KEY = '@videonly/camera-settings';
 
 const DEFAULT_SETTINGS = {
   audio: true,
+  audioProfile: 'live-safe',
   audioCodec: 'aac',
-  audioChannels: 'stereo',
+  audioChannels: 'mono',
   audioSampleRate: '48000',
-  audioBitRateKbps: '128',
+  audioBitRateKbps: '256',
+  audioGain: -9,
   audioSource: UNPROCESSED_AUDIO_SOURCE,
-  showAudioStatus: false,
+  showAudioStatus: true,
   compressVideoBeforeSave: false,
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
@@ -42,6 +45,9 @@ function normalizePersistedSettings(parsedSettings) {
   const normalized = {...parsedSettings};
   if (normalized.audioSource === undefined || normalized.audioSource === null) {
     normalized.audioSource = UNPROCESSED_AUDIO_SOURCE;
+  }
+  if (normalized.audioProfile === undefined || normalized.audioProfile === null) {
+    normalized.audioProfile = getDerivedAudioProfile(normalized);
   }
   if (normalized.showAudioStatus === undefined || normalized.showAudioStatus === null) {
     normalized.showAudioStatus = true;

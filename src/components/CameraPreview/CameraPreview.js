@@ -10,8 +10,8 @@ import {
 } from '../../utils/cameraFormatUtils';
 import {
   getAudioSourceOption,
-  UNPROCESSED_AUDIO_SOURCE,
 } from '../../constants/audioSources';
+import {getAudioRiskLevel} from '../../constants/audioProfiles';
 import {formatElapsedTime} from '../../utils/videoFormatters';
 import {styles} from './styles';
 
@@ -81,6 +81,7 @@ export default function CameraPreview({
       audioChannels: settings.audioChannels,
       audioSampleRate: parseCameraNumber(settings.audioSampleRate),
       audioBitRateKbps: parseCameraNumber(settings.audioBitRateKbps),
+      audioGain: parseCameraNumber(settings.audioGain),
       audioSource: parseCameraNumber(settings.audioSource),
       photo: settings.photo,
       video: settings.video,
@@ -106,10 +107,8 @@ export default function CameraPreview({
 
   const fpsLabel = `FPS: ${cameraProps?.fps ?? 'auto'}`;
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
-  const showAudioRiskWarning =
-    isRecording &&
-    settings.audio &&
-    settings.audioSource !== UNPROCESSED_AUDIO_SOURCE;
+  const audioRisk = getAudioRiskLevel(settings);
+  const showAudioRiskWarning = isRecording && settings.audio && audioRisk.level === 'high';
 
   if (device == null) {
     return (
@@ -159,12 +158,10 @@ export default function CameraPreview({
                 : styles.audioStatusPillSafe,
             ]}>
             <Text style={styles.audioStatusPillTitle}>
-              Audio: {currentAudioSource.shortLabel}
+              Audio: {currentAudioSource.shortLabel} · {audioRisk.title}
             </Text>
             <Text style={styles.audioStatusPillText}>
-              {showAudioRiskWarning
-                ? 'Processamento ativo: em ambientes muito altos, pode gerar clipping ou som abafado.'
-                : 'Sem processamento ativo para preservar dinamica e reduzir distorcao.'}
+              {audioRisk.description}
             </Text>
           </View>
         </View>
