@@ -119,22 +119,10 @@ export default function SettingsScreen() {
       <SectionTitle>Captura</SectionTitle>
       <Card>
         <ToggleRow
-          label="Vídeo"
-          description="Habilita gravação com startRecording()."
-          value={settings.video}
-          onValueChange={value => update({video: value})}
-        />
-        <ToggleRow
           label="Áudio"
           description="Habilita gravação com áudio. Exige permissão de microfone."
           value={settings.audio}
           onValueChange={value => update({audio: value})}
-        />
-        <ToggleRow
-          label="Preview"
-          description="Mostra o preview da câmera."
-          value={settings.preview}
-          onValueChange={value => update({preview: value})}
         />
         <ToggleRow
           label="Compressão para upload"

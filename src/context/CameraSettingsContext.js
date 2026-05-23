@@ -15,14 +15,12 @@ const DEFAULT_SETTINGS = {
   audioBitRateKbps: '256',
   audioGain: -9,
   audioSource: UNPROCESSED_AUDIO_SOURCE,
-  showAudioStatus: true,
+  showAudioStatus: false,
   compressVideoBeforeSave: false,
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
   videoResolutionPreset: 'auto',
-  video: true,
   enableZoomGesture: true,
-  preview: true,
   lowLightBoost: false,
   videoHdr: false,
   torch: 'off',
@@ -40,6 +38,8 @@ function normalizePersistedSettings(parsedSettings) {
   }
 
   const normalized = {...parsedSettings};
+  normalized.video = true;
+  normalized.preview = true;
   if (normalized.audioSource === undefined || normalized.audioSource === null) {
     normalized.audioSource = UNPROCESSED_AUDIO_SOURCE;
   }
@@ -47,7 +47,7 @@ function normalizePersistedSettings(parsedSettings) {
     normalized.audioProfile = getDerivedAudioProfile(normalized);
   }
   if (normalized.showAudioStatus === undefined || normalized.showAudioStatus === null) {
-    normalized.showAudioStatus = true;
+    normalized.showAudioStatus = false;
   }
 
   return normalized;

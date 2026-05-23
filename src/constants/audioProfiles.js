@@ -11,7 +11,6 @@ export const AUDIO_PROFILE_OPTIONS = [
       audioBitRateKbps: '128',
       audioGain: 0,
       audioSource: 5,
-      showAudioStatus: false,
     },
   },
   {
@@ -24,7 +23,6 @@ export const AUDIO_PROFILE_OPTIONS = [
       audioBitRateKbps: '256',
       audioGain: -9,
       audioSource: UNPROCESSED_AUDIO_SOURCE,
-      showAudioStatus: true,
     },
   },
   {
