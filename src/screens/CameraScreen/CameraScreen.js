@@ -17,7 +17,10 @@ import {
 } from 'react-native';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import RNFS from 'react-native-fs';
-import {useCameraPermission} from 'react-native-vision-camera';
+import {
+  useCameraPermission,
+  useMicrophonePermission,
+} from 'react-native-vision-camera';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import CameraHeaderActions from '../../components/CameraHeaderActions/CameraHeaderActions';
@@ -28,9 +31,14 @@ import {useCameraSettings} from '../../context/CameraSettingsContext';
 import {useCustomAlert} from '../../context/CustomAlertContext';
 import {
   canManageAndroidMedia,
+  ensureCameraPermission,
+  ensureCameraRollVideoPermission,
+  ensureMicrophonePermission,
   ensureStartupPermissions,
+  getCameraRollVideoPermissionStatus,
   openAndroidManageMediaSettings,
 } from '../../utils/appPermissions';
+import {usePermissionQueue} from '../../hooks/usePermissionQueue';
 import {
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
@@ -77,6 +85,8 @@ export default function CameraScreen({navigation}) {
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const {hasPermission: hasCameraPermission} = useCameraPermission();
+  const {hasPermission: hasMicrophonePermission} = useMicrophonePermission();
+  const {isReady: isPermissionFlowReady, enqueuePermission} = usePermissionQueue();
   const {isHydrated, settings, setSettings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
 
@@ -84,6 +94,7 @@ export default function CameraScreen({navigation}) {
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
   const [isLoadingSavedVideos, setIsLoadingSavedVideos] = useState(true);
+  const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [cameraPosition, setCameraPosition] = useState('back');
   const currentCameraLabel = cameraPosition === 'back' ? 'traseira' : 'frontal';
@@ -92,6 +103,7 @@ export default function CameraScreen({navigation}) {
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [activeFlashMode, setActiveFlashMode] = useState('off');
   const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
+  const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] = useState(false);
 
   const loadVideosFromGallery = useCallback(async ({showLoader = false} = {}) => {
     if (showLoader) {
@@ -128,7 +140,7 @@ export default function CameraScreen({navigation}) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!isHydrated) {
+      if (!isHydrated || !hasCompletedInitialBootstrap || !hasGalleryPermission) {
         return undefined;
       }
 
@@ -137,7 +149,12 @@ export default function CameraScreen({navigation}) {
       });
 
       return undefined;
-    }, [isHydrated, loadVideosFromGallery]),
+    }, [
+      hasCompletedInitialBootstrap,
+      hasGalleryPermission,
+      isHydrated,
+      loadVideosFromGallery,
+    ]),
   );
 
   const clearPendingRecovery = useCallback(() => {
@@ -206,6 +223,18 @@ export default function CameraScreen({navigation}) {
       }
 
       if (previousState !== 'active') {
+        getCameraRollVideoPermissionStatus()
+          .then(status => {
+            if (isUnmountedRef.current) {
+              return;
+            }
+
+            setHasGalleryPermission(status.granted);
+          })
+          .catch(error => {
+            console.warn('Falha ao sincronizar permissao da galeria.', error);
+          });
+
         scheduleCameraRecovery({delayMs: 900});
       }
     });
@@ -215,11 +244,20 @@ export default function CameraScreen({navigation}) {
 
   const isCameraActive = useMemo(
     () =>
+      isPermissionFlowReady &&
+      hasCompletedInitialBootstrap &&
       isFocused &&
       appState === 'active' &&
       !isProcessingVideo &&
       !isRecoveringCamera,
-    [appState, isFocused, isProcessingVideo, isRecoveringCamera],
+    [
+      appState,
+      hasCompletedInitialBootstrap,
+      isFocused,
+      isPermissionFlowReady,
+      isProcessingVideo,
+      isRecoveringCamera,
+    ],
   );
 
   useEffect(() => {
@@ -319,7 +357,7 @@ export default function CameraScreen({navigation}) {
         includeMicrophone: settings.audio,
         request: true,
       });
-
+      console.log('Permissoes iniciais:', {cameraOk, galleryOk, microphoneOk});
       if ((!cameraOk || !microphoneOk || !galleryOk) && showMissingAlert) {
         showAlert(
           'Permissoes necessarias',
@@ -376,41 +414,103 @@ export default function CameraScreen({navigation}) {
       !isHydrated ||
       hasBootstrappedInitialFlowRef.current ||
       !isFocused ||
-      appState !== 'active'
+      appState !== 'active' ||
+      !isPermissionFlowReady
     ) {
       return;
     }
 
     hasBootstrappedInitialFlowRef.current = true;
+    let galleryPermissionGranted = false;
 
-    const bootstrapPermissions = async () => {
-      try {
-        await ensurePermissions({showMissingAlert: false});
-      } catch (error) {
-        console.warn('Falha ao solicitar permissoes iniciais.', error);
-      }
-
-      try {
-        await loadVideosFromGallery({showLoader: true});
-      } catch (error) {
-        console.warn('Nao foi possivel carregar videos na inicializacao.', error);
-      }
-
-      try {
-        await promptManageMediaAccess();
-      } catch (error) {
-        console.warn('Falha ao sugerir acesso especial de gerenciamento de midia.', error);
+    const finalizeBootstrap = () => {
+      if (!isUnmountedRef.current) {
+        setHasCompletedInitialBootstrap(true);
       }
     };
 
-    bootstrapPermissions();
+    if (!hasCameraPermission) {
+      enqueuePermission(
+        'startup-camera',
+        async () => {
+          await ensureCameraPermission({request: true});
+        },
+        error => {
+          console.warn('Falha ao solicitar permissao inicial de camera.', error);
+        },
+      );
+    }
+
+    if (settings.audio && !hasMicrophonePermission) {
+      enqueuePermission(
+        'startup-microphone',
+        async () => {
+          await ensureMicrophonePermission({request: true});
+        },
+        error => {
+          console.warn('Falha ao solicitar permissao inicial de microfone.', error);
+        },
+      );
+    }
+
+    enqueuePermission(
+      'startup-gallery',
+      async () => {
+        galleryPermissionGranted = await ensureCameraRollVideoPermission({request: true});
+        setHasGalleryPermission(galleryPermissionGranted);
+      },
+      error => {
+        console.warn('Falha ao solicitar permissao inicial da galeria.', error);
+      },
+    );
+
+    enqueuePermission(
+      'startup-load-videos',
+      async () => {
+        if (!galleryPermissionGranted) {
+          setHasGalleryPermission(false);
+          setIsLoadingSavedVideos(false);
+          return;
+        }
+
+        await loadVideosFromGallery({showLoader: true});
+      },
+      error => {
+        console.warn('Nao foi possivel carregar videos na inicializacao.', error);
+      },
+    );
+
+    enqueuePermission(
+      'startup-manage-media',
+      async () => {
+        if (!galleryPermissionGranted) {
+          return;
+        }
+
+        await promptManageMediaAccess();
+      },
+      error => {
+        console.warn(
+          'Falha ao sugerir acesso especial de gerenciamento de midia.',
+          error,
+        );
+      },
+    );
+
+    enqueuePermission('startup-complete', async () => {
+      finalizeBootstrap();
+    });
   }, [
     appState,
-    ensurePermissions,
+    enqueuePermission,
+    hasCameraPermission,
+    hasMicrophonePermission,
     isFocused,
     isHydrated,
+    isPermissionFlowReady,
     loadVideosFromGallery,
     promptManageMediaAccess,
+    settings.audio,
   ]);
 
   const handleRecordingFinished = useCallback(
@@ -592,8 +692,29 @@ export default function CameraScreen({navigation}) {
   }, [isRecording, showAlert]);
 
   const onPermissionPress = useCallback(async () => {
-    await ensurePermissions();
-  }, [ensurePermissions]);
+    enqueuePermission(
+      'manual-permissions',
+      async () => {
+        const ok = await ensurePermissions();
+
+        if (!ok) {
+          return;
+        }
+
+        const galleryStatus = await getCameraRollVideoPermissionStatus();
+        setHasGalleryPermission(galleryStatus.granted);
+        await loadVideosFromGallery({showLoader: true});
+        await promptManageMediaAccess();
+
+        if (!isUnmountedRef.current) {
+          setHasCompletedInitialBootstrap(true);
+        }
+      },
+      error => {
+        console.warn('Falha ao processar fila manual de permissoes.', error);
+      },
+    );
+  }, [enqueuePermission, ensurePermissions, loadVideosFromGallery, promptManageMediaAccess]);
 
   const onToggleCamera = useCallback(() => {
     if (isRecording) {
@@ -655,6 +776,15 @@ export default function CameraScreen({navigation}) {
       <View style={styles.center}>
         <ActivityIndicator size="small" color="#cbd5e1" />
         <Text style={styles.subtitle}>Carregando configurações...</Text>
+      </View>
+    );
+  }
+
+  if (!hasCompletedInitialBootstrap) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="small" color="#cbd5e1" />
+        <Text style={styles.subtitle}>Inicializando camera e permissoes...</Text>
       </View>
     );
   }

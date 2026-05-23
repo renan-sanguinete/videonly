@@ -2,6 +2,13 @@ import {NativeModules, PermissionsAndroid, Platform} from 'react-native';
 import {Camera} from 'react-native-vision-camera';
 
 const {MediaManagementModule} = NativeModules;
+const READ_MEDIA_VISUAL_USER_SELECTED =
+  PermissionsAndroid.PERMISSIONS.READ_MEDIA_VISUAL_USER_SELECTED ??
+  'android.permission.READ_MEDIA_VISUAL_USER_SELECTED';
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function getAndroidGalleryPermissions() {
   if (Platform.OS !== 'android') {
@@ -14,6 +21,10 @@ function getAndroidGalleryPermissions() {
     permissions.push(PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO);
   } else {
     permissions.push(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
+  }
+
+  if (Platform.Version >= 34) {
+    permissions.push(READ_MEDIA_VISUAL_USER_SELECTED);
   }
 
   if (Platform.Version <= 29) {
@@ -51,36 +62,136 @@ async function ensureAndroidPermissions(permissions, {request = true} = {}) {
   );
 }
 
-export async function ensureCameraRollVideoPermission(options) {
-  return ensureAndroidPermissions(getAndroidGalleryPermissions(), options);
+async function getAndroidGalleryPermissionState() {
+  if (Platform.OS !== 'android') {
+    return {
+      fullAccess: true,
+      limitedAccess: false,
+      granted: true,
+    };
+  }
+
+  if (Platform.Version >= 34) {
+    const [hasFullAccess, hasLimitedAccess] = await Promise.all([
+      PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO),
+      PermissionsAndroid.check(READ_MEDIA_VISUAL_USER_SELECTED),
+    ]);
+
+    return {
+      fullAccess: hasFullAccess,
+      limitedAccess: hasLimitedAccess,
+      granted: hasFullAccess || hasLimitedAccess,
+    };
+  }
+
+  const granted = await ensureAndroidPermissions(getAndroidGalleryPermissions(), {
+    request: false,
+  });
+
+  return {
+    fullAccess: granted,
+    limitedAccess: false,
+    granted,
+  };
+}
+
+export async function getCameraRollVideoPermissionStatus() {
+  const status = await getAndroidGalleryPermissionState();
+
+  return {
+    granted: status.granted,
+    isLimited: status.limitedAccess,
+    isFullAccess: status.fullAccess,
+  };
+}
+
+export async function ensureCameraRollVideoPermission({request = true} = {}) {
+  const currentState = await getAndroidGalleryPermissionState();
+  if (currentState.granted) {
+    return true;
+  }
+
+  if (!request) {
+    return false;
+  }
+
+  if (Platform.OS !== 'android') {
+    return true;
+  }
+
+  if (Platform.Version >= 34) {
+    const statuses = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+      READ_MEDIA_VISUAL_USER_SELECTED,
+    ]);
+
+    return (
+      statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO] ===
+        PermissionsAndroid.RESULTS.GRANTED ||
+      statuses[READ_MEDIA_VISUAL_USER_SELECTED] === PermissionsAndroid.RESULTS.GRANTED
+    );
+  }
+
+  return ensureAndroidPermissions(getAndroidGalleryPermissions(), {request: true});
+}
+
+async function ensureVisionCameraPermission({
+  getStatus,
+  requestPermission,
+  request = true,
+}) {
+  let currentStatus = await getStatus();
+  if (currentStatus === 'granted') {
+    return true;
+  }
+
+  if (!request) {
+    return false;
+  }
+
+  currentStatus = await requestPermission();
+  if (currentStatus === 'granted') {
+    return true;
+  }
+
+  return (await getStatus()) === 'granted';
+}
+
+export async function ensureCameraPermission({request = true} = {}) {
+  return ensureVisionCameraPermission({
+    getStatus: () => Camera.getCameraPermissionStatus(),
+    requestPermission: () => Camera.requestCameraPermission(),
+    request,
+  });
+}
+
+export async function ensureMicrophonePermission({request = true} = {}) {
+  return ensureVisionCameraPermission({
+    getStatus: () => Camera.getMicrophonePermissionStatus(),
+    requestPermission: () => Camera.requestMicrophonePermission(),
+    request,
+  });
 }
 
 export async function ensureStartupPermissions({
   includeMicrophone = true,
   request = true,
 } = {}) {
+  const cameraOk = await ensureCameraPermission({request});
+
+  if (request && includeMicrophone) {
+    await wait(250);
+  }
+
+  const microphoneOk = includeMicrophone
+    ? await ensureMicrophonePermission({request})
+    : true;
+
+  if (request) {
+    await wait(250);
+  }
+
   const galleryOk = await ensureCameraRollVideoPermission({request});
-
-  let cameraStatus = await Camera.getCameraPermissionStatus();
-  if (request && cameraStatus !== 'granted') {
-    cameraStatus = await Camera.requestCameraPermission();
-  }
-
-  let microphoneStatus = 'granted';
-  if (includeMicrophone) {
-    microphoneStatus = await Camera.getMicrophonePermissionStatus();
-    if (request && microphoneStatus !== 'granted') {
-      microphoneStatus = await Camera.requestMicrophonePermission();
-    }
-  }
-
-  const finalCameraStatus = await Camera.getCameraPermissionStatus();
-  const finalMicrophoneStatus = includeMicrophone
-    ? await Camera.getMicrophonePermissionStatus()
-    : 'granted';
-
-  const cameraOk = finalCameraStatus === 'granted';
-  const microphoneOk = finalMicrophoneStatus === 'granted';
 
   return {
     allGranted: galleryOk && cameraOk && microphoneOk,
