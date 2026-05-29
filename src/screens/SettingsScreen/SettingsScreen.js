@@ -276,7 +276,7 @@ export default function SettingsScreen() {
         <View style={styles.sectionSpacer} />
 
         <ToggleRow
-          label="Corrigir áudio no salvamento"
+          label="Corrigir áudio ao salvar"
           description="Quando a compressão para upload estiver ativa, aplica passa-altas em 80 Hz e limiter para reduzir clipping e graves embolados."
           value={settings.applyAudioCleanup}
           onValueChange={value =>
