@@ -15,6 +15,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 import {
@@ -40,6 +41,7 @@ import {
 } from '../../utils/appPermissions';
 import { usePermissionQueue } from '../../hooks/usePermissionQueue';
 import {
+  deleteVideoFromCameraRoll,
   loadSavedVideosFromCameraRoll,
   saveVideoToCameraRoll,
 } from '../../utils/cameraRollVideos';
@@ -97,7 +99,9 @@ export default function CameraScreen({ navigation }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
+  const [selectedVideoUri, setSelectedVideoUri] = useState(null);
   const [isLoadingSavedVideos, setIsLoadingSavedVideos] = useState(true);
+  const [isDeletingSelectedVideo, setIsDeletingSelectedVideo] = useState(false);
   const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [cameraPosition, setCameraPosition] = useState('back');
@@ -119,6 +123,11 @@ export default function CameraScreen({ navigation }) {
       try {
         const videos = await loadSavedVideosFromCameraRoll();
         setSavedVideos(videos);
+        setSelectedVideoUri(currentSelectedUri =>
+          videos.some(video => video.uri === currentSelectedUri)
+            ? currentSelectedUri
+            : null,
+        );
       } catch (error) {
         console.error('Erro ao carregar videos:', error);
       } finally {
@@ -842,20 +851,104 @@ export default function CameraScreen({ navigation }) {
     [showAlert],
   );
 
+  const clearSelectedVideo = useCallback(() => {
+    setSelectedVideoUri(null);
+  }, []);
+
+  const maybeWarnAboutManageMedia = useCallback(async () => {
+    if (Platform.OS !== 'android' || Platform.Version < 31) {
+      return;
+    }
+
+    if (await canManageAndroidMedia()) {
+      return;
+    }
+
+    showAlert(
+      'Permissão extra para excluir',
+      'Sem o acesso especial "Gerenciar mídia", o Android pode continuar mostrando uma confirmação adicional ao excluir vídeos.',
+      [
+        { text: 'Fechar', style: 'cancel' },
+        {
+          text: 'Abrir configurações',
+          onPress: () => {
+            openAndroidManageMediaSettings().catch(openError => {
+              console.warn(
+                'Falha ao abrir configurações de gerenciamento de mídia.',
+                openError,
+              );
+            });
+          },
+        },
+      ],
+    );
+  }, [showAlert]);
+
+  const selectedVideo = useMemo(
+    () => savedVideos.find(item => item.uri === selectedVideoUri) ?? null,
+    [savedVideos, selectedVideoUri],
+  );
+
+  const deleteSelectedVideo = useCallback(
+    async item => {
+      setIsDeletingSelectedVideo(true);
+
+      try {
+        const result = await deleteVideoFromCameraRoll(item.uri);
+        await loadVideosFromGallery({ showLoader: false });
+
+        if (!result?.bypassedSystemPrompt) {
+          await maybeWarnAboutManageMedia();
+        }
+      } catch (error) {
+        showAlert(
+          'Erro',
+          error?.message ?? 'Nao foi possivel excluir este video.',
+        );
+      } finally {
+        setIsDeletingSelectedVideo(false);
+      }
+    },
+    [loadVideosFromGallery, maybeWarnAboutManageMedia, showAlert],
+  );
+
+  const onDeleteSelectedVideo = useCallback(() => {
+    if (!selectedVideo || isDeletingSelectedVideo) {
+      return;
+    }
+
+    const videoToDelete = selectedVideo;
+    clearSelectedVideo();
+
+    showAlert('Excluir vídeo', 'Excluir o vídeo selecionado?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: () => {
+          deleteSelectedVideo(videoToDelete).catch(error => {
+            console.warn('Falha ao excluir vídeo a partir da câmera.', error);
+          });
+        },
+      },
+    ]);
+  }, [
+    clearSelectedVideo,
+    deleteSelectedVideo,
+    isDeletingSelectedVideo,
+    selectedVideo,
+    showAlert,
+  ]);
+
   const onVideoCardPress = useCallback(
     item => {
-      showAlert(
-        item.filename || 'Video',
-        'Escolha o que deseja fazer com este video.',
-        [
-          { text: 'Visualizar', onPress: () => onOpenVideo(item) },
-          { text: 'Compartilhar', onPress: () => onShareVideo(item) },
-          { text: 'Biblioteca', onPress: () => navigation.navigate('Library') },
-          { text: 'Cancelar', style: 'cancel' },
-        ],
-      );
+      if (isDeletingSelectedVideo) {
+        return;
+      }
+
+      setSelectedVideoUri(item.uri);
     },
-    [navigation, onOpenVideo, onShareVideo, showAlert],
+    [isDeletingSelectedVideo],
   );
 
   if (!isHydrated) {
@@ -901,6 +994,11 @@ export default function CameraScreen({ navigation }) {
         title="Comprimindo video"
         visible={isProcessingVideo}
       />
+      <LoadingModal
+        message="Aguarde enquanto removemos o vídeo selecionado."
+        title="Excluindo vídeo"
+        visible={isDeletingSelectedVideo}
+      />
       <CameraPreview
         key={cameraSessionKey}
         camera={camera}
@@ -943,7 +1041,76 @@ export default function CameraScreen({ navigation }) {
       <View
         style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
       >
-        <Text style={styles.panelTitle}>Videos salvos</Text>
+        {selectedVideo ? (
+          <View style={styles.panelActions}>
+            <Pressable
+              disabled={isDeletingSelectedVideo}
+              onPress={() => {
+                clearSelectedVideo();
+                onOpenVideo(selectedVideo).catch(error => {
+                  console.warn(
+                    'Falha ao abrir video pela barra de ações.',
+                    error,
+                  );
+                });
+              }}
+              style={styles.panelActionButton}
+            >
+              <View style={styles.panelActionIconWrap}>
+                <Icon name="folder-open-outline" size={22} color="#f8fafc" />
+              </View>
+              <Text style={styles.panelActionLabel}>Abrir</Text>
+            </Pressable>
+
+            <Pressable
+              disabled={isDeletingSelectedVideo}
+              onPress={() => {
+                clearSelectedVideo();
+                onShareVideo(selectedVideo).catch(error => {
+                  console.warn(
+                    'Falha ao compartilhar video pela barra de ações.',
+                    error,
+                  );
+                });
+              }}
+              style={styles.panelActionButton}
+            >
+              <View style={styles.panelActionIconWrap}>
+                <Icon name="share-social-outline" size={22} color="#f8fafc" />
+              </View>
+              <Text style={styles.panelActionLabel}>Compartilhar</Text>
+            </Pressable>
+
+            <Pressable
+              disabled={isDeletingSelectedVideo}
+              onPress={onDeleteSelectedVideo}
+              style={styles.panelActionButton}
+            >
+              <View
+                style={[
+                  styles.panelActionIconWrap,
+                  styles.panelActionIconDanger,
+                ]}
+              >
+                <Icon name="trash-outline" size={22} color="#fca5a5" />
+              </View>
+              <Text style={styles.panelActionLabel}>Excluir</Text>
+            </Pressable>
+
+            <Pressable
+              disabled={isDeletingSelectedVideo}
+              onPress={clearSelectedVideo}
+              style={styles.panelActionButton}
+            >
+              <View style={styles.panelActionIconWrap}>
+                <Icon name="close-outline" size={22} color="#f8fafc" />
+              </View>
+              <Text style={styles.panelActionLabel}>Cancelar</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Text style={styles.panelTitle}>Vídeos</Text>
+        )}
         {isLoadingSavedVideos ? (
           <View style={styles.savedVideosLoading}>
             <ActivityIndicator size="small" color="#cbd5e1" />
@@ -962,6 +1129,7 @@ export default function CameraScreen({ navigation }) {
               <VideoCard
                 compact
                 item={item}
+                selected={item.uri === selectedVideoUri}
                 onPress={() => onVideoCardPress(item)}
               />
             )}

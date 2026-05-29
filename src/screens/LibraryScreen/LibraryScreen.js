@@ -140,10 +140,10 @@ export default function LibraryScreen({navigation}) {
     }
 
     showAlert(
-      'Excluir videos',
+      'Excluir vídeos',
       selectedCount === 1
-        ? 'Excluir o video selecionado?'
-        : `Excluir os ${selectedCount} videos selecionados?`,
+        ? 'Excluir o vídeo selecionado?'
+        : `Excluir os ${selectedCount} vídeos selecionados?`,
       [
         {text: 'Cancelar', style: 'cancel'},
         {
@@ -151,7 +151,7 @@ export default function LibraryScreen({navigation}) {
           style: 'destructive',
           onPress: () => {
             deleteVideos().catch(error => {
-              console.warn('Falha ao excluir videos em lote.', error);
+              console.warn('Falha ao excluir vídeos em lote.', error);
             });
           },
         },
@@ -198,7 +198,7 @@ export default function LibraryScreen({navigation}) {
       title:
         selectedCount > 0
           ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}`
-          : 'Videos salvos',
+          : 'Vídeos salvos',
       headerRight: renderHeaderActions,
     });
   }, [navigation, renderHeaderActions, selectedCount]);
@@ -226,8 +226,8 @@ export default function LibraryScreen({navigation}) {
         await openVideoUri(item.uri);
       } catch (error) {
         showAlert(
-          'Erro ao abrir video',
-          error?.message || 'Nao foi possivel abrir este video.',
+          'Erro ao abrir vídeo',
+          error?.message || 'Não foi possível abrir este vídeo.',
         );
       }
     },
@@ -241,7 +241,7 @@ export default function LibraryScreen({navigation}) {
       } catch (error) {
         showAlert(
           'Erro ao compartilhar',
-          error?.message || 'Nao foi possivel compartilhar este video.',
+          error?.message || 'Não foi possível compartilhar este vídeo.',
         );
       }
     },
@@ -259,7 +259,7 @@ export default function LibraryScreen({navigation}) {
         return;
       }
 
-      showAlert(item.filename || 'Video', 'Escolha o que deseja fazer com este video.', [
+      showAlert(item.filename || 'Vídeo', 'Escolha o que deseja fazer com este vídeo.', [
         {text: 'Visualizar', onPress: () => onOpen(item)},
         {text: 'Compartilhar', onPress: () => onShare(item)},
         {text: 'Cancelar', style: 'cancel'},
@@ -291,17 +291,17 @@ export default function LibraryScreen({navigation}) {
 
   const deletingMessage = useMemo(() => {
     if (deleteProgress.total === 0) {
-      return 'Aguarde enquanto removemos os videos selecionados.';
+      return 'Aguarde enquanto removemos os vídeos selecionados.';
     }
 
-    return `Removendo ${deleteProgress.current} de ${deleteProgress.total} videos selecionados.`;
+    return `Removendo ${deleteProgress.current} de ${deleteProgress.total} vídeos selecionados.`;
   }, [deleteProgress]);
 
   return (
     <View style={styles.container}>
       <LoadingModal
         message={deletingMessage}
-        title="Excluindo videos"
+        title="Excluindo vídeos"
         visible={isDeleting}
       />
 
@@ -331,8 +331,8 @@ export default function LibraryScreen({navigation}) {
           )}
           ListEmptyComponent={
             <View>
-              <Text style={styles.emptyTitle}>Nenhum video encontrado</Text>
-              <Text style={styles.emptyText}>Grave um video para ve-lo aqui.</Text>
+              <Text style={styles.emptyTitle}>Nenhum vídeo encontrado</Text>
+              <Text style={styles.emptyText}>Grave um vídeo para vê-lo aqui.</Text>
             </View>
           }
         />

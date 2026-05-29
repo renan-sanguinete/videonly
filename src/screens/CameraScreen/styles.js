@@ -1,14 +1,46 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#0b1020'},
+  container: { flex: 1, backgroundColor: '#0b1020' },
   panel: {
     backgroundColor: '#111827',
     borderTopWidth: 1,
     borderTopColor: '#1f2937',
     padding: 16,
     minHeight: 164,
-    maxHeight: 164,
+    maxHeight: 220,
+    gap: 12,
+  },
+  panelActions: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  panelActionButton: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  panelActionIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+    backgroundColor: '#0f172a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  panelActionIconDanger: {
+    borderColor: 'rgba(248, 113, 113, 0.45)',
+    backgroundColor: 'rgba(127, 29, 29, 0.28)',
+  },
+  panelActionLabel: {
+    color: '#e5e7eb',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   savedVideosContent: {
     gap: 12,
@@ -18,9 +50,9 @@ export const styles = StyleSheet.create({
     color: '#f9fafb',
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 2,
   },
-  emptyText: {color: '#9ca3af'},
+  emptyText: { color: '#9ca3af' },
   savedVideosLoading: {
     flex: 1,
     minHeight: 78,
@@ -59,5 +91,5 @@ export const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 18,
   },
-  primaryButtonText: {color: '#fff', fontWeight: '700'},
+  primaryButtonText: { color: '#fff', fontWeight: '700' },
 });

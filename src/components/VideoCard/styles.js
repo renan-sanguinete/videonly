@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   card: {
@@ -13,6 +13,7 @@ export const styles = StyleSheet.create({
   },
   selectedCard: {
     borderColor: '#38bdf8',
+    borderWidth: 2,
     backgroundColor: '#0f1d31',
   },
   compactCard: {

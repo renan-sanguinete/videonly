@@ -162,7 +162,7 @@ export default function SettingsScreen() {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Video bit rate</Text>
+        <Text style={styles.label}>Vídeo bit rate</Text>
         <OptionChips
           value={settings.videoBitRate}
           options={VIDEO_BIT_RATE_OPTIONS}
