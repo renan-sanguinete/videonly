@@ -9,14 +9,16 @@ import androidx.media3.transformer.Composition
 import androidx.media3.transformer.DefaultEncoderFactory
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
+import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.Effects
 import androidx.media3.transformer.Transformer
 import androidx.media3.transformer.VideoEncoderSettings
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReactMethod
 import java.io.File
-import java.util.UUID
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -30,7 +32,12 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
   override fun getName(): String = "VideoCompressionModule"
 
   @ReactMethod
-  fun compressVideo(inputPath: String, extension: String, promise: Promise) {
+  fun compressVideo(
+    inputPath: String,
+    extension: String,
+    options: ReadableMap?,
+    promise: Promise,
+  ) {
     if (activePromise != null) {
       promise.reject("compression_in_progress", "Já existe uma compressão em andamento.")
       return
@@ -39,6 +46,7 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
     val inputUri = toUri(inputPath)
     val outputFile = createOutputFile(extension)
     val targetBitrate = resolveTargetBitrate(inputUri)
+    val audioCleanupEnabled = options?.getBoolean("audioCleanupEnabled") ?: false
 
     activePromise = promise
 
@@ -47,6 +55,23 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
         VideoEncoderSettings.Builder()
           .setBitrate(targetBitrate)
           .build()
+
+      val inputMediaItem = MediaItem.fromUri(inputUri)
+      val editedMediaItem =
+        if (audioCleanupEnabled) {
+          val audioEffects =
+            Effects(
+              listOf(
+                HighPassAudioProcessor(),
+                HardLimiterAudioProcessor(),
+              ),
+              emptyList(),
+            )
+
+          EditedMediaItem.Builder(inputMediaItem).setEffects(audioEffects).build()
+        } else {
+          null
+        }
 
       val transformer =
         Transformer.Builder(reactApplicationContext)
@@ -84,7 +109,11 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
           .build()
 
       activeTransformer = transformer
-      transformer.start(MediaItem.fromUri(inputUri), outputFile.absolutePath)
+      if (editedMediaItem != null) {
+        transformer.start(editedMediaItem, outputFile.absolutePath)
+      } else {
+        transformer.start(inputMediaItem, outputFile.absolutePath)
+      }
     } catch (error: Throwable) {
       outputFile.delete()
       activeTransformer = null

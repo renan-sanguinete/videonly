@@ -248,6 +248,11 @@ export default function CameraPreview({
             <Text style={styles.audioStatusPillText}>
               {audioRisk.description}
             </Text>
+            {settings.compressVideoBeforeSave && settings.applyAudioCleanup ? (
+              <Text style={styles.audioStatusPillText}>
+                Correção de áudio no salvamento: ativa
+              </Text>
+            ) : null}
           </View>
         </View>
       ) : null}

@@ -275,6 +275,17 @@ export default function SettingsScreen() {
 
         <View style={styles.sectionSpacer} />
 
+        <ToggleRow
+          label="Corrigir áudio no salvamento"
+          description="Quando a compressão para upload estiver ativa, aplica passa-altas em 80 Hz e limiter para reduzir clipping e graves embolados."
+          value={settings.applyAudioCleanup}
+          onValueChange={value =>
+            updateAudioSetting({ applyAudioCleanup: value })
+          }
+        />
+
+        <View style={styles.sectionSpacer} />
+
         <AudioSourcePicker
           selectedSource={settings.audioSource}
           onSourceChange={value => updateAudioSetting({ audioSource: value })}
@@ -295,8 +306,12 @@ export default function SettingsScreen() {
           </Text>
           <Text style={styles.audioStatusText}>
             {settings.audioSource === UNPROCESSED_AUDIO_SOURCE
-              ? 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume.'
-              : 'Esta fonte pode aplicar processamento automático. Em shows e baladas, isso aumenta o risco de distorção e som abafado.'}
+              ? settings.applyAudioCleanup
+                ? 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume. A correção no salvamento ajuda a segurar picos e subgraves.'
+                : 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume.'
+              : settings.applyAudioCleanup
+                ? 'Esta fonte pode aplicar processamento automático. A correção no salvamento ajuda, mas em shows e baladas ainda existe risco de distorção e som abafado.'
+                : 'Esta fonte pode aplicar processamento automático. Em shows e baladas, isso aumenta o risco de distorção e som abafado.'}
           </Text>
         </View>
       </Card>

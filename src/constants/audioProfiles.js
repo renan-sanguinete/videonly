@@ -11,19 +11,21 @@ export const AUDIO_PROFILE_OPTIONS = [
       audioBitRateKbps: '128',
       audioGain: 0,
       audioSource: 5,
+      applyAudioCleanup: false,
     },
   },
   {
     value: 'live-safe',
     label: 'Show ao vivo',
     description:
-      'Prioriza menos processamento para ambientes muito altos.',
+      'Prioriza menos processamento e prepara o áudio para correção ao salvar.',
     settings: {
       audioChannels: 'mono',
       audioSampleRate: '48000',
       audioBitRateKbps: '256',
       audioGain: -9,
       audioSource: UNPROCESSED_AUDIO_SOURCE,
+      applyAudioCleanup: true,
     },
   },
   {
@@ -95,13 +97,18 @@ export function getAudioRiskLevel(settings) {
 
   const usingUnprocessed = settings.audioSource === UNPROCESSED_AUDIO_SOURCE;
   const usingMono = settings.audioChannels === 'mono';
+  const applyingCleanup = Boolean(
+    settings.applyAudioCleanup && settings.compressVideoBeforeSave,
+  );
 
   if (usingUnprocessed && usingMono) {
     return {
       level: 'low',
       title: 'Risco reduzido',
       description:
-        'Sem processamento e em mono: melhor combinação atual do app para preservar dinâmica e segurar graves fortes.',
+        applyingCleanup
+          ? 'Sem processamento, em mono e com correção no salvamento: a configuração mais segura do app para preservar dinâmica e segurar graves fortes.'
+          : 'Sem processamento e em mono: melhor combinação atual do app para preservar dinâmica e segurar graves fortes.',
     };
   }
 
@@ -110,7 +117,9 @@ export function getAudioRiskLevel(settings) {
       level: 'medium',
       title: 'Risco moderado',
       description:
-        'A fonte sem processamento ajuda bastante, mas mono ainda costuma ser mais seguro em ambientes extremos.',
+        applyingCleanup
+          ? 'A fonte sem processamento ajuda bastante e a correção no salvamento reduz o risco de clipping, mas mono ainda costuma ser mais seguro em ambientes extremos.'
+          : 'A fonte sem processamento ajuda bastante, mas mono ainda costuma ser mais seguro em ambientes extremos.',
     };
   }
 
@@ -118,6 +127,8 @@ export function getAudioRiskLevel(settings) {
     level: 'high',
     title: 'Risco alto',
     description:
-      'A fonte atual pode aplicar AGC, compressao ou reducao de ruido. Isso aumenta o risco de clipping e graves embolados.',
+      applyingCleanup
+        ? 'A fonte atual pode aplicar AGC, compressao ou reducao de ruido. A correção no salvamento ajuda, mas ainda há risco de clipping e graves embolados.'
+        : 'A fonte atual pode aplicar AGC, compressao ou reducao de ruido. Isso aumenta o risco de clipping e graves embolados.',
   };
 }

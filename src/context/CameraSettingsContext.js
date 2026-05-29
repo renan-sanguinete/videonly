@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   audioBitRateKbps: '256',
   audioGain: -9,
   audioSource: UNPROCESSED_AUDIO_SOURCE,
+  applyAudioCleanup: true,
   showAudioStatus: false,
   compressVideoBeforeSave: false,
   recordFileType: 'mp4',
@@ -45,6 +46,12 @@ function normalizePersistedSettings(parsedSettings) {
   }
   if (normalized.audioProfile === undefined || normalized.audioProfile === null) {
     normalized.audioProfile = getDerivedAudioProfile(normalized);
+  }
+  if (
+    normalized.applyAudioCleanup === undefined ||
+    normalized.applyAudioCleanup === null
+  ) {
+    normalized.applyAudioCleanup = normalized.audioProfile === 'live-safe';
   }
   if (normalized.showAudioStatus === undefined || normalized.showAudioStatus === null) {
     normalized.showAudioStatus = false;

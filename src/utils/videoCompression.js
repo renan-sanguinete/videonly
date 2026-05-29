@@ -2,7 +2,7 @@ import {NativeModules, Platform} from 'react-native';
 
 const {VideoCompressionModule} = NativeModules;
 
-export async function compressVideo(path, extension = 'mp4') {
+export async function compressVideo(path, extension = 'mp4', options = {}) {
   if (Platform.OS !== 'android') {
     return path;
   }
@@ -11,5 +11,5 @@ export async function compressVideo(path, extension = 'mp4') {
     throw new Error('Compressão de vídeo não está disponível neste aparelho.');
   }
 
-  return VideoCompressionModule.compressVideo(path, extension);
+  return VideoCompressionModule.compressVideo(path, extension, options);
 }

@@ -627,7 +627,10 @@ export default function CameraScreen({ navigation }) {
         setIsRecording(false);
         if (settings.compressVideoBeforeSave) {
           setIsProcessingVideo(true);
-          compressedPath = await compressVideo(sourcePath, extension);
+          compressedPath = await compressVideo(sourcePath, extension, {
+            audioCleanupEnabled:
+              settings.applyAudioCleanup && Boolean(settings.audio),
+          });
           pathToSave = compressedPath;
         }
 
@@ -673,6 +676,8 @@ export default function CameraScreen({ navigation }) {
     [
       loadVideosFromGallery,
       settings.compressVideoBeforeSave,
+      settings.applyAudioCleanup,
+      settings.audio,
       settings.recordFileType,
       showAlert,
     ],
