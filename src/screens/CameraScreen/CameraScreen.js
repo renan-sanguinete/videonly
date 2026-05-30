@@ -82,6 +82,18 @@ async function deleteIfExists(pathLike) {
   }
 }
 
+function getOptimizationLoadingTitle(mode) {
+  if (mode === 'audio') {
+    return 'Otimizando áudio';
+  }
+
+  if (mode === 'both') {
+    return 'Otimizando vídeo e áudio';
+  }
+
+  return 'Otimizando vídeo';
+}
+
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
   const recordingStartedAtRef = useRef(null);
@@ -103,6 +115,8 @@ export default function CameraScreen({ navigation }) {
 
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
+  const [processingOptimizationMode, setProcessingOptimizationMode] =
+    useState('none');
   const [savedVideos, setSavedVideos] = useState([]);
   const [selectedVideoUri, setSelectedVideoUri] = useState(null);
   const [isLoadingSavedVideos, setIsLoadingSavedVideos] = useState(true);
@@ -116,6 +130,7 @@ export default function CameraScreen({ navigation }) {
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [activeFlashMode, setActiveFlashMode] = useState('off');
   const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
+  const [isOptimizationMenuOpen, setIsOptimizationMenuOpen] = useState(false);
   const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
     useState(false);
   const audioLevel = useAudioLevelMonitor({
@@ -398,18 +413,21 @@ export default function CameraScreen({ navigation }) {
         isRecording={isRecording}
         optimizationMode={settings.optimizationMode}
         onOptimizationModeChange={onOptimizationModeChange}
+        isOptimizationMenuOpen={isOptimizationMenuOpen}
+        onOptimizationMenuOpenChange={setIsOptimizationMenuOpen}
         onOpenLibrary={() => navigation.navigate('Library')}
         onOpenSettings={() => navigation.navigate('Settings')}
       />
     ),
-    [
-      navigation,
-      activeFlashMode,
-      cameraPosition,
-      isRecording,
-      onOptimizationModeChange,
-      settings.optimizationMode,
-    ],
+      [
+        navigation,
+        activeFlashMode,
+        cameraPosition,
+        isRecording,
+        isOptimizationMenuOpen,
+        onOptimizationModeChange,
+        settings.optimizationMode,
+      ],
   );
 
   useLayoutEffect(() => {
@@ -650,6 +668,7 @@ export default function CameraScreen({ navigation }) {
       try {
         setIsRecording(false);
         if (shouldProcessMedia) {
+          setProcessingOptimizationMode(optimizationMode);
           setIsProcessingVideo(true);
           compressedPath = await optimizeVideo(sourcePath, extension, {
             optimizationMode,
@@ -685,6 +704,7 @@ export default function CameraScreen({ navigation }) {
         }
       } finally {
         setIsProcessingVideo(false);
+        setProcessingOptimizationMode('none');
         if (shouldDeleteOriginal) {
           await deleteIfExists(compressedPath);
           await deleteIfExists(sourcePath);
@@ -1017,8 +1037,8 @@ export default function CameraScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <LoadingModal
-        message="Estamos otimizando seu video antes de salvar."
-        title="Otimizando video"
+        message="Aguarde..."
+        title={getOptimizationLoadingTitle(processingOptimizationMode)}
         visible={isProcessingVideo}
       />
       <LoadingModal
@@ -1031,6 +1051,7 @@ export default function CameraScreen({ navigation }) {
         camera={camera}
         cameraPosition={cameraPosition}
         currentCameraLabel={currentCameraLabel}
+        isOptimizationMenuOpen={isOptimizationMenuOpen}
         isProcessingVideo={isProcessingVideo}
         isRecording={isRecording}
         isActive={isCameraActive}

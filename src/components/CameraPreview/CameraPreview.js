@@ -27,6 +27,7 @@ export default function CameraPreview({
   camera,
   cameraPosition,
   currentCameraLabel,
+  isOptimizationMenuOpen,
   isProcessingVideo,
   isRecording,
   onError,
@@ -229,7 +230,11 @@ export default function CameraPreview({
         ) : (
           <Text>{''}</Text>
         )}
-        <Text style={styles.fpsText}>{fpsLabel}</Text>
+        {!isOptimizationMenuOpen ? (
+          <Text style={styles.fpsText}>{fpsLabel}</Text>
+        ) : (
+          <Text>{''}</Text>
+        )}
       </View>
 
       {isRecording && settings.showAudioStatus ? (

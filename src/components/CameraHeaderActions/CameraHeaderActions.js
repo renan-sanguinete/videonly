@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {Pressable, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -17,8 +17,9 @@ export default function CameraHeaderActions({
   isRecording,
   optimizationMode,
   onOptimizationModeChange,
+  isOptimizationMenuOpen,
+  onOptimizationMenuOpenChange,
 }) {
-  const [isOptimizationMenuOpen, setIsOptimizationMenuOpen] = useState(false);
   const currentOptimizationMode = useMemo(
     () => getMediaOptimizationModeOption(optimizationMode),
     [optimizationMode],
@@ -27,9 +28,13 @@ export default function CameraHeaderActions({
 
   useEffect(() => {
     if (isOptimizationControlDisabled && isOptimizationMenuOpen) {
-      setIsOptimizationMenuOpen(false);
+      onOptimizationMenuOpenChange(false);
     }
-  }, [isOptimizationControlDisabled, isOptimizationMenuOpen]);
+  }, [
+    isOptimizationControlDisabled,
+    isOptimizationMenuOpen,
+    onOptimizationMenuOpenChange,
+  ]);
 
   const optimizationButtonStyle = useMemo(() => {
     if (currentOptimizationMode.value === 'video') {
@@ -56,7 +61,7 @@ export default function CameraHeaderActions({
             <Pressable
               accessibilityLabel="Fechar otimização"
               hitSlop={10}
-              onPress={() => setIsOptimizationMenuOpen(false)}
+              onPress={() => onOptimizationMenuOpenChange(false)}
               style={styles.optimizationCloseButton}
             >
               <Icon name="close-outline" size={18} color="#cbd5e1" />
@@ -72,7 +77,7 @@ export default function CameraHeaderActions({
                   key={option.value}
                   onPress={() => {
                     onOptimizationModeChange(option.value);
-                    setIsOptimizationMenuOpen(false);
+                    onOptimizationMenuOpenChange(false);
                   }}
                   style={styles.optimizationOption}
                 >
@@ -126,7 +131,7 @@ export default function CameraHeaderActions({
               hitSlop={10}
               disabled={isOptimizationControlDisabled}
               onPress={() =>
-                setIsOptimizationMenuOpen(currentValue => !currentValue)
+                onOptimizationMenuOpenChange(currentValue => !currentValue)
               }
               style={[
                 styles.headerIconButton,
