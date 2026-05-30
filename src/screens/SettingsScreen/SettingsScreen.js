@@ -16,6 +16,10 @@ import {
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
 import {
+  AUDIO_LIMITER_PRESET_OPTIONS,
+  getAudioLimiterPresetOption,
+} from '../../constants/audioProcessing';
+import {
   MEDIA_OPTIMIZATION_MODES,
   applyMediaOptimizationMode,
   getMediaOptimizationModeOption,
@@ -113,6 +117,7 @@ export default function SettingsScreen() {
   const optimizationMode = getMediaOptimizationModeOption(
     settings.optimizationMode,
   );
+  const limiterPreset = getAudioLimiterPresetOption(settings.audioLimiterPreset);
 
   const updateAudioSetting = patch =>
     setSettings(prev => ({
@@ -130,6 +135,10 @@ export default function SettingsScreen() {
       ...applyMediaOptimizationMode(prev, value),
       audioProfile: prev.audioProfile,
     }));
+  };
+
+  const onAudioLimiterPresetChange = value => {
+    updateAudioSetting({ audioLimiterPreset: value });
   };
 
   return (
@@ -295,11 +304,31 @@ export default function SettingsScreen() {
 
         <ToggleRow
           label="Mostrar barra VU"
-          description="Exibe, durante a gravação, uma barra de nível de áudio na parte inferior da tela."
+          description="Exibe, antes e durante a gravação, uma barra de nível de áudio na parte inferior da tela."
           value={settings.showAudioLevelMeter}
           onValueChange={value =>
             updateAudioSetting({ showAudioLevelMeter: value })
           }
+        />
+
+        <View style={styles.sectionSpacer} />
+
+        <ToggleRow
+          label="Normalizar loudness"
+          description="Ajusta o volume ao salvar com base na análise do áudio gravado."
+          value={settings.normalizeAudioLoudness}
+          onValueChange={value =>
+            updateAudioSetting({ normalizeAudioLoudness: value })
+          }
+        />
+
+        <View style={styles.sectionSpacer} />
+
+        <Text style={styles.label}>Limiter</Text>
+        <OptionChips
+          value={limiterPreset.value}
+          options={AUDIO_LIMITER_PRESET_OPTIONS}
+          onChange={onAudioLimiterPresetChange}
         />
 
         <View style={styles.sectionSpacer} />

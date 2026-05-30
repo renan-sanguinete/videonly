@@ -2,6 +2,7 @@ import React, {createContext, useContext, useEffect, useMemo, useState} from 're
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {UNPROCESSED_AUDIO_SOURCE} from '../constants/audioSources';
 import {getDerivedAudioProfile} from '../constants/audioProfiles';
+import {getAudioLimiterPresetOption} from '../constants/audioProcessing';
 import {
   getDerivedMediaOptimizationMode,
   getMediaOptimizationPatch,
@@ -21,6 +22,8 @@ const DEFAULT_SETTINGS = {
   audioSource: UNPROCESSED_AUDIO_SOURCE,
   optimizationMode: 'none',
   applyAudioCleanup: false,
+  audioLimiterPreset: 'standard',
+  normalizeAudioLoudness: false,
   showAudioStatus: false,
   showAudioLevelMeter: false,
   compressVideoBeforeSave: false,
@@ -55,6 +58,24 @@ function normalizePersistedSettings(parsedSettings) {
   }
   normalized.optimizationMode = getDerivedMediaOptimizationMode(normalized);
   Object.assign(normalized, getMediaOptimizationPatch(normalized.optimizationMode));
+  if (
+    normalized.audioLimiterPreset === undefined ||
+    normalized.audioLimiterPreset === null
+  ) {
+    normalized.audioLimiterPreset = getAudioLimiterPresetOption(
+      normalized.audioLimiterPreset,
+    ).value;
+  } else {
+    normalized.audioLimiterPreset = getAudioLimiterPresetOption(
+      normalized.audioLimiterPreset,
+    ).value;
+  }
+  if (
+    normalized.normalizeAudioLoudness === undefined ||
+    normalized.normalizeAudioLoudness === null
+  ) {
+    normalized.normalizeAudioLoudness = false;
+  }
   if (normalized.showAudioStatus === undefined || normalized.showAudioStatus === null) {
     normalized.showAudioStatus = false;
   }

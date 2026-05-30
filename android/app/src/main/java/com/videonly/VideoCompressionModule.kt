@@ -4,6 +4,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.DefaultEncoderFactory
@@ -21,6 +22,7 @@ import com.facebook.react.bridge.ReactMethod
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.pow
 
 @OptIn(UnstableApi::class)
 class VideoCompressionModule(reactContext: ReactApplicationContext) :
@@ -50,19 +52,40 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
       optimizationMode == "video" || optimizationMode == "both"
     val shouldCleanupAudio =
       optimizationMode == "audio" || optimizationMode == "both"
+    val shouldNormalizeLoudness =
+      shouldCleanupAudio && (options?.getBoolean("normalizeAudioLoudness") ?: false)
+    val limiterPreset = resolveLimiterPreset(options)
 
     activePromise = promise
 
     try {
       val inputMediaItem = MediaItem.fromUri(inputUri)
+      val loudnessAnalysis =
+        if (shouldNormalizeLoudness) {
+          AudioLoudnessAnalyzer.analyze(reactApplicationContext, inputUri)
+        } else {
+          null
+        }
       val editedMediaItem =
         if (shouldCleanupAudio) {
+          val audioProcessors = mutableListOf<AudioProcessor>(
+            HighPassAudioProcessor(),
+          )
+
+          loudnessAnalysis?.let { analysis ->
+            val gainLinear = 10f.pow(analysis.suggestedGainDb / 20f)
+            if (gainLinear != 1f) {
+              audioProcessors.add(GainAudioProcessor(gainLinear))
+            }
+          }
+
+          audioProcessors.add(
+            HardLimiterAudioProcessor(resolveLimiterThreshold(limiterPreset)),
+          )
+
           val audioEffects =
             Effects(
-              listOf(
-                HighPassAudioProcessor(),
-                HardLimiterAudioProcessor(),
-              ),
+              audioProcessors,
               emptyList(),
             )
 
@@ -211,5 +234,22 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
     val cleanupEnabled = options?.getBoolean("audioCleanupEnabled") ?: false
 
     return if (cleanupEnabled) "both" else "video"
+  }
+
+  private fun resolveLimiterPreset(options: ReadableMap?): String {
+    val preset = options?.getString("audioLimiterPreset")?.lowercase()
+
+    return when (preset) {
+      "gentle", "strong", "standard" -> preset
+      else -> "standard"
+    }
+  }
+
+  private fun resolveLimiterThreshold(preset: String): Float {
+    return when (preset) {
+      "gentle" -> 0.95f
+      "strong" -> 0.8f
+      else -> 0.9f
+    }
   }
 }

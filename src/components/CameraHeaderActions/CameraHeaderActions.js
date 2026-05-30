@@ -18,7 +18,7 @@ export default function CameraHeaderActions({
   optimizationMode,
   onOptimizationModeChange,
   isOptimizationMenuOpen,
-  onOptimizationMenuOpenChange,
+  setIsOptimizationMenuOpen,
 }) {
   const currentOptimizationMode = useMemo(
     () => getMediaOptimizationModeOption(optimizationMode),
@@ -28,13 +28,9 @@ export default function CameraHeaderActions({
 
   useEffect(() => {
     if (isOptimizationControlDisabled && isOptimizationMenuOpen) {
-      onOptimizationMenuOpenChange(false);
+      setIsOptimizationMenuOpen(false);
     }
-  }, [
-    isOptimizationControlDisabled,
-    isOptimizationMenuOpen,
-    onOptimizationMenuOpenChange,
-  ]);
+  }, [isOptimizationControlDisabled, isOptimizationMenuOpen]);
 
   const optimizationButtonStyle = useMemo(() => {
     if (currentOptimizationMode.value === 'video') {
@@ -61,7 +57,7 @@ export default function CameraHeaderActions({
             <Pressable
               accessibilityLabel="Fechar otimização"
               hitSlop={10}
-              onPress={() => onOptimizationMenuOpenChange(false)}
+              onPress={() => setIsOptimizationMenuOpen(false)}
               style={styles.optimizationCloseButton}
             >
               <Icon name="close-outline" size={18} color="#cbd5e1" />
@@ -77,7 +73,7 @@ export default function CameraHeaderActions({
                   key={option.value}
                   onPress={() => {
                     onOptimizationModeChange(option.value);
-                    onOptimizationMenuOpenChange(false);
+                    setIsOptimizationMenuOpen(false);
                   }}
                   style={styles.optimizationOption}
                 >
@@ -131,7 +127,7 @@ export default function CameraHeaderActions({
               hitSlop={10}
               disabled={isOptimizationControlDisabled}
               onPress={() =>
-                onOptimizationMenuOpenChange(currentValue => !currentValue)
+                setIsOptimizationMenuOpen(currentValue => !currentValue)
               }
               style={[
                 styles.headerIconButton,

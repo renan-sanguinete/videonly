@@ -1,8 +1,8 @@
 export const MEDIA_OPTIMIZATION_MODES = [
   {
     value: 'none',
-    label: 'Sem Otimizar',
-    shortLabel: 'Sem Otimizar',
+    label: 'Nenhum',
+    shortLabel: 'Nenhum',
     description: 'Mantém o arquivo como foi gravado.',
     helper: 'Sem compressão e sem correção de áudio.',
     iconColor: '#ffffff',

@@ -27,7 +27,6 @@ export default function CameraPreview({
   camera,
   cameraPosition,
   currentCameraLabel,
-  isOptimizationMenuOpen,
   isProcessingVideo,
   isRecording,
   onError,
@@ -42,6 +41,7 @@ export default function CameraPreview({
   onApplyAudioProfile,
   onSetAudioEnabled,
   onOpenCustomAudioSettings,
+  isOptimizationMenuOpen,
 }) {
   const device = useCameraDevice(cameraPosition);
   const [isAudioMenuOpen, setIsAudioMenuOpen] = useState(false);

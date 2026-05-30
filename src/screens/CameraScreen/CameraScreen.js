@@ -134,7 +134,12 @@ export default function CameraScreen({ navigation }) {
   const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
     useState(false);
   const audioLevel = useAudioLevelMonitor({
-    enabled: isRecording && settings.audio && settings.showAudioLevelMeter,
+    enabled:
+      isFocused &&
+      !isProcessingVideo &&
+      hasMicrophonePermission &&
+      settings.audio &&
+      settings.showAudioLevelMeter,
   });
 
   const loadVideosFromGallery = useCallback(
@@ -414,7 +419,7 @@ export default function CameraScreen({ navigation }) {
         optimizationMode={settings.optimizationMode}
         onOptimizationModeChange={onOptimizationModeChange}
         isOptimizationMenuOpen={isOptimizationMenuOpen}
-        onOptimizationMenuOpenChange={setIsOptimizationMenuOpen}
+        setIsOptimizationMenuOpen={setIsOptimizationMenuOpen}
         onOpenLibrary={() => navigation.navigate('Library')}
         onOpenSettings={() => navigation.navigate('Settings')}
       />
@@ -672,6 +677,8 @@ export default function CameraScreen({ navigation }) {
           setIsProcessingVideo(true);
           compressedPath = await optimizeVideo(sourcePath, extension, {
             optimizationMode,
+            audioLimiterPreset: settings.audioLimiterPreset,
+            normalizeAudioLoudness: settings.normalizeAudioLoudness,
           });
           pathToSave = compressedPath;
         }
@@ -720,6 +727,8 @@ export default function CameraScreen({ navigation }) {
       loadVideosFromGallery,
       settings.optimizationMode,
       settings.audio,
+      settings.audioLimiterPreset,
+      settings.normalizeAudioLoudness,
       settings.recordFileType,
       showAlert,
     ],
@@ -1051,7 +1060,6 @@ export default function CameraScreen({ navigation }) {
         camera={camera}
         cameraPosition={cameraPosition}
         currentCameraLabel={currentCameraLabel}
-        isOptimizationMenuOpen={isOptimizationMenuOpen}
         isProcessingVideo={isProcessingVideo}
         isRecording={isRecording}
         isActive={isCameraActive}
@@ -1067,6 +1075,7 @@ export default function CameraScreen({ navigation }) {
         onApplyAudioProfile={onApplyAudioProfile}
         onSetAudioEnabled={onSetAudioEnabled}
         onOpenCustomAudioSettings={onOpenCustomAudioSettings}
+        isOptimizationMenuOpen={isOptimizationMenuOpen}
         onError={error => {
           const errorCode = error?.code ?? null;
 
@@ -1129,6 +1138,38 @@ export default function CameraScreen({ navigation }) {
         <View
           style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
         >
+          {settings.showAudioLevelMeter && settings.audio ? (
+            <View style={styles.recordingMeterPanel}>
+              <View style={styles.recordingMeterHeader}>
+                <Text style={styles.recordingMeterLabel}>VU preview</Text>
+                <Text
+                  style={[
+                    styles.recordingMeterValue,
+                    audioMeterIsClipping && styles.recordingMeterValueClip,
+                  ]}
+                >
+                  {audioMeterIsClipping
+                    ? 'CLIP'
+                    : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
+                </Text>
+              </View>
+              <View style={styles.recordingMeterTrack}>
+                <View
+                  style={[
+                    styles.recordingMeterFill,
+                    audioMeterFillStyle,
+                    {width: audioMeterWidth},
+                  ]}
+                />
+                <View style={styles.recordingMeterThreshold} />
+              </View>
+              <Text style={styles.recordingMeterHint}>
+                {audioMeterIsClipping
+                  ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
+                  : 'Prévia do ambiente antes de gravar. Verde indica zona segura.'}
+              </Text>
+            </View>
+          ) : null}
           {selectedVideo ? (
             <View style={styles.panelActions}>
               <Pressable
