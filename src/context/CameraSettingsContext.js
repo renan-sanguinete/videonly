@@ -2,6 +2,10 @@ import React, {createContext, useContext, useEffect, useMemo, useState} from 're
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {UNPROCESSED_AUDIO_SOURCE} from '../constants/audioSources';
 import {getDerivedAudioProfile} from '../constants/audioProfiles';
+import {
+  getDerivedMediaOptimizationMode,
+  getMediaOptimizationPatch,
+} from '../constants/mediaOptimization';
 
 const CameraSettingsContext = createContext(null);
 const CAMERA_SETTINGS_STORAGE_KEY = '@videonly/camera-settings';
@@ -15,7 +19,8 @@ const DEFAULT_SETTINGS = {
   audioBitRateKbps: '256',
   audioGain: -9,
   audioSource: UNPROCESSED_AUDIO_SOURCE,
-  applyAudioCleanup: true,
+  optimizationMode: 'none',
+  applyAudioCleanup: false,
   showAudioStatus: false,
   showAudioLevelMeter: false,
   compressVideoBeforeSave: false,
@@ -48,12 +53,8 @@ function normalizePersistedSettings(parsedSettings) {
   if (normalized.audioProfile === undefined || normalized.audioProfile === null) {
     normalized.audioProfile = getDerivedAudioProfile(normalized);
   }
-  if (
-    normalized.applyAudioCleanup === undefined ||
-    normalized.applyAudioCleanup === null
-  ) {
-    normalized.applyAudioCleanup = normalized.audioProfile === 'live-safe';
-  }
+  normalized.optimizationMode = getDerivedMediaOptimizationMode(normalized);
+  Object.assign(normalized, getMediaOptimizationPatch(normalized.optimizationMode));
   if (normalized.showAudioStatus === undefined || normalized.showAudioStatus === null) {
     normalized.showAudioStatus = false;
   }

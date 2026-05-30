@@ -98,7 +98,9 @@ export function getAudioRiskLevel(settings) {
   const usingUnprocessed = settings.audioSource === UNPROCESSED_AUDIO_SOURCE;
   const usingMono = settings.audioChannels === 'mono';
   const applyingCleanup = Boolean(
-    settings.applyAudioCleanup && settings.compressVideoBeforeSave,
+    settings.applyAudioCleanup &&
+      (settings.optimizationMode === 'audio' ||
+        settings.optimizationMode === 'both'),
   );
 
   if (usingUnprocessed && usingMono) {

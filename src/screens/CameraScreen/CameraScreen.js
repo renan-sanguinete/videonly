@@ -46,9 +46,13 @@ import {
   saveVideoToCameraRoll,
 } from '../../utils/cameraRollVideos';
 import { openVideoUri, shareVideo } from '../../utils/videoActions';
-import { compressVideo } from '../../utils/videoCompression';
+import { optimizeVideo } from '../../utils/videoCompression';
 import { generateVideoFileName } from '../../utils/videoFormatters';
 import { applyAudioProfile } from '../../constants/audioProfiles';
+import {
+  applyMediaOptimizationMode,
+  getMediaOptimizationModeOption,
+} from '../../constants/mediaOptimization';
 import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
 import { styles } from './styles';
 
@@ -332,12 +336,12 @@ export default function CameraScreen({ navigation }) {
     return () => clearInterval(intervalId);
   }, [isRecording]);
 
-  const onToggleCompressVideo = useCallback(() => {
-    setSettings(prev => ({
-      ...prev,
-      compressVideoBeforeSave: !prev.compressVideoBeforeSave,
-    }));
-  }, [setSettings]);
+  const onOptimizationModeChange = useCallback(
+    value => {
+      setSettings(prev => applyMediaOptimizationMode(prev, value));
+    },
+    [setSettings],
+  );
 
   const onApplyAudioProfile = useCallback(
     value => {
@@ -361,13 +365,13 @@ export default function CameraScreen({ navigation }) {
       'Ajustes personalizados',
       'As edições do modo personalizado são feitas na tela de Configurações.',
       [
-        { text: 'Agora não', style: 'cancel' },
+        {text: 'Agora não', style: 'cancel'},
         {
           text: 'Ir para Configurações',
           onPress: () => navigation.navigate('Settings'),
         },
       ],
-      { cancelable: true },
+      {cancelable: true},
     );
   }, [navigation, showAlert]);
 
@@ -391,9 +395,9 @@ export default function CameraScreen({ navigation }) {
         flashMode={activeFlashMode}
         onToggleFlash={onFlashModeChange}
         isFrontCamera={cameraPosition === 'front'}
-        compressVideoEnabled={settings.compressVideoBeforeSave}
-        onToggleCompressVideo={onToggleCompressVideo}
         isRecording={isRecording}
+        optimizationMode={settings.optimizationMode}
+        onOptimizationModeChange={onOptimizationModeChange}
         onOpenLibrary={() => navigation.navigate('Library')}
         onOpenSettings={() => navigation.navigate('Settings')}
       />
@@ -402,9 +406,9 @@ export default function CameraScreen({ navigation }) {
       navigation,
       activeFlashMode,
       cameraPosition,
-      settings.compressVideoBeforeSave,
-      onToggleCompressVideo,
       isRecording,
+      onOptimizationModeChange,
+      settings.optimizationMode,
     ],
   );
 
@@ -619,6 +623,10 @@ export default function CameraScreen({ navigation }) {
       const newFileName = generateVideoFileName(extension);
       const newPath = `${RNFS.CachesDirectoryPath}/${newFileName}`;
       let sourcePath = originalPath;
+      const optimizationMode = getMediaOptimizationModeOption(
+        settings.optimizationMode,
+      ).value;
+      const shouldOptimize = optimizationMode !== 'none';
 
       try {
         if (originalPath !== newPath) {
@@ -636,14 +644,15 @@ export default function CameraScreen({ navigation }) {
       let pathToSave = sourcePath;
       let compressedPath = null;
       let shouldDeleteOriginal = false;
+      const shouldProcessMedia =
+        shouldOptimize && (optimizationMode !== 'audio' || settings.audio);
 
       try {
         setIsRecording(false);
-        if (settings.compressVideoBeforeSave) {
+        if (shouldProcessMedia) {
           setIsProcessingVideo(true);
-          compressedPath = await compressVideo(sourcePath, extension, {
-            audioCleanupEnabled:
-              settings.applyAudioCleanup && Boolean(settings.audio),
+          compressedPath = await optimizeVideo(sourcePath, extension, {
+            optimizationMode,
           });
           pathToSave = compressedPath;
         }
@@ -652,20 +661,20 @@ export default function CameraScreen({ navigation }) {
         shouldDeleteOriginal = true;
         await loadVideosFromGallery();
       } catch (error) {
-        if (settings.compressVideoBeforeSave) {
+        if (shouldProcessMedia) {
           try {
             await saveVideoToCameraRoll(sourcePath);
             shouldDeleteOriginal = true;
             await loadVideosFromGallery();
             showAlert(
-              'Compressao indisponivel',
-              'Nao foi possivel comprimir este video. A versao original foi salva normalmente.',
+              'Otimização indisponível',
+              'Nao foi possivel otimizar este video. A versao original foi salva normalmente.',
             );
           } catch (fallbackError) {
             showAlert(
               'Erro ao processar video',
               fallbackError?.message ??
-                'Nao foi possivel comprimir nem salvar o video original.',
+                'Nao foi possivel otimizar nem salvar o video original.',
             );
           }
         } else {
@@ -689,8 +698,7 @@ export default function CameraScreen({ navigation }) {
     },
     [
       loadVideosFromGallery,
-      settings.compressVideoBeforeSave,
-      settings.applyAudioCleanup,
+      settings.optimizationMode,
       settings.audio,
       settings.recordFileType,
       showAlert,
@@ -1009,8 +1017,8 @@ export default function CameraScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <LoadingModal
-        message="Estamos comprimindo seu video para gerar um arquivo mais leve antes de salvar."
-        title="Comprimindo video"
+        message="Estamos otimizando seu video antes de salvar."
+        title="Otimizando video"
         visible={isProcessingVideo}
       />
       <LoadingModal

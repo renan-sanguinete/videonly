@@ -15,6 +15,11 @@ import {
   applyAudioProfile,
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
+import {
+  MEDIA_OPTIMIZATION_MODES,
+  applyMediaOptimizationMode,
+  getMediaOptimizationModeOption,
+} from '../../constants/mediaOptimization';
 import { useCameraSettings } from '../../context/CameraSettingsContext';
 import {
   getAudioSourceOption,
@@ -105,6 +110,9 @@ export default function SettingsScreen() {
   const update = patch => setSettings(prev => ({ ...prev, ...patch }));
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
   const audioRisk = getAudioRiskLevel(settings);
+  const optimizationMode = getMediaOptimizationModeOption(
+    settings.optimizationMode,
+  );
 
   const updateAudioSetting = patch =>
     setSettings(prev => ({
@@ -117,6 +125,13 @@ export default function SettingsScreen() {
     setSettings(prev => applyAudioProfile(prev, value));
   };
 
+  const onOptimizationModeChange = value => {
+    setSettings(prev => ({
+      ...applyMediaOptimizationMode(prev, value),
+      audioProfile: prev.audioProfile,
+    }));
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <SectionTitle>Captura</SectionTitle>
@@ -126,12 +141,6 @@ export default function SettingsScreen() {
           description="Habilita gravação com áudio. Exige permissão de microfone."
           value={settings.audio}
           onValueChange={value => update({ audio: value })}
-        />
-        <ToggleRow
-          label="Compressão para upload"
-          description="Após gravar, comprime o vídeo antes de salvar para gerar arquivos mais leves."
-          value={settings.compressVideoBeforeSave}
-          onValueChange={value => update({ compressVideoBeforeSave: value })}
         />
       </Card>
 
@@ -194,6 +203,15 @@ export default function SettingsScreen() {
 
       <SectionTitle>Áudio</SectionTitle>
       <Card>
+        <View style={styles.sectionSpacer} />
+
+        <Text style={styles.label}>Otimizar</Text>
+        <OptionChips
+          value={optimizationMode.value}
+          options={MEDIA_OPTIMIZATION_MODES}
+          onChange={onOptimizationModeChange}
+        />
+
         <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>Configurações de Captação</Text>
@@ -286,17 +304,6 @@ export default function SettingsScreen() {
 
         <View style={styles.sectionSpacer} />
 
-        <ToggleRow
-          label="Corrigir áudio ao salvar"
-          description="Quando a compressão para upload estiver ativa, aplica passa-altas em 80 Hz e limiter para reduzir clipping e graves embolados."
-          value={settings.applyAudioCleanup}
-          onValueChange={value =>
-            updateAudioSetting({ applyAudioCleanup: value })
-          }
-        />
-
-        <View style={styles.sectionSpacer} />
-
         <AudioSourcePicker
           selectedSource={settings.audioSource}
           onSourceChange={value => updateAudioSetting({ audioSource: value })}
@@ -317,12 +324,25 @@ export default function SettingsScreen() {
           </Text>
           <Text style={styles.audioStatusText}>
             {settings.audioSource === UNPROCESSED_AUDIO_SOURCE
-              ? settings.applyAudioCleanup
-                ? 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume. A correção no salvamento ajuda a segurar picos e subgraves.'
-                : 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume.'
-              : settings.applyAudioCleanup
-                ? 'Esta fonte pode aplicar processamento automático. A correção no salvamento ajuda, mas em shows e baladas ainda existe risco de distorção e som abafado.'
-                : 'Esta fonte pode aplicar processamento automático. Em shows e baladas, isso aumenta o risco de distorção e som abafado.'}
+              ? 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume.'
+              : 'Esta fonte pode aplicar processamento automático. Em shows e baladas, isso aumenta o risco de distorção e som abafado.'}
+          </Text>
+        </View>
+        <View style={styles.sectionSpacer} />
+
+        <View
+          style={[
+            styles.audioStatusBox,
+            optimizationMode.value === 'none'
+              ? styles.audioStatusBoxSafe
+              : styles.audioStatusBoxWarning,
+          ]}
+        >
+          <Text style={styles.audioStatusTitle}>
+            Otimização: {optimizationMode.label}
+          </Text>
+          <Text style={styles.audioStatusText}>
+            {optimizationMode.description}
           </Text>
         </View>
       </Card>

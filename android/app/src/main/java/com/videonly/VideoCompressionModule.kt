@@ -32,7 +32,7 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
   override fun getName(): String = "VideoCompressionModule"
 
   @ReactMethod
-  fun compressVideo(
+  fun optimizeVideo(
     inputPath: String,
     extension: String,
     options: ReadableMap?,
@@ -45,20 +45,18 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
 
     val inputUri = toUri(inputPath)
     val outputFile = createOutputFile(extension)
-    val targetBitrate = resolveTargetBitrate(inputUri)
-    val audioCleanupEnabled = options?.getBoolean("audioCleanupEnabled") ?: false
+    val optimizationMode = resolveOptimizationMode(options)
+    val shouldCompressVideo =
+      optimizationMode == "video" || optimizationMode == "both"
+    val shouldCleanupAudio =
+      optimizationMode == "audio" || optimizationMode == "both"
 
     activePromise = promise
 
     try {
-      val encoderSettings =
-        VideoEncoderSettings.Builder()
-          .setBitrate(targetBitrate)
-          .build()
-
       val inputMediaItem = MediaItem.fromUri(inputUri)
       val editedMediaItem =
-        if (audioCleanupEnabled) {
+        if (shouldCleanupAudio) {
           val audioEffects =
             Effects(
               listOf(
@@ -73,15 +71,27 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
           null
         }
 
-      val transformer =
+      val transformerBuilder =
         Transformer.Builder(reactApplicationContext)
           .setVideoMimeType(MimeTypes.VIDEO_H264)
           .setAudioMimeType(MimeTypes.AUDIO_AAC)
-          .setEncoderFactory(
-            DefaultEncoderFactory.Builder(reactApplicationContext)
-              .setRequestedVideoEncoderSettings(encoderSettings)
-              .build(),
-          )
+
+      if (shouldCompressVideo) {
+        val targetBitrate = resolveTargetBitrate(inputUri)
+        val encoderSettings =
+          VideoEncoderSettings.Builder()
+            .setBitrate(targetBitrate)
+            .build()
+
+        transformerBuilder.setEncoderFactory(
+          DefaultEncoderFactory.Builder(reactApplicationContext)
+            .setRequestedVideoEncoderSettings(encoderSettings)
+            .build(),
+        )
+      }
+
+      val transformer =
+        transformerBuilder
           .addListener(
             object : Transformer.Listener {
               override fun onCompleted(composition: Composition, exportResult: ExportResult) {
@@ -99,7 +109,7 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
                 activeTransformer = null
                 activePromise?.reject(
                   "compression_failed",
-                  exportException.message ?: "Falha ao comprimir o vídeo.",
+                  exportException.message ?: "Falha ao otimizar o vídeo.",
                   exportException,
                 )
                 activePromise = null
@@ -120,6 +130,16 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
       activePromise = null
       promise.reject("compression_setup_failed", error.message, error)
     }
+  }
+
+  @ReactMethod
+  fun compressVideo(
+    inputPath: String,
+    extension: String,
+    options: ReadableMap?,
+    promise: Promise,
+  ) {
+    optimizeVideo(inputPath, extension, options, promise)
   }
 
   private fun createOutputFile(extension: String): File {
@@ -179,5 +199,17 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
     } finally {
       retriever.release()
     }
+  }
+
+  private fun resolveOptimizationMode(options: ReadableMap?): String {
+    val mode = options?.getString("optimizationMode")?.lowercase()
+
+    if (mode == "none" || mode == "video" || mode == "audio" || mode == "both") {
+      return mode
+    }
+
+    val cleanupEnabled = options?.getBoolean("audioCleanupEnabled") ?: false
+
+    return if (cleanupEnabled) "both" else "video"
   }
 }

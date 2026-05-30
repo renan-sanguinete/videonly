@@ -160,7 +160,7 @@ export default function CameraPreview({
     if (isAudioControlDisabled && isAudioMenuOpen) {
       setIsAudioMenuOpen(false);
     }
-  }, [isAudioControlDisabled, isAudioMenuOpen]);
+  }, [isAudioMenuOpen, isAudioControlDisabled]);
 
   const getQuickOptionSelectedStyle = optionValue => {
     if (optionValue === 'custom') {
@@ -248,7 +248,8 @@ export default function CameraPreview({
             <Text style={styles.audioStatusPillText}>
               {audioRisk.description}
             </Text>
-            {settings.compressVideoBeforeSave && settings.applyAudioCleanup ? (
+            {settings.optimizationMode === 'audio' ||
+            settings.optimizationMode === 'both' ? (
               <Text style={styles.audioStatusPillText}>
                 Correção de áudio no salvamento: ativa
               </Text>
@@ -260,7 +261,7 @@ export default function CameraPreview({
       <View style={styles.controls}>
         <View style={styles.controlsRow}>
           <View style={styles.controlsSideSlot}>
-            {isRecording ? null : isAudioMenuOpen ? (
+            {!isRecording && isAudioMenuOpen ? (
               <View style={styles.audioQuickMenu}>
                 <Text style={styles.audioQuickMenuTitle}>
                   {settings.audio ? 'Captação' : 'Áudio'}
@@ -350,7 +351,8 @@ export default function CameraPreview({
                 }
                 style={[
                   styles.audioProfileButton,
-                  isAudioControlDisabled && styles.cameraSwitchButtonDisabled,
+                  isAudioControlDisabled &&
+                    styles.cameraSwitchButtonDisabled,
                   audioProfileButtonStyle,
                 ]}
               >
