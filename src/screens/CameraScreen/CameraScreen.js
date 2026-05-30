@@ -49,11 +49,13 @@ import { openVideoUri, shareVideo } from '../../utils/videoActions';
 import { optimizeVideo } from '../../utils/videoCompression';
 import { generateVideoFileName } from '../../utils/videoFormatters';
 import { applyAudioProfile } from '../../constants/audioProfiles';
+import { getAudioLimiterPresetOption } from '../../constants/audioProcessing';
 import {
   applyMediaOptimizationMode,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
 import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
+import { useAmbientAudioAnalysis } from '../../hooks/useAmbientAudioAnalysis';
 import { styles } from './styles';
 
 function normalizeFilePath(pathLike) {
@@ -133,13 +135,72 @@ export default function CameraScreen({ navigation }) {
   const [isOptimizationMenuOpen, setIsOptimizationMenuOpen] = useState(false);
   const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
     useState(false);
+  const {
+    analysisProgress: ambientAnalysisProgress,
+    cancelAnalysis: cancelAmbientAnalysis,
+    isAnalyzing: isAmbientAnalysisRunning,
+    recordSample: recordAmbientSample,
+    remainingMs: ambientAnalysisRemainingMs,
+    startAnalysis: startAmbientAnalysis,
+  } = useAmbientAudioAnalysis({
+    durationMs: 10_000,
+    onComplete: suggestion => {
+      if (!suggestion) {
+        showAlert(
+          'Análise concluída',
+          'Não foi possível gerar uma sugestão. Tente novamente com o ambiente estável.',
+          [{ text: 'Ok' }],
+        );
+        return;
+      }
+
+      const optimizationOption = getMediaOptimizationModeOption(
+        suggestion.optimizationMode,
+      );
+      const limiterOption = getAudioLimiterPresetOption(
+        suggestion.audioLimiterPreset,
+      );
+
+      showAlert(
+        'Sugestão pronta',
+        [
+          `${optimizationOption.label} · ${suggestion.confidence}`,
+          suggestion.description,
+          '',
+          `Média RMS: ${suggestion.averageRmsLabel}`,
+          `Pico médio: ${suggestion.averagePeakLabel}`,
+          `Pico máximo: ${suggestion.maxPeakLabel}`,
+          `Clipping: ${suggestion.clipRatioLabel}`,
+          '',
+          `Limiter: ${limiterOption.label}`,
+          suggestion.normalizeAudioLoudness
+            ? 'Normalização de loudness: ativa'
+            : 'Normalização de loudness: desativada',
+        ].join('\n'),
+        [
+          { text: 'Manter atual', style: 'cancel' },
+          {
+            text: 'Aplicar sugestão',
+            onPress: () => {
+              setSettings(prev => ({
+                ...applyMediaOptimizationMode(prev, suggestion.optimizationMode),
+                audioLimiterPreset: suggestion.audioLimiterPreset,
+                normalizeAudioLoudness: suggestion.normalizeAudioLoudness,
+                audioProfile: 'custom',
+              }));
+            },
+          },
+        ],
+      );
+    },
+  });
   const audioLevel = useAudioLevelMonitor({
     enabled:
       isFocused &&
       !isProcessingVideo &&
       hasMicrophonePermission &&
       settings.audio &&
-      settings.showAudioLevelMeter,
+      (settings.showAudioLevelMeter || isAmbientAnalysisRunning),
   });
 
   const loadVideosFromGallery = useCallback(
@@ -408,6 +469,37 @@ export default function CameraScreen({ navigation }) {
       ? styles.recordingMeterFillWarn
       : styles.recordingMeterFillSafe;
   const audioMeterWidth = `${Math.max(0, Math.min(100, audioMeterLevel * 100))}%`;
+  const ambientAnalysisButtonLabel = isAmbientAnalysisRunning
+    ? `Analisando... ${Math.max(
+        1,
+        Math.ceil(ambientAnalysisRemainingMs / 1000),
+      )}s`
+    : 'Analisar ambiente por 10s';
+
+  useEffect(() => {
+    recordAmbientSample(audioLevel);
+  }, [audioLevel, recordAmbientSample]);
+
+  useEffect(() => {
+    if (!isFocused || appState !== 'active' || isProcessingVideo) {
+      cancelAmbientAnalysis();
+    }
+  }, [appState, cancelAmbientAnalysis, isFocused, isProcessingVideo]);
+
+  const onStartAmbientAnalysis = useCallback(() => {
+    if (!settings.audio || isAmbientAnalysisRunning) {
+      return;
+    }
+
+    const started = startAmbientAnalysis();
+    if (!started) {
+      showAlert(
+        'Análise indisponível',
+        'Não foi possível iniciar a análise agora. Tente novamente em instantes.',
+        [{ text: 'Ok' }],
+      );
+    }
+  }, [isAmbientAnalysisRunning, settings.audio, showAlert, startAmbientAnalysis]);
 
   const renderHeader = useCallback(
     () => (
@@ -1051,6 +1143,14 @@ export default function CameraScreen({ navigation }) {
         visible={isProcessingVideo}
       />
       <LoadingModal
+        message={`${Math.round(ambientAnalysisProgress * 100)}% concluído · ${Math.max(
+          1,
+          Math.ceil(ambientAnalysisRemainingMs / 1000),
+        )}s restantes`}
+        title="Analisando ambiente"
+        visible={isAmbientAnalysisRunning}
+      />
+      <LoadingModal
         message="Aguarde enquanto removemos o vídeo selecionado."
         title="Excluindo vídeo"
         visible={isDeletingSelectedVideo}
@@ -1170,6 +1270,29 @@ export default function CameraScreen({ navigation }) {
               </Text>
             </View>
           ) : null}
+          {settings.audio && !selectedVideo ? (
+            <Pressable
+              disabled={isAmbientAnalysisRunning}
+              onPress={onStartAmbientAnalysis}
+              style={[
+                styles.ambientAnalysisButton,
+                isAmbientAnalysisRunning &&
+                  styles.ambientAnalysisButtonDisabled,
+              ]}
+            >
+              <View style={styles.ambientAnalysisButtonIconWrap}>
+                <Icon name="sparkles-outline" size={22} color="#7dd3fc" />
+              </View>
+              <View style={styles.ambientAnalysisButtonTextWrap}>
+                <Text style={styles.ambientAnalysisButtonTitle}>
+                  {ambientAnalysisButtonLabel}
+                </Text>
+                <Text style={styles.ambientAnalysisButtonSubtitle}>
+                  Analisa o ambiente e sugere a melhor configuração.
+                </Text>
+              </View>
+            </Pressable>
+          ) : null}
           {selectedVideo ? (
             <View style={styles.panelActions}>
               <Pressable
@@ -1238,15 +1361,19 @@ export default function CameraScreen({ navigation }) {
               </Pressable>
             </View>
           ) : (
-            <Text style={styles.panelTitle}>Vídeos</Text>
+            <Text style={styles.panelTitle}>{settings.showAudioLevelMeter ? '' : 'Vídeos'}</Text>
           )}
-          {isLoadingSavedVideos ? (
-            <View style={styles.savedVideosLoading}>
-              <ActivityIndicator size="small" color="#cbd5e1" />
-              <Text style={styles.savedVideosLoadingText}>
-                Carregando videos...
+          {isLoadingSavedVideos || settings.showAudioLevelMeter ? (
+            <>
+              {!settings.showAudioLevelMeter ? (
+                <View style={styles.savedVideosLoading}>
+                  <ActivityIndicator size="small" color="#cbd5e1" />
+                  <Text style={styles.savedVideosLoadingText}>
+                    Carregando vídeos...
               </Text>
-            </View>
+              </View>
+              ) : null}
+            </>
           ) : (
             <FlatList
               data={savedVideos}
@@ -1263,7 +1390,7 @@ export default function CameraScreen({ navigation }) {
                 />
               )}
               ListEmptyComponent={
-                <Text style={styles.emptyText}>Nenhum video salvo ainda.</Text>
+                <Text style={styles.emptyText}>Nenhum vídeo salvo ainda.</Text>
               }
             />
           )}
