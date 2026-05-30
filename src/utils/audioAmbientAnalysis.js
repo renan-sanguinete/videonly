@@ -70,12 +70,12 @@ export function analyzeAmbientAudioSamples(samples) {
     return {
       ...summary,
       ...buildSuggestion({
-        optimizationMode: 'both',
+        optimizationMode: 'audio',
         audioLimiterPreset: 'strong',
         normalizeAudioLoudness: true,
-        title: 'Vídeo + Áudio',
+        title: 'Áudio',
         description:
-          'O ambiente está alto e com picos. A proteção completa é a opção mais segura.',
+          'O ambiente está alto e com picos. Corrigir apenas o áudio evita sugerir compressão de vídeo sem necessidade.',
         confidence: 'alta',
       }),
     };
