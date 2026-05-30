@@ -260,7 +260,7 @@ export default function CameraPreview({
       <View style={styles.controls}>
         <View style={styles.controlsRow}>
           <View style={styles.controlsSideSlot}>
-            {isAudioMenuOpen ? (
+            {isRecording ? null : isAudioMenuOpen ? (
               <View style={styles.audioQuickMenu}>
                 <Text style={styles.audioQuickMenuTitle}>
                   {settings.audio ? 'Captação' : 'Áudio'}
@@ -339,22 +339,28 @@ export default function CameraPreview({
                     })}
               </View>
             ) : null}
-            <Pressable
-              accessibilityLabel="Abrir configuracoes de captacao"
-              disabled={isAudioControlDisabled}
-              onPress={() => setIsAudioMenuOpen(currentValue => !currentValue)}
-              style={[
-                styles.audioProfileButton,
-                isAudioControlDisabled && styles.cameraSwitchButtonDisabled,
-                audioProfileButtonStyle,
-              ]}
-            >
-              <Icon
-                name={settings.audio ? 'mic' : 'mic-off-outline'}
-                size={20}
-                color="#fff"
-              />
-            </Pressable>
+            {isRecording ? (
+              <View style={styles.controlsSideSlotPlaceholder} />
+            ) : (
+              <Pressable
+                accessibilityLabel="Abrir configuracoes de captacao"
+                disabled={isAudioControlDisabled}
+                onPress={() =>
+                  setIsAudioMenuOpen(currentValue => !currentValue)
+                }
+                style={[
+                  styles.audioProfileButton,
+                  isAudioControlDisabled && styles.cameraSwitchButtonDisabled,
+                  audioProfileButtonStyle,
+                ]}
+              >
+                <Icon
+                  name={settings.audio ? 'mic' : 'mic-off-outline'}
+                  size={20}
+                  color="#fff"
+                />
+              </Pressable>
+            )}
           </View>
           <Pressable
             disabled={isProcessingVideo}

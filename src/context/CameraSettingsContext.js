@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS = {
   audioSource: UNPROCESSED_AUDIO_SOURCE,
   applyAudioCleanup: true,
   showAudioStatus: false,
+  showAudioLevelMeter: false,
   compressVideoBeforeSave: false,
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
@@ -55,6 +56,12 @@ function normalizePersistedSettings(parsedSettings) {
   }
   if (normalized.showAudioStatus === undefined || normalized.showAudioStatus === null) {
     normalized.showAudioStatus = false;
+  }
+  if (
+    normalized.showAudioLevelMeter === undefined ||
+    normalized.showAudioLevelMeter === null
+  ) {
+    normalized.showAudioLevelMeter = false;
   }
 
   return normalized;

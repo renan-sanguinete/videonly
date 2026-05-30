@@ -49,6 +49,7 @@ import { openVideoUri, shareVideo } from '../../utils/videoActions';
 import { compressVideo } from '../../utils/videoCompression';
 import { generateVideoFileName } from '../../utils/videoFormatters';
 import { applyAudioProfile } from '../../constants/audioProfiles';
+import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
 import { styles } from './styles';
 
 function normalizeFilePath(pathLike) {
@@ -113,6 +114,9 @@ export default function CameraScreen({ navigation }) {
   const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
   const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
     useState(false);
+  const audioLevel = useAudioLevelMonitor({
+    enabled: isRecording && settings.audio && settings.showAudioLevelMeter,
+  });
 
   const loadVideosFromGallery = useCallback(
     async ({ showLoader = false } = {}) => {
@@ -370,6 +374,16 @@ export default function CameraScreen({ navigation }) {
   const onFlashModeChange = () => {
     setActiveFlashMode(prevMode => (prevMode === 'off' ? 'on' : 'off'));
   };
+
+  const audioMeterLevel = audioLevel?.level ?? 0;
+  const audioMeterPeakDb = audioLevel?.peakDb ?? -120;
+  const audioMeterIsClipping = Boolean(audioLevel?.isClipping);
+  const audioMeterFillStyle = audioMeterIsClipping
+    ? styles.recordingMeterFillClip
+    : audioMeterLevel > 0.82
+      ? styles.recordingMeterFillWarn
+      : styles.recordingMeterFillSafe;
+  const audioMeterWidth = `${Math.max(0, Math.min(100, audioMeterLevel * 100))}%`;
 
   const renderHeader = useCallback(
     () => (
@@ -1043,107 +1057,148 @@ export default function CameraScreen({ navigation }) {
         }}
       />
 
-      <View
-        style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
-      >
-        {selectedVideo ? (
-          <View style={styles.panelActions}>
-            <Pressable
-              disabled={isDeletingSelectedVideo}
-              onPress={() => {
-                clearSelectedVideo();
-                onOpenVideo(selectedVideo).catch(error => {
-                  console.warn(
-                    'Falha ao abrir video pela barra de ações.',
-                    error,
-                  );
-                });
-              }}
-              style={styles.panelActionButton}
-            >
-              <View style={styles.panelActionIconWrap}>
-                <Icon name="folder-open-outline" size={22} color="#f8fafc" />
+      {isRecording ? (
+        <View
+          style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
+        >
+          {settings.showAudioLevelMeter && settings.audio ? (
+            <View style={styles.recordingMeterPanel}>
+              <View style={styles.recordingMeterHeader}>
+                <Text style={styles.recordingMeterLabel}>VU meter</Text>
+                <Text
+                  style={[
+                    styles.recordingMeterValue,
+                    audioMeterIsClipping && styles.recordingMeterValueClip,
+                  ]}
+                >
+                  {audioMeterIsClipping
+                    ? 'CLIP'
+                    : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
+                </Text>
               </View>
-              <Text style={styles.panelActionLabel}>Abrir</Text>
-            </Pressable>
-
-            <Pressable
-              disabled={isDeletingSelectedVideo}
-              onPress={() => {
-                clearSelectedVideo();
-                onShareVideo(selectedVideo).catch(error => {
-                  console.warn(
-                    'Falha ao compartilhar video pela barra de ações.',
-                    error,
-                  );
-                });
-              }}
-              style={styles.panelActionButton}
-            >
-              <View style={styles.panelActionIconWrap}>
-                <Icon name="share-social-outline" size={22} color="#f8fafc" />
+              <View style={styles.recordingMeterTrack}>
+                <View
+                  style={[
+                    styles.recordingMeterFill,
+                    audioMeterFillStyle,
+                    {width: audioMeterWidth},
+                  ]}
+                />
+                <View style={styles.recordingMeterThreshold} />
               </View>
-              <Text style={styles.panelActionLabel}>Compartilhar</Text>
-            </Pressable>
-
-            <Pressable
-              disabled={isDeletingSelectedVideo}
-              onPress={onDeleteSelectedVideo}
-              style={styles.panelActionButton}
-            >
-              <View
-                style={[
-                  styles.panelActionIconWrap,
-                  styles.panelActionIconDanger,
-                ]}
+              <Text style={styles.recordingMeterHint}>
+                {audioMeterIsClipping
+                  ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
+                  : 'Zona segura em verde. Amarelo indica aproximação do limite.'}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.recordingPanelSpacer} />
+          )}
+        </View>
+      ) : (
+        <View
+          style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
+        >
+          {selectedVideo ? (
+            <View style={styles.panelActions}>
+              <Pressable
+                disabled={isDeletingSelectedVideo}
+                onPress={() => {
+                  clearSelectedVideo();
+                  onOpenVideo(selectedVideo).catch(error => {
+                    console.warn(
+                      'Falha ao abrir video pela barra de ações.',
+                      error,
+                    );
+                  });
+                }}
+                style={styles.panelActionButton}
               >
-                <Icon name="trash-outline" size={22} color="#fca5a5" />
-              </View>
-              <Text style={styles.panelActionLabel}>Excluir</Text>
-            </Pressable>
+                <View style={styles.panelActionIconWrap}>
+                  <Icon name="folder-open-outline" size={22} color="#f8fafc" />
+                </View>
+                <Text style={styles.panelActionLabel}>Abrir</Text>
+              </Pressable>
 
-            <Pressable
-              disabled={isDeletingSelectedVideo}
-              onPress={clearSelectedVideo}
-              style={styles.panelActionButton}
-            >
-              <View style={styles.panelActionIconWrap}>
-                <Icon name="close-outline" size={22} color="#f8fafc" />
-              </View>
-              <Text style={styles.panelActionLabel}>Cancelar</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Text style={styles.panelTitle}>Vídeos</Text>
-        )}
-        {isLoadingSavedVideos ? (
-          <View style={styles.savedVideosLoading}>
-            <ActivityIndicator size="small" color="#cbd5e1" />
-            <Text style={styles.savedVideosLoadingText}>
-              Carregando videos...
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={savedVideos}
-            keyExtractor={item => item.uri}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.savedVideosContent}
-            renderItem={({ item }) => (
-              <VideoCard
-                compact
-                item={item}
-                selected={item.uri === selectedVideoUri}
-                onPress={() => onVideoCardPress(item)}
-              />
-            )}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>Nenhum video salvo ainda.</Text>
-            }
-          />
-        )}
-      </View>
+              <Pressable
+                disabled={isDeletingSelectedVideo}
+                onPress={() => {
+                  clearSelectedVideo();
+                  onShareVideo(selectedVideo).catch(error => {
+                    console.warn(
+                      'Falha ao compartilhar video pela barra de ações.',
+                      error,
+                    );
+                  });
+                }}
+                style={styles.panelActionButton}
+              >
+                <View style={styles.panelActionIconWrap}>
+                  <Icon name="share-social-outline" size={22} color="#f8fafc" />
+                </View>
+                <Text style={styles.panelActionLabel}>Compartilhar</Text>
+              </Pressable>
+
+              <Pressable
+                disabled={isDeletingSelectedVideo}
+                onPress={onDeleteSelectedVideo}
+                style={styles.panelActionButton}
+              >
+                <View
+                  style={[
+                    styles.panelActionIconWrap,
+                    styles.panelActionIconDanger,
+                  ]}
+                >
+                  <Icon name="trash-outline" size={22} color="#fca5a5" />
+                </View>
+                <Text style={styles.panelActionLabel}>Excluir</Text>
+              </Pressable>
+
+              <Pressable
+                disabled={isDeletingSelectedVideo}
+                onPress={clearSelectedVideo}
+                style={styles.panelActionButton}
+              >
+                <View style={styles.panelActionIconWrap}>
+                  <Icon name="close-outline" size={22} color="#f8fafc" />
+                </View>
+                <Text style={styles.panelActionLabel}>Cancelar</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={styles.panelTitle}>Vídeos</Text>
+          )}
+          {isLoadingSavedVideos ? (
+            <View style={styles.savedVideosLoading}>
+              <ActivityIndicator size="small" color="#cbd5e1" />
+              <Text style={styles.savedVideosLoadingText}>
+                Carregando videos...
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={savedVideos}
+              keyExtractor={item => item.uri}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.savedVideosContent}
+              renderItem={({ item }) => (
+                <VideoCard
+                  compact
+                  item={item}
+                  selected={item.uri === selectedVideoUri}
+                  onPress={() => onVideoCardPress(item)}
+                />
+              )}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>Nenhum video salvo ainda.</Text>
+              }
+            />
+          )}
+        </View>
+      )}
     </View>
   );
 }

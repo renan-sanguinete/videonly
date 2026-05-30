@@ -53,15 +53,23 @@ export default function CameraHeaderActions({
         <Pressable
           accessibilityLabel="Abrir galeria"
           hitSlop={10}
+          disabled={isRecording}
           onPress={onOpenLibrary}
-          style={styles.headerIconButton}>
+          style={[
+            styles.headerIconButton,
+            isRecording && styles.headerIconButtonDisabled,
+          ]}>
           <Icon name="images-outline" size={24} color="#fff" />
         </Pressable>
         <Pressable
           accessibilityLabel="Abrir configurações"
           hitSlop={10}
+          disabled={isRecording}
           onPress={onOpenSettings}
-          style={styles.headerIconButton}>
+          style={[
+            styles.headerIconButton,
+            isRecording && styles.headerIconButtonDisabled,
+          ]}>
           <Icon name="settings-outline" size={22} color="#fff" />
         </Pressable>
       </View>

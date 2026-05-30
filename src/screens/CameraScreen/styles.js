@@ -11,6 +11,69 @@ export const styles = StyleSheet.create({
     maxHeight: 220,
     gap: 12,
   },
+  recordingMeterPanel: {
+    gap: 8,
+  },
+  recordingMeterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  recordingMeterLabel: {
+    color: '#e2e8f0',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  recordingMeterValue: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  recordingMeterValueClip: {
+    color: '#f87171',
+  },
+  recordingMeterTrack: {
+    position: 'relative',
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: '#0f172a',
+    borderWidth: 1,
+    borderColor: '#334155',
+    overflow: 'hidden',
+  },
+  recordingMeterFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  recordingMeterFillSafe: {
+    backgroundColor: '#22c55e',
+  },
+  recordingMeterFillWarn: {
+    backgroundColor: '#f59e0b',
+  },
+  recordingMeterFillClip: {
+    backgroundColor: '#ef4444',
+  },
+  recordingMeterThreshold: {
+    position: 'absolute',
+    right: '4%',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: 'rgba(248, 113, 113, 0.9)',
+  },
+  recordingMeterHint: {
+    color: '#94a3b8',
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  recordingPanelSpacer: {
+    flex: 1,
+  },
   panelActions: {
     flexDirection: 'row',
     alignItems: 'flex-start',

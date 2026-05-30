@@ -24,4 +24,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerIconButtonDisabled: {
+    opacity: 0.35,
+  },
 });

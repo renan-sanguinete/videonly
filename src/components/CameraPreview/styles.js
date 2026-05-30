@@ -107,6 +107,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
+  controlsSideSlotPlaceholder: {
+    width: 56,
+    height: 56,
+  },
   audioProfileButton: {
     width: 40,
     height: 40,
