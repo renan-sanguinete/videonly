@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import React, {useCallback, useMemo, useState} from 'react';
+import {Pressable, ScrollView, Text, View} from 'react-native';
 import { useCameraDevice } from 'react-native-vision-camera';
 
 import {
@@ -25,10 +25,13 @@ import {
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
 import { useCameraSettings } from '../../context/CameraSettingsContext';
+import { useCustomAlert } from '../../context/CustomAlertContext';
 import {
   getAudioSourceOption,
   UNPROCESSED_AUDIO_SOURCE,
 } from '../../constants/audioSources';
+import {exportVideoRecordingMetadata} from '../../utils/videoRecordingMetadata';
+import {shareFile} from '../../utils/videoActions';
 import { styles } from './styles';
 
 const VIDEO_BIT_RATE_OPTIONS = [
@@ -105,6 +108,8 @@ function buildResolutionOptions(formats) {
 export default function SettingsScreen() {
   const device = useCameraDevice('back');
   const { settings, setSettings, resetSettings } = useCameraSettings();
+  const {showAlert} = useCustomAlert();
+  const [isExportingMetadata, setIsExportingMetadata] = useState(false);
   const formats = useMemo(() => device?.formats ?? [], [device]);
   const resolutionOptions = useMemo(
     () => buildResolutionOptions(formats),
@@ -140,6 +145,39 @@ export default function SettingsScreen() {
   const onAudioLimiterPresetChange = value => {
     updateAudioSetting({ audioLimiterPreset: value });
   };
+
+  const onExportMetadata = useCallback(async () => {
+    if (isExportingMetadata) {
+      return;
+    }
+
+    setIsExportingMetadata(true);
+
+    try {
+      const result = await exportVideoRecordingMetadata();
+
+      if (result.totalFiles === 0) {
+        showAlert(
+          'Sem metadados',
+          'Ainda não há arquivos de metadados salvos para exportar.',
+        );
+        return;
+      }
+
+      await shareFile(
+        result.exportPath,
+        'Exportar metadados',
+        'application/json',
+      );
+    } catch (error) {
+      showAlert(
+        'Erro ao exportar metadados',
+        error?.message ?? 'Nao foi possivel gerar o arquivo de exportacao.',
+      );
+    } finally {
+      setIsExportingMetadata(false);
+    }
+  }, [isExportingMetadata, showAlert]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -406,6 +444,15 @@ export default function SettingsScreen() {
           options={RECORD_VIDEO_CODEC_OPTIONS}
           onChange={value => update({ recordVideoCodec: value })}
         />
+        <Pressable
+          disabled={isExportingMetadata}
+          style={styles.exportButton}
+          onPress={onExportMetadata}
+        >
+          <Text style={styles.exportText}>
+            {isExportingMetadata ? 'Exportando...' : 'Exportar metadados'}
+          </Text>
+        </Pressable>
         <Pressable style={styles.resetButton} onPress={resetSettings}>
           <Text style={styles.resetText}>Restaurar padrões</Text>
         </Pressable>

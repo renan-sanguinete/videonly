@@ -48,6 +48,10 @@ import {
 import { openVideoUri, shareVideo } from '../../utils/videoActions';
 import { optimizeVideo } from '../../utils/videoCompression';
 import { generateVideoFileName } from '../../utils/videoFormatters';
+import {
+  buildVideoRecordingMetadata,
+  saveVideoRecordingMetadata,
+} from '../../utils/videoRecordingMetadata';
 import { applyAudioProfile } from '../../constants/audioProfiles';
 import { getAudioLimiterPresetOption } from '../../constants/audioProcessing';
 import {
@@ -761,6 +765,24 @@ export default function CameraScreen({ navigation }) {
       let shouldDeleteOriginal = false;
       const shouldProcessMedia =
         shouldOptimize && (optimizationMode !== 'audio' || settings.audio);
+      const saveRecordingMetadata = async finalPath => {
+        const metadata = buildVideoRecordingMetadata({
+          videoFileName: newFileName,
+          originalPath,
+          sourcePath,
+          savedPath: finalPath,
+          compressedPath,
+          requestedOptimizationMode: settings.optimizationMode,
+          appliedOptimizationMode:
+            shouldProcessMedia && finalPath !== sourcePath
+              ? optimizationMode
+              : 'none',
+          usedFallbackToOriginal: shouldProcessMedia && finalPath === sourcePath,
+          settings,
+        });
+
+        await saveVideoRecordingMetadata(newFileName, metadata);
+      };
 
       try {
         setIsRecording(false);
@@ -776,12 +798,28 @@ export default function CameraScreen({ navigation }) {
         }
 
         await saveVideoToCameraRoll(pathToSave);
+        try {
+          await saveRecordingMetadata(pathToSave);
+        } catch (metadataError) {
+          console.warn(
+            'Nao foi possivel salvar os metadados da gravacao.',
+            metadataError,
+          );
+        }
         shouldDeleteOriginal = true;
         await loadVideosFromGallery();
       } catch (error) {
         if (shouldProcessMedia) {
           try {
             await saveVideoToCameraRoll(sourcePath);
+            try {
+              await saveRecordingMetadata(sourcePath);
+            } catch (metadataError) {
+              console.warn(
+                'Nao foi possivel salvar os metadados da gravacao.',
+                metadataError,
+              );
+            }
             shouldDeleteOriginal = true;
             await loadVideosFromGallery();
             showAlert(
@@ -817,11 +855,7 @@ export default function CameraScreen({ navigation }) {
     },
     [
       loadVideosFromGallery,
-      settings.optimizationMode,
-      settings.audio,
-      settings.audioLimiterPreset,
-      settings.normalizeAudioLoudness,
-      settings.recordFileType,
+      settings,
       showAlert,
     ],
   );

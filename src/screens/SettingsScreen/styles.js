@@ -42,4 +42,13 @@ export const styles = StyleSheet.create({
     borderRadius: 999,
   },
   resetText: {color: '#fff', fontWeight: '700'},
+  exportButton: {
+    marginTop: 14,
+    alignSelf: 'flex-start',
+    backgroundColor: '#0f766e',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+  exportText: {color: '#ecfeff', fontWeight: '700'},
 });

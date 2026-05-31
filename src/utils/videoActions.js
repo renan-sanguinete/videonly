@@ -28,3 +28,16 @@ export async function shareVideo(video) {
     url: video.uri,
   });
 }
+
+export async function shareFile(path, title, mimeType = 'application/octet-stream') {
+  if (Platform.OS === 'android' && VideoIntentModule?.shareFile) {
+    await VideoIntentModule.shareFile(path, title || 'Arquivo', mimeType);
+    return;
+  }
+
+  await Share.share({
+    title: title || 'Arquivo',
+    message: path,
+    url: path,
+  });
+}
