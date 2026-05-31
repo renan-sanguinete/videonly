@@ -104,7 +104,7 @@ export function analyzeAmbientAudioSamples(samples) {
         optimizationMode: 'none',
         audioLimiterPreset: 'gentle',
         normalizeAudioLoudness: false,
-        title: 'Nenhum',
+        title: 'Desativado',
         description:
           'O ambiente está limpo e sem picos relevantes. Você pode gravar sem correção.',
         confidence: 'alta',
