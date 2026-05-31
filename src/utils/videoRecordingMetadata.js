@@ -136,3 +136,24 @@ export async function exportVideoRecordingMetadata() {
     totalFiles: records.length,
   };
 }
+
+export async function deleteVideoRecordingMetadata() {
+  const directoryPath = getMetadataDirectoryPath();
+  const directoryExists = await RNFS.exists(directoryPath);
+
+  if (!directoryExists) {
+    return {deletedFiles: 0};
+  }
+
+  const files = await RNFS.readDir(directoryPath);
+  const metadataFiles = files.filter(item => item.isFile() && item.name.endsWith('.json'));
+
+  let deletedFiles = 0;
+
+  for (const file of metadataFiles) {
+    await RNFS.unlink(file.path);
+    deletedFiles += 1;
+  }
+
+  return {deletedFiles};
+}

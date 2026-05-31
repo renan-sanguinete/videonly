@@ -1,6 +1,6 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import {Pressable, ScrollView, Text, View} from 'react-native';
-import { useCameraDevice } from 'react-native-vision-camera';
+import {useCameraDevice} from 'react-native-vision-camera';
 
 import {
   Card,
@@ -30,9 +30,12 @@ import {
   getAudioSourceOption,
   UNPROCESSED_AUDIO_SOURCE,
 } from '../../constants/audioSources';
-import {exportVideoRecordingMetadata} from '../../utils/videoRecordingMetadata';
+import {
+  deleteVideoRecordingMetadata,
+  exportVideoRecordingMetadata,
+} from '../../utils/videoRecordingMetadata';
 import {shareFile} from '../../utils/videoActions';
-import { styles } from './styles';
+import {styles} from './styles';
 
 const VIDEO_BIT_RATE_OPTIONS = [
   { label: 'extra-low', value: 'extra-low' },
@@ -178,6 +181,37 @@ export default function SettingsScreen() {
       setIsExportingMetadata(false);
     }
   }, [isExportingMetadata, showAlert]);
+
+  const onDeleteMetadata = useCallback(() => {
+    showAlert(
+      'Apagar metadados',
+      'Isso vai excluir todos os arquivos de metadados salvos no aparelho. Deseja continuar?',
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => {
+            deleteVideoRecordingMetadata()
+              .then(result => {
+                showAlert(
+                  'Metadados apagados',
+                  result.deletedFiles > 0
+                    ? `${result.deletedFiles} arquivo${result.deletedFiles > 1 ? 's' : ''} de metadados foram excluído${result.deletedFiles > 1 ? 's' : ''}.`
+                    : 'Não havia arquivos de metadados para excluir.',
+                );
+              })
+              .catch(error => {
+                showAlert(
+                  'Erro ao apagar metadados',
+                  error?.message ?? 'Nao foi possivel excluir os metadados.',
+                );
+              });
+          },
+        },
+      ],
+    );
+  }, [showAlert]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -444,17 +478,34 @@ export default function SettingsScreen() {
           options={RECORD_VIDEO_CODEC_OPTIONS}
           onChange={value => update({ recordVideoCodec: value })}
         />
+      </Card>
+
+      <SectionTitle>Opções adicionais</SectionTitle>
+      <Card>
+        <View style={styles.actionRow}>
+          <Pressable
+            disabled={isExportingMetadata}
+            style={styles.exportButton}
+            onPress={onExportMetadata}
+          >
+            <Text style={styles.exportText}>
+              {isExportingMetadata
+                ? 'Exportando...'
+                : 'Exportar metadados'}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.destructiveButton}
+            onPress={onDeleteMetadata}
+          >
+            <Text style={styles.destructiveText}>Apagar metadados</Text>
+          </Pressable>
+        </View>
         <Pressable
-          disabled={isExportingMetadata}
-          style={styles.exportButton}
-          onPress={onExportMetadata}
+          style={styles.secondaryActionButton}
+          onPress={resetSettings}
         >
-          <Text style={styles.exportText}>
-            {isExportingMetadata ? 'Exportando...' : 'Exportar metadados'}
-          </Text>
-        </Pressable>
-        <Pressable style={styles.resetButton} onPress={resetSettings}>
-          <Text style={styles.resetText}>Restaurar padrões</Text>
+          <Text style={styles.secondaryActionText}>Restaurar padrões</Text>
         </Pressable>
       </Card>
 
