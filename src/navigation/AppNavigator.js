@@ -12,17 +12,26 @@ export default function AppNavigator() {
     <Stack.Navigator
       initialRouteName="Camera"
       screenOptions={{
-        headerStyle: {backgroundColor: '#111827'},
-        headerTintColor: '#fff',
-        contentStyle: {backgroundColor: '#0b1020'},
+        headerStyle: {backgroundColor: 'rgba(10, 7, 5, 0.92)'},
+        headerTintColor: '#FAF8F5',
+        contentStyle: {backgroundColor: '#0A0705'},
+        animation: 'fade_from_bottom',
       }}>
       <Stack.Screen
         name="Camera"
         component={CameraScreen}
         options={{title: ''}}
       />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{title: 'Configurações'}} />
-      <Stack.Screen name="Library" component={LibraryScreen} options={{title: 'Vídeos salvos'}} />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="Library"
+        component={LibraryScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }

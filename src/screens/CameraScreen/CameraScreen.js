@@ -60,6 +60,7 @@ import {
 } from '../../constants/mediaOptimization';
 import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
 import { useAmbientAudioAnalysis } from '../../hooks/useAmbientAudioAnalysis';
+import { cinematicTheme } from '../../theme/cinematicTheme';
 import { styles } from './styles';
 
 function normalizeFilePath(pathLike) {
@@ -1136,7 +1137,10 @@ export default function CameraScreen({ navigation }) {
   if (!isHydrated) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="small" color="#cbd5e1" />
+        <ActivityIndicator
+          size="small"
+          color={cinematicTheme.colors.mutedForeground}
+        />
         <Text style={styles.subtitle}>Carregando configurações...</Text>
       </View>
     );
@@ -1145,7 +1149,10 @@ export default function CameraScreen({ navigation }) {
   if (!hasCompletedInitialBootstrap) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="small" color="#cbd5e1" />
+        <ActivityIndicator
+          size="small"
+          color={cinematicTheme.colors.mutedForeground}
+        />
         <Text style={styles.subtitle}>
           Inicializando camera e permissoes...
         </Text>
@@ -1272,6 +1279,23 @@ export default function CameraScreen({ navigation }) {
         <View
           style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
         >
+          <View style={styles.panelHeader}>
+            <View style={styles.panelHeaderTitleWrap}>
+              <Text style={styles.panelKicker}>Biblioteca</Text>
+              <Text style={styles.panelTitle}>
+                Vídeos salvos {String(savedVideos.length).padStart(2, '0')}
+              </Text>
+              <Text style={styles.panelMeta}>
+                {savedVideos.length === 0
+                  ? 'Nenhum vídeo salvo ainda.'
+                  : 'Toque em um cartão para abrir ou compartilhar.'}
+              </Text>
+            </View>
+            <Pressable onPress={() => navigation.navigate('Library')}>
+              <Text style={styles.panelLink}>Ver todos →</Text>
+            </Pressable>
+          </View>
+          <View style={styles.panelDivider} />
           {settings.showAudioLevelMeter && settings.audio ? (
             <View style={styles.recordingMeterPanel}>
               <View style={styles.recordingMeterHeader}>
@@ -1315,7 +1339,11 @@ export default function CameraScreen({ navigation }) {
               ]}
             >
               <View style={styles.ambientAnalysisButtonIconWrap}>
-                <Icon name="sparkles-outline" size={22} color="#7dd3fc" />
+                <Icon
+                  name="sparkles-outline"
+                  size={22}
+                  color={cinematicTheme.colors.accent}
+                />
               </View>
               <View style={styles.ambientAnalysisButtonTextWrap}>
                 <Text style={styles.ambientAnalysisButtonTitle}>
@@ -1343,7 +1371,11 @@ export default function CameraScreen({ navigation }) {
                 style={styles.panelActionButton}
               >
                 <View style={styles.panelActionIconWrap}>
-                  <Icon name="folder-open-outline" size={22} color="#f8fafc" />
+                  <Icon
+                    name="folder-open-outline"
+                    size={22}
+                    color={cinematicTheme.colors.foreground}
+                  />
                 </View>
                 <Text style={styles.panelActionLabel}>Abrir</Text>
               </Pressable>
@@ -1362,7 +1394,11 @@ export default function CameraScreen({ navigation }) {
                 style={styles.panelActionButton}
               >
                 <View style={styles.panelActionIconWrap}>
-                  <Icon name="share-social-outline" size={22} color="#f8fafc" />
+                  <Icon
+                    name="share-social-outline"
+                    size={22}
+                    color={cinematicTheme.colors.foreground}
+                  />
                 </View>
                 <Text style={styles.panelActionLabel}>Compartilhar</Text>
               </Pressable>
@@ -1378,7 +1414,11 @@ export default function CameraScreen({ navigation }) {
                     styles.panelActionIconDanger,
                   ]}
                 >
-                  <Icon name="trash-outline" size={22} color="#fca5a5" />
+                  <Icon
+                    name="trash-outline"
+                    size={22}
+                    color={cinematicTheme.colors.rec}
+                  />
                 </View>
                 <Text style={styles.panelActionLabel}>Excluir</Text>
               </Pressable>
@@ -1389,19 +1429,23 @@ export default function CameraScreen({ navigation }) {
                 style={styles.panelActionButton}
               >
                 <View style={styles.panelActionIconWrap}>
-                  <Icon name="close-outline" size={22} color="#f8fafc" />
+                  <Icon
+                    name="close-outline"
+                    size={22}
+                    color={cinematicTheme.colors.foreground}
+                  />
                 </View>
                 <Text style={styles.panelActionLabel}>Cancelar</Text>
               </Pressable>
             </View>
           ) : (
-            <Text style={styles.panelTitle}>{settings.showAudioLevelMeter ? '' : 'Vídeos'}</Text>
+            <View />
           )}
           {isLoadingSavedVideos || settings.showAudioLevelMeter ? (
             <>
               {!settings.showAudioLevelMeter ? (
                 <View style={styles.savedVideosLoading}>
-                  <ActivityIndicator size="small" color="#cbd5e1" />
+                  <ActivityIndicator size="small" color={cinematicTheme.colors.mutedForeground} />
                   <Text style={styles.savedVideosLoadingText}>
                     Carregando vídeos...
               </Text>

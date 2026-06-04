@@ -7,7 +7,10 @@ import {
   formatSize,
   formatVideoDuration,
 } from '../../utils/videoFormatters';
+import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
+
+const {colors} = cinematicTheme;
 
 export default function VideoCard({
   item,
@@ -36,12 +39,12 @@ export default function VideoCard({
             <Icon
               name="videocam-outline"
               size={compact ? 22 : 26}
-              color="#cbd5e1"
+              color={colors.mutedForeground}
             />
           </View>
         )}
         <View style={styles.playBadge}>
-          <Icon name="play" size={compact ? 12 : 14} color="#fff" />
+          <Icon name="play" size={compact ? 12 : 14} color={colors.foreground} />
         </View>
         <View style={styles.durationBadge}>
           <Text style={styles.durationText}>

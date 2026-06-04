@@ -1,9 +1,13 @@
 import {StyleSheet} from 'react-native';
 
+import {cinematicTheme} from '../../theme/cinematicTheme';
+
+const {colors, radii, typography} = cinematicTheme;
+
 export const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.72)',
+    backgroundColor: colors.overlayHeavy,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -11,11 +15,11 @@ export const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 28,
+    borderRadius: radii.xl,
     padding: 22,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.18)',
+    borderColor: colors.border,
     shadowColor: '#020617',
     shadowOpacity: 0.38,
     shadowRadius: 28,
@@ -26,16 +30,18 @@ export const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    color: '#38bdf8',
+    color: colors.accent,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
+    fontFamily: typography.mono.fontFamily,
   },
   message: {
-    color: '#cbd5e1',
+    color: colors.mutedForeground,
     fontSize: 15,
     lineHeight: 22,
+    fontFamily: typography.body.fontFamily,
   },
   actions: {
     marginTop: 24,
@@ -49,7 +55,7 @@ export const styles = StyleSheet.create({
   },
   buttonBase: {
     minHeight: 50,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
@@ -62,29 +68,30 @@ export const styles = StyleSheet.create({
     flexShrink: 1,
   },
   primaryButton: {
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.accent,
   },
   secondaryButton: {
-    backgroundColor: '#172033',
+    backgroundColor: colors.surface2,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
   },
   destructiveButton: {
-    backgroundColor: '#7f1d1d',
+    backgroundColor: 'rgba(255, 47, 58, 0.16)',
     borderWidth: 1,
-    borderColor: '#b91c1c',
+    borderColor: 'rgba(255, 47, 58, 0.42)',
   },
   buttonText: {
     fontSize: 15,
     fontWeight: '800',
+    fontFamily: typography.body.fontFamily,
   },
   primaryButtonText: {
-    color: '#052e16',
+    color: colors.accentForeground,
   },
   secondaryButtonText: {
-    color: '#f8fafc',
+    color: colors.foreground,
   },
   destructiveButtonText: {
-    color: '#fee2e2',
+    color: colors.rec,
   },
 });

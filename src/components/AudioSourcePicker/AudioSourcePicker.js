@@ -5,6 +5,9 @@ import {
   AUDIO_SOURCE_OPTIONS,
   UNPROCESSED_AUDIO_SOURCE,
 } from '../../constants/audioSources';
+import {cinematicTheme} from '../../theme/cinematicTheme';
+
+const {colors, radii, typography} = cinematicTheme;
 
 export default function AudioSourcePicker({selectedSource, onSourceChange}) {
   return (
@@ -68,38 +71,40 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
-    color: '#f9fafb',
+    color: colors.foreground,
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: typography.body.fontFamily,
   },
   subtitle: {
-    color: '#94a3b8',
+    color: colors.mutedForeground,
     fontSize: 13,
     lineHeight: 19,
+    fontFamily: typography.body.fontFamily,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    borderRadius: 18,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#1f2937',
-    backgroundColor: '#0f172a',
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
     padding: 14,
   },
   optionSelected: {
-    borderColor: '#2563eb',
-    backgroundColor: '#12203c',
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(247, 162, 36, 0.08)',
   },
   optionRecommended: {
-    borderColor: '#c0841a',
+    borderColor: colors.accent,
   },
   radioOuter: {
     width: 22,
     height: 22,
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: '#cbd5e1',
+    borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -108,7 +113,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 999,
-    backgroundColor: '#60a5fa',
+    backgroundColor: colors.accent,
   },
   optionBody: {
     flex: 1,
@@ -121,48 +126,54 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   optionTitle: {
-    color: '#f8fafc',
+    color: colors.foreground,
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: typography.body.fontFamily,
   },
   optionTitleSelected: {
-    color: '#ffffff',
+    color: colors.accent,
   },
   optionDescription: {
-    color: '#cbd5e1',
+    color: colors.mutedForeground,
     fontSize: 13,
     lineHeight: 18,
+    fontFamily: typography.body.fontFamily,
   },
   optionDescriptionSelected: {
-    color: '#e2e8f0',
+    color: colors.foreground,
   },
   optionHelper: {
-    color: '#94a3b8',
+    color: colors.mutedForeground,
     fontSize: 12,
     lineHeight: 17,
+    fontFamily: typography.mono.fontFamily,
   },
   badge: {
-    color: '#facc15',
+    color: colors.accent,
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
+    fontFamily: typography.mono.fontFamily,
   },
   infoBox: {
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#4338ca',
-    backgroundColor: '#172554',
+    borderColor: 'rgba(53, 193, 119, 0.35)',
+    backgroundColor: 'rgba(53, 193, 119, 0.08)',
     padding: 14,
     gap: 6,
   },
   infoTitle: {
-    color: '#dbeafe',
+    color: colors.success,
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: typography.body.fontFamily,
   },
   infoText: {
-    color: '#c7d2fe',
+    color: colors.mutedForeground,
     fontSize: 12,
     lineHeight: 18,
+    fontFamily: typography.body.fontFamily,
   },
 });

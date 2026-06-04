@@ -20,8 +20,11 @@ import {
   AUDIO_PROFILE_OPTIONS,
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
+import {cinematicTheme} from '../../theme/cinematicTheme';
 import { formatElapsedTime } from '../../utils/videoFormatters';
 import { styles } from './styles';
+
+const {colors} = cinematicTheme;
 
 export default function CameraPreview({
   camera,
@@ -61,15 +64,15 @@ export default function CameraPreview({
 
   const animatedBorderRadius = progressJS.interpolate({
     inputRange: [0, 1],
-    outputRange: [15, 6],
+    outputRange: [999, 8],
   });
   const animatedInnerScale = progressNative.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.53, 1],
+    outputRange: [0.52, 1],
   });
   const animatedOuterScale = progressNative.interpolate({
     inputRange: [0, 0.5, 1],
-    outputRange: [1, 0.85, 1],
+    outputRange: [1, 1.03, 1],
   });
 
   useEffect(() => {
@@ -120,7 +123,7 @@ export default function CameraPreview({
     [device, isActive, selectedFormat, settings, torch],
   );
 
-  const fpsLabel = `FPS: ${cameraProps?.fps ?? 'auto'}`;
+  const fpsLabel = `FPS\n${String(cameraProps?.fps ?? 'AUTO').toUpperCase()}`;
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
   const audioRisk = getAudioRiskLevel(settings);
   const showAudioRiskWarning =
@@ -208,12 +211,21 @@ export default function CameraPreview({
           style={styles.audioQuickMenuBackdrop}
         />
       ) : null}
+      <View style={styles.cameraVignetteTop} pointerEvents="none" />
+      <View style={styles.cameraVignetteBottom} pointerEvents="none" />
       <Camera
         ref={camera}
         style={StyleSheet.absoluteFill}
         onError={onError}
         onInitialized={onInitialized}
         {...cameraProps}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.recordingFrame,
+          isRecording && styles.recordingFrameActive,
+        ]}
       />
       <View style={topOverlayStyle}>
         {isRecording ? (
@@ -364,7 +376,7 @@ export default function CameraPreview({
                 <Icon
                   name={settings.audio ? 'mic' : 'mic-off-outline'}
                   size={20}
-                  color="#fff"
+                  color={colors.foreground}
                 />
               </Pressable>
             )}
@@ -373,22 +385,24 @@ export default function CameraPreview({
             disabled={isProcessingVideo}
             onPress={isRecording ? stopRecording : startRecording}
           >
+          <Animated.View
+            style={[
+              styles.recordButton,
+              isRecording && styles.recordButtonActive,
+              {
+                transform: [{ scale: animatedOuterScale }],
+              },
+            ]}
+          >
             <Animated.View
               style={[
-                styles.recordButton,
+                styles.recordButtonInner,
+                isRecording && styles.recordButtonInnerRecording,
                 {
-                  transform: [{ scale: animatedOuterScale }],
+                  borderRadius: animatedBorderRadius,
+                  transform: [{ scale: animatedInnerScale }],
                 },
               ]}
-            >
-              <Animated.View
-                style={[
-                  styles.recordButtonInner,
-                  {
-                    borderRadius: animatedBorderRadius,
-                    transform: [{ scale: animatedInnerScale }],
-                  },
-                ]}
               />
             </Animated.View>
           </Pressable>
@@ -404,7 +418,11 @@ export default function CameraPreview({
                 styles.cameraSwitchButtonDisabled,
             ]}
           >
-            <Icon name="camera-reverse-outline" size={20} color="#fff" />
+            <Icon
+              name="camera-reverse-outline"
+              size={20}
+              color={colors.foreground}
+            />
           </Pressable>
         </View>
       </View>

@@ -1,19 +1,26 @@
 import {StyleSheet} from 'react-native';
 
+import {cinematicTheme} from '../../theme/cinematicTheme';
+
+const {colors, radii, typography} = cinematicTheme;
+
 export const styles = StyleSheet.create({
   sectionTitle: {
-    color: '#e5e7eb',
+    color: colors.accent,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 10,
-    marginTop: 16,
+    marginTop: 18,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    fontFamily: typography.mono.fontFamily,
   },
   card: {
-    backgroundColor: '#111827',
-    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#1f2937',
+    borderColor: colors.border,
   },
   row: {
     flexDirection: 'row',
@@ -27,15 +34,17 @@ export const styles = StyleSheet.create({
     paddingRight: 10,
   },
   label: {
-    color: '#f9fafb',
+    color: colors.foreground,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 4,
+    fontFamily: typography.body.fontFamily,
   },
   description: {
-    color: '#9ca3af',
+    color: colors.mutedForeground,
     fontSize: 12,
     lineHeight: 17,
+    fontFamily: typography.body.fontFamily,
   },
   chipsWrap: {
     flexDirection: 'row',
@@ -44,37 +53,39 @@ export const styles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: colors.border,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: '#0f172a',
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface2,
   },
   chipActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: 'rgba(247, 162, 36, 0.18)',
+    borderColor: colors.accent,
   },
   chipDisabled: {
     opacity: 0.45,
   },
   chipText: {
-    color: '#d1d5db',
+    color: colors.foreground,
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: typography.body.fontFamily,
   },
   chipTextActive: {
-    color: '#fff',
+    color: colors.accent,
   },
   fieldBlock: {
     marginBottom: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 14,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#fff',
-    backgroundColor: '#0f172a',
+    color: colors.foreground,
+    backgroundColor: colors.surface2,
+    fontFamily: typography.body.fontFamily,
   },
 });

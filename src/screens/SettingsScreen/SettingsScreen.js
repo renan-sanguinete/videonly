@@ -1,6 +1,8 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import {Pressable, ScrollView, Text, View} from 'react-native';
 import {useCameraDevice} from 'react-native-vision-camera';
+import Icon from 'react-native-vector-icons/Ionicons';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   Card,
@@ -108,11 +110,12 @@ function buildResolutionOptions(formats) {
   return options;
 }
 
-export default function SettingsScreen() {
+export default function SettingsScreen({navigation}) {
   const device = useCameraDevice('back');
   const { settings, setSettings, resetSettings } = useCameraSettings();
   const {showAlert} = useCustomAlert();
   const [isExportingMetadata, setIsExportingMetadata] = useState(false);
+  const insets = useSafeAreaInsets();
   const formats = useMemo(() => device?.formats ?? [], [device]);
   const resolutionOptions = useMemo(
     () => buildResolutionOptions(formats),
@@ -214,7 +217,32 @@ export default function SettingsScreen() {
   }, [showAlert]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <View
+        style={[
+          styles.header,
+          {paddingTop: Math.max(insets.top, 10)},
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <Pressable
+            accessibilityLabel="Voltar"
+            hitSlop={10}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Icon name="chevron-back" size={20} color="#FAF8F5" />
+          </Pressable>
+          <Text style={styles.headerEyebrow}>Audio · Ajustes</Text>
+          <View style={{width: 34}} />
+        </View>
+        <Text style={styles.title}>Configurações</Text>
+        <Text style={styles.subtitle}>
+          Ajuste o comportamento de captura, os perfis de áudio e os formatos de gravação.
+        </Text>
+      </View>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.screenDivider} />
       <SectionTitle>Captura</SectionTitle>
       <Card>
         <ToggleRow
@@ -510,6 +538,7 @@ export default function SettingsScreen() {
       </Card>
 
       <View style={styles.bottomSpacer} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

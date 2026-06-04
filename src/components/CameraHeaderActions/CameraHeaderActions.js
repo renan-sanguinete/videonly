@@ -6,7 +6,10 @@ import {
   MEDIA_OPTIMIZATION_MODES,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
+import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
+
+const {colors} = cinematicTheme;
 
 export default function CameraHeaderActions({
   onOpenLibrary,
@@ -60,7 +63,7 @@ export default function CameraHeaderActions({
               onPress={() => setIsOptimizationMenuOpen(false)}
               style={styles.optimizationCloseButton}
             >
-              <Icon name="close-outline" size={18} color="#cbd5e1" />
+              <Icon name="close-outline" size={18} color={colors.mutedForeground} />
             </Pressable>
           </View>
           <View style={styles.optimizationMenuOptions}>
@@ -86,7 +89,7 @@ export default function CameraHeaderActions({
                     <Icon
                       name={option.icon}
                       size={22}
-                      color={isSelected ? option.iconColor : '#f8fafc'}
+                      color={isSelected ? option.iconColor : colors.foreground}
                     />
                   </View>
                   <Text
@@ -118,7 +121,7 @@ export default function CameraHeaderActions({
                 <Icon
                   name={flashMode === 'off' ? 'flashlight-outline' : 'flashlight'}
                   size={22}
-                  color="#fff"
+                  color={colors.mutedForeground}
                 />
               </Pressable>
             )}
@@ -135,11 +138,11 @@ export default function CameraHeaderActions({
                 isOptimizationControlDisabled && styles.headerIconButtonDisabled,
                 optimizationButtonStyle,
               ]}
-            >
+              >
               <Icon
                 name="options-outline"
                 size={20}
-                color={currentOptimizationMode.iconColor}
+                color={currentOptimizationMode.iconColor ?? colors.foreground}
               />
             </Pressable>
             <Pressable
@@ -152,7 +155,7 @@ export default function CameraHeaderActions({
                 isRecording && styles.headerIconButtonDisabled,
               ]}
             >
-              <Icon name="images-outline" size={24} color="#fff" />
+              <Icon name="images-outline" size={24} color={colors.mutedForeground} />
             </Pressable>
             <Pressable
               accessibilityLabel="Abrir configurações"
@@ -164,7 +167,7 @@ export default function CameraHeaderActions({
                 isRecording && styles.headerIconButtonDisabled,
               ]}
             >
-              <Icon name="settings-outline" size={22} color="#fff" />
+              <Icon name="settings-outline" size={22} color={colors.mutedForeground} />
             </Pressable>
           </View>
         </>

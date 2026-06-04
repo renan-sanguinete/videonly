@@ -1,43 +1,47 @@
-import { StyleSheet } from 'react-native';
+import {StyleSheet} from 'react-native';
+
+import {cinematicTheme} from '../../theme/cinematicTheme';
+
+const {colors, radii, typography} = cinematicTheme;
 
 export const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#111827',
-    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#1f2937',
+    borderColor: colors.border,
     padding: 14,
     flexDirection: 'row',
     gap: 12,
     alignItems: 'flex-start',
   },
   selectedCard: {
-    borderColor: '#38bdf8',
+    borderColor: colors.accent,
     borderWidth: 2,
-    backgroundColor: '#0f1d31',
+    backgroundColor: colors.surface2,
   },
   compactCard: {
     width: 112,
-    backgroundColor: '#0f172a',
-    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
     padding: 2,
     borderWidth: 1,
-    borderColor: '#243244',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   thumbWrap: {
     width: 96,
     height: 96,
-    borderRadius: 16,
+    borderRadius: radii.md,
     overflow: 'hidden',
-    backgroundColor: '#172033',
+    backgroundColor: colors.surface2,
     position: 'relative',
   },
   compactThumbWrap: {
     height: 64,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#172033',
+    backgroundColor: colors.surface2,
     marginBottom: 6,
     position: 'relative',
   },
@@ -56,7 +60,7 @@ export const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(15,23,42,0.72)',
+    backgroundColor: 'rgba(21, 16, 12, 0.74)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -64,15 +68,16 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     left: 6,
     bottom: 6,
-    backgroundColor: 'rgba(2,6,23,0.78)',
+    backgroundColor: 'rgba(21, 16, 12, 0.84)',
     borderRadius: 999,
     paddingHorizontal: 6,
     paddingVertical: 3,
   },
   durationText: {
-    color: '#fff',
+    color: colors.foreground,
     fontSize: 9,
     fontWeight: '700',
+    fontFamily: typography.mono.fontFamily,
     fontVariant: ['tabular-nums'],
   },
   content: {
@@ -80,23 +85,26 @@ export const styles = StyleSheet.create({
     gap: 2,
   },
   name: {
-    color: '#fff',
+    color: colors.foreground,
     fontWeight: '800',
     fontSize: 15,
     marginBottom: 4,
+    fontFamily: typography.display.fontFamily,
   },
   meta: {
-    color: '#cbd5e1',
+    color: colors.mutedForeground,
     fontSize: 10,
     marginBottom: 2,
+    fontFamily: typography.mono.fontFamily,
   },
   compactMeta: {
-    color: '#cbd5e1',
+    color: colors.mutedForeground,
     fontSize: 9,
     paddingLeft: 2,
+    fontFamily: typography.mono.fontFamily,
   },
   path: {
-    color: '#6b7280',
+    color: colors.mutedForeground,
     fontSize: 11,
     marginTop: 8,
     lineHeight: 16,

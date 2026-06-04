@@ -1,0 +1,42 @@
+export const cinematicTheme = {
+  colors: {
+    background: '#0A0705',
+    backgroundSoft: '#120C09',
+    foreground: '#FAF8F5',
+    mutedForeground: '#9E978F',
+    surface: '#130E0B',
+    surface2: '#1D1713',
+    surface3: '#29231D',
+    border: '#2D2823',
+    borderStrong: '#4E4640',
+    accent: '#F7A224',
+    accentForeground: '#110C09',
+    rec: '#FF2F3A',
+    success: '#35C177',
+    warning: '#F3BA25',
+    info: '#3BACDA',
+    overlay: 'rgba(10, 7, 5, 0.74)',
+    overlayHeavy: 'rgba(10, 7, 5, 0.88)',
+    overlaySoft: 'rgba(255, 255, 255, 0.04)',
+  },
+  radii: {
+    xs: 10,
+    sm: 14,
+    md: 18,
+    lg: 22,
+    xl: 28,
+    pill: 999,
+  },
+  typography: {
+    display: {
+      fontFamily: 'Space Grotesk',
+    },
+    body: {
+      fontFamily: 'Inter',
+    },
+    mono: {
+      fontFamily: 'JetBrains Mono',
+    },
+  },
+};
+

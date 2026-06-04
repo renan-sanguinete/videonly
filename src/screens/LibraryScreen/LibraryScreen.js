@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import LoadingModal from '../../components/LoadingModal/LoadingModal';
 import VideoCard from '../../components/VideoCard/VideoCard';
@@ -22,7 +23,10 @@ import {
   loadSavedVideosFromCameraRoll,
 } from '../../utils/cameraRollVideos';
 import {openVideoUri, shareVideo} from '../../utils/videoActions';
+import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
+
+const {colors} = cinematicTheme;
 
 export default function LibraryScreen({navigation}) {
   const [videos, setVideos] = useState([]);
@@ -32,8 +36,22 @@ export default function LibraryScreen({navigation}) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteProgress, setDeleteProgress] = useState({current: 0, total: 0});
   const {showAlert} = useCustomAlert();
+  const insets = useSafeAreaInsets();
 
   const selectedCount = selectedUris.length;
+  const totalSizeMb = useMemo(
+    () =>
+      Math.round(
+        videos.reduce((acc, item) => acc + (item.size || 0), 0) /
+          (1024 * 1024) *
+          10,
+      ) / 10,
+    [videos],
+  );
+  const headerMetaText =
+    selectedCount > 0
+      ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}`
+      : `${String(videos.length).padStart(2, '0')} / ${totalSizeMb} MB`;
 
   const load = useCallback(async ({showLoader = false} = {}) => {
     if (showLoader) {
@@ -169,7 +187,7 @@ export default function LibraryScreen({navigation}) {
             onPress={confirmDeleteSelected}
             style={styles.headerIconButton}>
             <Icon
-              color={isDeleting ? '#64748b' : '#f87171'}
+              color={isDeleting ? colors.borderStrong : colors.rec}
               name="trash-outline"
               size={22}
             />
@@ -182,7 +200,7 @@ export default function LibraryScreen({navigation}) {
             onPress={clearSelection}
             style={styles.headerIconButton}>
             <Icon
-              color={isDeleting ? '#64748b' : '#e2e8f0'}
+              color={isDeleting ? colors.borderStrong : colors.foreground}
               name="close-outline"
               size={24}
             />
@@ -282,7 +300,9 @@ export default function LibraryScreen({navigation}) {
             isSelected ? styles.checkboxSelected : null,
             isDeleting ? styles.checkboxDisabled : null,
           ]}>
-          {isSelected ? <Icon name="checkmark" size={16} color="#fff" /> : null}
+          {isSelected ? (
+            <Icon name="checkmark" size={16} color={colors.foreground} />
+          ) : null}
         </Pressable>
       );
     },
@@ -299,6 +319,26 @@ export default function LibraryScreen({navigation}) {
 
   return (
     <View style={styles.container}>
+      <View
+        style={[
+          styles.header,
+          {paddingTop: Math.max(insets.top, 10)},
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <Pressable
+            accessibilityLabel="Voltar"
+            hitSlop={10}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Icon name="chevron-back" size={20} color="#FAF8F5" />
+          </Pressable>
+          <Text style={styles.eyebrow}>Biblioteca</Text>
+          <Text style={styles.headerMeta}>{headerMetaText}</Text>
+        </View>
+        <Text style={styles.headerTitle}>Vídeos salvos</Text>
+      </View>
       <LoadingModal
         message={deletingMessage}
         title="Excluindo vídeos"
@@ -307,11 +347,16 @@ export default function LibraryScreen({navigation}) {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#888" style={styles.loadingIndicator} />
+          <ActivityIndicator
+            size="large"
+            color={colors.mutedForeground}
+            style={styles.loadingIndicator}
+          />
         </View>
       ) : (
         <FlatList
           data={videos}
+          style={styles.list}
           keyExtractor={item => item.uri}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
