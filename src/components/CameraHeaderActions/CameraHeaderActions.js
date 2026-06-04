@@ -92,7 +92,7 @@ export default function CameraHeaderActions({
               onPress={() => setIsOptimizationMenuOpen(false)}
               style={styles.optimizationCloseButton}
             >
-              <Icon name="close-outline" size={18} color={colors.mutedForeground} />
+              <Icon name="close-outline" size={24} color={colors.mutedForeground} />
             </Pressable>
           </View>
           <View style={styles.optimizationMenuOptions}>
@@ -146,7 +146,7 @@ export default function CameraHeaderActions({
             >
               <Icon
                 name="close-outline"
-                size={18}
+                size={24}
                 color={colors.mutedForeground}
               />
             </Pressable>
@@ -167,7 +167,7 @@ export default function CameraHeaderActions({
                 />
               </View>
               <Text style={styles.ambientAnalysisOptionDescription}>
-                Analisa o ambiente por 10 segundos e sugere a melhor configuração.
+                Analisa o ambiente por 10 segundos e sugere a melhor configuração de captação.
               </Text>
             </Pressable>
           </View>

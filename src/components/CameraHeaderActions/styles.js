@@ -81,7 +81,7 @@ export const styles = StyleSheet.create({
   },
   optimizationOption: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     gap: 8,
   },
@@ -114,6 +114,10 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15,
     fontFamily: typography.body.fontFamily,
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: 'center',
   },
   optimizationButtonNone: {
     borderWidth: 1,
