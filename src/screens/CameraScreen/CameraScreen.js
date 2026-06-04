@@ -138,6 +138,8 @@ export default function CameraScreen({ navigation }) {
   const [activeFlashMode, setActiveFlashMode] = useState('off');
   const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
   const [isOptimizationMenuOpen, setIsOptimizationMenuOpen] = useState(false);
+  const [isAmbientAnalysisMenuOpen, setIsAmbientAnalysisMenuOpen] =
+    useState(false);
   const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
     useState(false);
   const {
@@ -474,13 +476,6 @@ export default function CameraScreen({ navigation }) {
       ? styles.recordingMeterFillWarn
       : styles.recordingMeterFillSafe;
   const audioMeterWidth = `${Math.max(0, Math.min(100, audioMeterLevel * 100))}%`;
-  const ambientAnalysisButtonLabel = isAmbientAnalysisRunning
-    ? `Analisando... ${Math.max(
-        1,
-        Math.ceil(ambientAnalysisRemainingMs / 1000),
-      )}s`
-    : 'Analisar ambiente por 10s';
-
   useEffect(() => {
     recordAmbientSample(audioLevel);
   }, [audioLevel, recordAmbientSample]);
@@ -517,6 +512,11 @@ export default function CameraScreen({ navigation }) {
         onOptimizationModeChange={onOptimizationModeChange}
         isOptimizationMenuOpen={isOptimizationMenuOpen}
         setIsOptimizationMenuOpen={setIsOptimizationMenuOpen}
+        isAmbientAnalysisMenuOpen={isAmbientAnalysisMenuOpen}
+        setIsAmbientAnalysisMenuOpen={setIsAmbientAnalysisMenuOpen}
+        onStartAmbientAnalysis={onStartAmbientAnalysis}
+        isAmbientAnalysisRunning={isAmbientAnalysisRunning}
+        isAmbientAnalysisDisabled={!settings.audio}
         onOpenLibrary={() => navigation.navigate('Library')}
         onOpenSettings={() => navigation.navigate('Settings')}
       />
@@ -525,10 +525,14 @@ export default function CameraScreen({ navigation }) {
         navigation,
         activeFlashMode,
         cameraPosition,
+        isAmbientAnalysisMenuOpen,
+        isAmbientAnalysisRunning,
         isRecording,
         isOptimizationMenuOpen,
         onOptimizationModeChange,
+        onStartAmbientAnalysis,
         settings.optimizationMode,
+        settings.audio,
       ],
   );
 
@@ -1411,33 +1415,6 @@ export default function CameraScreen({ navigation }) {
                 />
               )}
 
-              {settings.audio ? (
-                <Pressable
-                  disabled={isAmbientAnalysisRunning}
-                  onPress={onStartAmbientAnalysis}
-                  style={[
-                    styles.ambientAnalysisButton,
-                    isAmbientAnalysisRunning &&
-                      styles.ambientAnalysisButtonDisabled,
-                  ]}
-                >
-                  <View style={styles.ambientAnalysisButtonIconWrap}>
-                    <Icon
-                      name="sparkles-outline"
-                      size={22}
-                      color={cinematicTheme.colors.accent}
-                    />
-                  </View>
-                  <View style={styles.ambientAnalysisButtonTextWrap}>
-                    <Text style={styles.ambientAnalysisButtonTitle}>
-                      {ambientAnalysisButtonLabel}
-                    </Text>
-                    <Text style={styles.ambientAnalysisButtonSubtitle}>
-                      Analisa o ambiente por 10 segundos e sugere a melhor configuração.
-                    </Text>
-                  </View>
-                </Pressable>
-              ) : null}
             </View>
           </View>
         ) : null}

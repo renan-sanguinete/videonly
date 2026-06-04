@@ -1,7 +1,7 @@
 import {StyleSheet} from 'react-native';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 
-const {colors, radii} = cinematicTheme;
+const {colors, radii, typography} = cinematicTheme;
 
 export const styles = StyleSheet.create({
   headerActions: {
@@ -39,6 +39,9 @@ export const styles = StyleSheet.create({
   headerOptimizationButton: {
     marginRight: 4,
   },
+  headerAmbientButton: {
+    marginRight: 4,
+  },
   optimizationMenuExpanded: {
     width: '100%',
     borderRadius: radii.lg,
@@ -74,12 +77,11 @@ export const styles = StyleSheet.create({
   },
   optimizationMenuOptions: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
     gap: 8,
   },
   optimizationOption: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
@@ -107,6 +109,12 @@ export const styles = StyleSheet.create({
   optimizationOptionLabelSelected: {
     color: colors.accent,
   },
+  ambientAnalysisOptionDescription: {
+    color: colors.mutedForeground,
+    fontSize: 11,
+    lineHeight: 15,
+    fontFamily: typography.body.fontFamily,
+  },
   optimizationButtonNone: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -126,5 +134,20 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.rec,
     backgroundColor: 'rgba(255, 47, 58, 0.12)',
+  },
+  ambientAnalysisButtonNone: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
+  },
+  ambientAnalysisButtonActive: {
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(247, 162, 36, 0.14)',
+  },
+  ambientAnalysisButtonRunning: {
+    borderWidth: 1,
+    borderColor: colors.success,
+    backgroundColor: 'rgba(53, 193, 119, 0.12)',
   },
 });
