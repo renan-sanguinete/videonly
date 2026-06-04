@@ -67,7 +67,9 @@ export default function VideoCard({
         {!compact ? (
           <Text style={styles.meta}>{formatDate(item.timestamp * 1000)}</Text>
         ) : null}
-        <Text style={[compact ? styles.compactMeta : styles.meta]}>{formatSize(item.size)}</Text>
+        {!compact ? (
+          <Text style={styles.meta}>{formatSize(item.size)}</Text>
+        ) : null}
       </View>
 
       {action || null}

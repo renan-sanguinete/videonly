@@ -95,7 +95,7 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     right: 12,
-    bottom: 122,
+    bottom: 258,
     zIndex: 10,
   },
   audioQuickMenuBackdrop: {
@@ -128,7 +128,7 @@ export const styles = StyleSheet.create({
   },
   controls: {
     position: 'absolute',
-    bottom: 22,
+    bottom: 188,
     left: 12,
     right: 12,
     gap: 12,

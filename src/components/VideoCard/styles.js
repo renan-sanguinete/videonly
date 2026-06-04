@@ -22,12 +22,9 @@ export const styles = StyleSheet.create({
   },
   compactCard: {
     width: 112,
-    backgroundColor: colors.surface,
+    height: 76,
     borderRadius: radii.md,
     padding: 2,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
   },
   thumbWrap: {
     width: 96,

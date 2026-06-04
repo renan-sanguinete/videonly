@@ -6,8 +6,23 @@ const {colors, radii, typography} = cinematicTheme;
 
 export const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background},
+  previewStage: {
+    flex: 1,
+    position: 'relative',
+  },
+  bottomOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 8,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    backgroundColor: colors.overlay,
+
+  },
   panel: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.overlay,
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.border,
@@ -15,8 +30,6 @@ export const styles = StyleSheet.create({
     minHeight: 160,
     maxHeight: 240,
     gap: 12,
-    marginHorizontal: 10,
-    shadowColor: '#000',
     shadowOpacity: 0.24,
     shadowRadius: 18,
     shadowOffset: {width: 0, height: 10},
@@ -32,9 +45,12 @@ export const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  panelHeaderTitleRow:{
+  panelHeaderTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  savedVideosRow: {
+    minHeight: 84,
   },
   panelKicker: {
     color: colors.accent,

@@ -1196,97 +1196,69 @@ export default function CameraScreen({ navigation }) {
         title="Excluindo vídeo"
         visible={isDeletingSelectedVideo}
       />
-      <CameraPreview
-        key={cameraSessionKey}
-        camera={camera}
-        cameraPosition={cameraPosition}
-        currentCameraLabel={currentCameraLabel}
-        isProcessingVideo={isProcessingVideo}
-        isRecording={isRecording}
-        isActive={isCameraActive}
-        torch={activeFlashMode}
-        onInitialized={() => {
-          setIsCameraReady(true);
-        }}
-        onToggleCamera={onToggleCamera}
-        recordingElapsedMs={recordingElapsedMs}
-        settings={settings}
-        startRecording={startRecording}
-        stopRecording={stopRecording}
-        onApplyAudioProfile={onApplyAudioProfile}
-        onSetAudioEnabled={onSetAudioEnabled}
-        onOpenCustomAudioSettings={onOpenCustomAudioSettings}
-        isOptimizationMenuOpen={isOptimizationMenuOpen}
-        onError={error => {
-          const errorCode = error?.code ?? null;
+      <View style={styles.previewStage}>
+        <CameraPreview
+          key={cameraSessionKey}
+          camera={camera}
+          cameraPosition={cameraPosition}
+          currentCameraLabel={currentCameraLabel}
+          isProcessingVideo={isProcessingVideo}
+          isRecording={isRecording}
+          isActive={isCameraActive}
+          torch={activeFlashMode}
+          onInitialized={() => {
+            setIsCameraReady(true);
+          }}
+          onToggleCamera={onToggleCamera}
+          recordingElapsedMs={recordingElapsedMs}
+          settings={settings}
+          startRecording={startRecording}
+          stopRecording={stopRecording}
+          onApplyAudioProfile={onApplyAudioProfile}
+          onSetAudioEnabled={onSetAudioEnabled}
+          onOpenCustomAudioSettings={onOpenCustomAudioSettings}
+          isOptimizationMenuOpen={isOptimizationMenuOpen}
+          onError={error => {
+            const errorCode = error?.code ?? null;
 
-          setIsCameraReady(false);
-          setIsRecording(false);
-          recordingStartedAtRef.current = null;
-          setRecordingElapsedMs(0);
+            setIsCameraReady(false);
+            setIsRecording(false);
+            recordingStartedAtRef.current = null;
+            setRecordingElapsedMs(0);
 
-          scheduleCameraRecovery({
-            delayMs:
-              errorCode === 'system/camera-is-restricted'
-                ? 1500
-                : errorCode === 'device/camera-already-in-use'
-                ? 1200
-                : 700,
-          });
-        }}
-      />
+            scheduleCameraRecovery({
+              delayMs:
+                errorCode === 'system/camera-is-restricted'
+                  ? 1500
+                  : errorCode === 'device/camera-already-in-use'
+                  ? 1200
+                  : 700,
+            });
+          }}
+        />
 
-      {isRecording ? (
-        <View
-          style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
-        >
-          {settings.showAudioLevelMeter && settings.audio ? (
-            <View style={styles.recordingMeterPanel}>
-              <View style={styles.recordingMeterHeader}>
-                <Text style={styles.recordingMeterLabel}>VU meter</Text>
-                <Text
-                  style={[
-                    styles.recordingMeterValue,
-                    audioMeterIsClipping && styles.recordingMeterValueClip,
-                  ]}
-                >
-                  {audioMeterIsClipping
-                    ? 'CLIP'
-                    : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
-                </Text>
+        {!isRecording ? (
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.bottomOverlay,
+              {paddingBottom: Math.max(insets.bottom, 10)},
+            ]}
+          >
+            <View style={styles.panel}>
+              <View style={styles.panelHeader}>
+                <View style={styles.panelHeaderTitleWrap}>
+                  <View style={styles.panelHeaderTitleRow}>
+                    <Text style={styles.panelKicker}>Vídeos</Text>
+                    <Pressable onPress={() => navigation.navigate('Library')}>
+                      <Text style={styles.panelLink}>Ver todos →</Text>
+                    </Pressable>
+                  </View>
+                </View>
               </View>
-              <View style={styles.recordingMeterTrack}>
-                <View
-                  style={[
-                    styles.recordingMeterFill,
-                    audioMeterFillStyle,
-                    {width: audioMeterWidth},
-                  ]}
-                />
-                <View style={styles.recordingMeterThreshold} />
-              </View>
-              <Text style={styles.recordingMeterHint}>
-                {audioMeterIsClipping
-                  ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
-                  : 'Zona segura em verde. Amarelo indica aproximação do limite.'}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.recordingPanelSpacer} />
-          )}
-        </View>
-      ) : (
-        <View
-          style={[styles.panel, { marginBottom: Math.max(insets.bottom, 12) }]}
-        >
-          <View style={styles.panelHeader}>
-            <View style={styles.panelHeaderTitleWrap}>
-              <View style={styles.panelHeaderTitleRow}>
-                <Text style={styles.panelKicker}>Vídeos</Text>
-                <Pressable onPress={() => navigation.navigate('Library')}>
-                  <Text style={styles.panelLink}>Ver todos →</Text>
-                </Pressable>
-              </View>
+
+              <View style={styles.panelDivider} />
+
               {selectedVideo ? (
             <View style={styles.panelActions}>
               <Pressable
@@ -1373,103 +1345,103 @@ export default function CameraScreen({ navigation }) {
           ) : (
             <View />
           )}
-          {isLoadingSavedVideos || settings.showAudioLevelMeter ? (
-            <>
-              {!settings.showAudioLevelMeter ? (
+
+              {settings.showAudioLevelMeter && settings.audio ? (
+                <View style={styles.recordingMeterPanel}>
+                  <View style={styles.recordingMeterHeader}>
+                    <Text style={styles.recordingMeterLabel}>VU preview</Text>
+                    <Text
+                      style={[
+                        styles.recordingMeterValue,
+                        audioMeterIsClipping && styles.recordingMeterValueClip,
+                      ]}
+                    >
+                      {audioMeterIsClipping
+                        ? 'CLIP'
+                        : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
+                    </Text>
+                  </View>
+                  <View style={styles.recordingMeterTrack}>
+                    <View
+                      style={[
+                        styles.recordingMeterFill,
+                        audioMeterFillStyle,
+                        {width: audioMeterWidth},
+                      ]}
+                    />
+                    <View style={styles.recordingMeterThreshold} />
+                  </View>
+                  <Text style={styles.recordingMeterHint}>
+                    {audioMeterIsClipping
+                      ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
+                      : 'Prévia do ambiente antes de gravar. Verde indica zona segura.'}
+                  </Text>
+                </View>
+              ) : isLoadingSavedVideos ? (
                 <View style={styles.savedVideosLoading}>
-                  <ActivityIndicator size="small" color={cinematicTheme.colors.mutedForeground} />
+                  <ActivityIndicator
+                    size="small"
+                    color={cinematicTheme.colors.mutedForeground}
+                  />
                   <Text style={styles.savedVideosLoadingText}>
                     Carregando vídeos...
-              </Text>
-              </View>
-              ) : null}
-            </>
-          ) : (
-            <FlatList
-              data={savedVideos}
-              keyExtractor={item => item.uri}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.savedVideosContent}
-              renderItem={({ item }) => (
-                <VideoCard
-                  compact
-                  item={item}
-                  selected={item.uri === selectedVideoUri}
-                  onPress={() => onVideoCardPress(item)}
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={savedVideos}
+                  keyExtractor={item => item.uri}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.savedVideosContent}
+                  style={styles.savedVideosRow}
+                  renderItem={({item}) => (
+                    <VideoCard
+                      compact
+                      item={item}
+                      selected={item.uri === selectedVideoUri}
+                      onPress={() => onVideoCardPress(item)}
+                    />
+                  )}
+                  ListEmptyComponent={
+                    <Text style={styles.emptyText}>
+                      Nenhum vídeo salvo ainda.
+                    </Text>
+                  }
                 />
               )}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>Nenhum vídeo salvo ainda.</Text>
-              }
-            />
-          )}
-            </View>
-            
-          </View>
-          <View style={styles.panelDivider} />
-          {settings.showAudioLevelMeter && settings.audio ? (
-            <View style={styles.recordingMeterPanel}>
-              <View style={styles.recordingMeterHeader}>
-                <Text style={styles.recordingMeterLabel}>VU preview</Text>
-                <Text
+
+              {settings.audio ? (
+                <Pressable
+                  disabled={isAmbientAnalysisRunning}
+                  onPress={onStartAmbientAnalysis}
                   style={[
-                    styles.recordingMeterValue,
-                    audioMeterIsClipping && styles.recordingMeterValueClip,
+                    styles.ambientAnalysisButton,
+                    isAmbientAnalysisRunning &&
+                      styles.ambientAnalysisButtonDisabled,
                   ]}
                 >
-                  {audioMeterIsClipping
-                    ? 'CLIP'
-                    : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
-                </Text>
-              </View>
-              <View style={styles.recordingMeterTrack}>
-                <View
-                  style={[
-                    styles.recordingMeterFill,
-                    audioMeterFillStyle,
-                    {width: audioMeterWidth},
-                  ]}
-                />
-                <View style={styles.recordingMeterThreshold} />
-              </View>
-              <Text style={styles.recordingMeterHint}>
-                {audioMeterIsClipping
-                  ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
-                  : 'Prévia do ambiente antes de gravar. Verde indica zona segura.'}
-              </Text>
+                  <View style={styles.ambientAnalysisButtonIconWrap}>
+                    <Icon
+                      name="sparkles-outline"
+                      size={22}
+                      color={cinematicTheme.colors.accent}
+                    />
+                  </View>
+                  <View style={styles.ambientAnalysisButtonTextWrap}>
+                    <Text style={styles.ambientAnalysisButtonTitle}>
+                      {ambientAnalysisButtonLabel}
+                    </Text>
+                    <Text style={styles.ambientAnalysisButtonSubtitle}>
+                      Analisa o ambiente por 10 segundos e sugere a melhor configuração.
+                    </Text>
+                  </View>
+                </Pressable>
+              ) : null}
             </View>
-          ) : null}
-          {settings.audio && !selectedVideo ? (
-            <Pressable
-              disabled={isAmbientAnalysisRunning}
-              onPress={onStartAmbientAnalysis}
-              style={[
-                styles.ambientAnalysisButton,
-                isAmbientAnalysisRunning &&
-                  styles.ambientAnalysisButtonDisabled,
-              ]}
-            >
-              <View style={styles.ambientAnalysisButtonIconWrap}>
-                <Icon
-                  name="sparkles-outline"
-                  size={22}
-                  color={cinematicTheme.colors.accent}
-                />
-              </View>
-              <View style={styles.ambientAnalysisButtonTextWrap}>
-                <Text style={styles.ambientAnalysisButtonTitle}>
-                  {ambientAnalysisButtonLabel}
-                </Text>
-                <Text style={styles.ambientAnalysisButtonSubtitle}>
-                  Analisa o ambiente e sugere a melhor configuração.
-                </Text>
-              </View>
-            </Pressable>
-          ) : null}
-          
-        </View>
-      )}
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
