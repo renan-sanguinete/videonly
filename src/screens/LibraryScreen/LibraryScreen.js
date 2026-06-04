@@ -177,50 +177,6 @@ export default function LibraryScreen({navigation}) {
     );
   }, [deleteVideos, isDeleting, selectedCount, showAlert]);
 
-  const renderHeaderActions = useCallback(
-    () => (
-      <View style={styles.headerActions}>
-        {selectedCount > 0 ? (
-          <Pressable
-            disabled={isDeleting}
-            hitSlop={10}
-            onPress={confirmDeleteSelected}
-            style={styles.headerIconButton}>
-            <Icon
-              color={isDeleting ? colors.borderStrong : colors.rec}
-              name="trash-outline"
-              size={22}
-            />
-          </Pressable>
-        ) : null}
-        {selectedCount > 0 ? (
-          <Pressable
-            disabled={isDeleting}
-            hitSlop={10}
-            onPress={clearSelection}
-            style={styles.headerIconButton}>
-            <Icon
-              color={isDeleting ? colors.borderStrong : colors.foreground}
-              name="close-outline"
-              size={24}
-            />
-          </Pressable>
-        ) : null}
-      </View>
-    ),
-    [clearSelection, confirmDeleteSelected, isDeleting, selectedCount],
-  );
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title:
-        selectedCount > 0
-          ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}`
-          : 'Vídeos salvos',
-      headerRight: renderHeaderActions,
-    });
-  }, [navigation, renderHeaderActions, selectedCount]);
-
   useLayoutEffect(() => {
     load({showLoader: true});
   }, [load]);
@@ -335,7 +291,27 @@ export default function LibraryScreen({navigation}) {
             <Icon name="chevron-back" size={20} color="#FAF8F5" />
           </Pressable>
           <Text style={styles.eyebrow}>Biblioteca</Text>
-          <Text style={styles.headerMeta}>{headerMetaText}</Text>
+          <View style={styles.headerRightGroup}>
+            <Text style={styles.headerMeta}>{headerMetaText}</Text>
+            {selectedCount > 0 ? (
+              <Pressable
+                accessibilityLabel="Excluir vídeos selecionados"
+                disabled={isDeleting}
+                hitSlop={10}
+                onPress={confirmDeleteSelected}
+                style={[
+                  styles.headerIconButton,
+                  isDeleting && styles.headerIconButtonDisabled,
+                ]}
+              >
+                <Icon
+                  color={isDeleting ? colors.borderStrong : colors.rec}
+                  name="trash-outline"
+                  size={22}
+                />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
         <Text style={styles.headerTitle}>Vídeos salvos</Text>
       </View>

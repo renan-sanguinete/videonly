@@ -25,6 +25,12 @@ export const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
+  headerRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
   backButton: {
     width: 34,
     height: 34,
@@ -108,7 +114,16 @@ export const styles = StyleSheet.create({
     gap: 16,
   },
   headerIconButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  headerIconButtonDisabled: {
+    opacity: 0.45,
   },
 });

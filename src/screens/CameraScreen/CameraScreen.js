@@ -1250,18 +1250,22 @@ export default function CameraScreen({ navigation }) {
             ]}
           >
             <View style={styles.panel}>
-              <View style={styles.panelHeader}>
-                <View style={styles.panelHeaderTitleWrap}>
-                  <View style={styles.panelHeaderTitleRow}>
-                    <Text style={styles.panelKicker}>Vídeos</Text>
-                    <Pressable onPress={() => navigation.navigate('Library')}>
-                      <Text style={styles.panelLink}>Ver todos →</Text>
-                    </Pressable>
+              {!selectedVideo ? (
+                <>
+                  <View style={styles.panelHeader}>
+                    <View style={styles.panelHeaderTitleWrap}>
+                      <View style={styles.panelHeaderTitleRow}>
+                        <Text style={styles.panelKicker}>Vídeos</Text>
+                        <Pressable onPress={() => navigation.navigate('Library')}>
+                          <Text style={styles.panelLink}>Ver todos →</Text>
+                        </Pressable>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </View>
 
-              <View style={styles.panelDivider} />
+                  <View style={styles.panelDivider} />
+                </>
+              ) : null}
 
               {selectedVideo ? (
             <View style={styles.panelActions}>

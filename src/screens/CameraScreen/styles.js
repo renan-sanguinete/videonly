@@ -153,16 +153,15 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 2,
   },
   panelActionButton: {
     flex: 1,
     alignItems: 'center',
-    gap: 8,
   },
   panelActionIconWrap: {
-    width: 48,
-    height: 48,
+    width: 32,
+    height: 32,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -176,13 +175,13 @@ export const styles = StyleSheet.create({
   },
   panelActionLabel: {
     color: colors.foreground,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '400',
     textAlign: 'center',
     fontFamily: typography.body.fontFamily,
   },
   savedVideosContent: {
-    gap: 12,
+    gap: 8,
     paddingRight: 8,
   },
   emptyText: {
