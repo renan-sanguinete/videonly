@@ -123,7 +123,7 @@ export default function CameraPreview({
     [device, isActive, selectedFormat, settings, torch],
   );
 
-  const fpsLabel = `FPS\n${String(cameraProps?.fps ?? 'AUTO').toUpperCase()}`;
+  const fpsLabel = `FPS ${String(cameraProps?.fps ?? 'AUTO').toUpperCase()}`;
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
   const audioRisk = getAudioRiskLevel(settings);
   const showAudioRiskWarning =
@@ -219,13 +219,6 @@ export default function CameraPreview({
         onError={onError}
         onInitialized={onInitialized}
         {...cameraProps}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.recordingFrame,
-          isRecording && styles.recordingFrameActive,
-        ]}
       />
       <View style={topOverlayStyle}>
         {isRecording ? (

@@ -32,6 +32,10 @@ export const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  panelHeaderTitleRow:{
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   panelKicker: {
     color: colors.accent,
     fontFamily: typography.mono.fontFamily,

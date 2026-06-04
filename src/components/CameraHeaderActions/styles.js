@@ -17,9 +17,10 @@ export const styles = StyleSheet.create({
   },
 
   rightGroup: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     gap: 6,
   },
   headerIconButton: {

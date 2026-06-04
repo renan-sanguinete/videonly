@@ -107,7 +107,6 @@ export const styles = StyleSheet.create({
   },
   resetText: {color: colors.foreground, fontWeight: '700', fontFamily: typography.body.fontFamily},
   exportButton: {
-    flex: 1,
     marginRight: 10,
     backgroundColor: colors.accent,
     paddingVertical: 10,
@@ -118,9 +117,9 @@ export const styles = StyleSheet.create({
     color: colors.accentForeground,
     fontWeight: '800',
     fontFamily: typography.body.fontFamily,
+    textAlign: 'center',
   },
   destructiveButton: {
-    flex: 1,
     backgroundColor: 'rgba(255, 47, 58, 0.16)',
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -135,6 +134,7 @@ export const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 10,
   },
   secondaryActionButton: {

@@ -33,9 +33,6 @@ export const styles = StyleSheet.create({
     borderColor: 'transparent',
     zIndex: 4,
   },
-  recordingFrameActive: {
-    borderColor: 'rgba(255, 47, 58, 0.55)',
-  },
   topOverlay: {
     position: 'absolute',
     top: 10,

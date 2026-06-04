@@ -1281,81 +1281,13 @@ export default function CameraScreen({ navigation }) {
         >
           <View style={styles.panelHeader}>
             <View style={styles.panelHeaderTitleWrap}>
-              <Text style={styles.panelKicker}>Biblioteca</Text>
-              <Text style={styles.panelTitle}>
-                Vídeos salvos {String(savedVideos.length).padStart(2, '0')}
-              </Text>
-              <Text style={styles.panelMeta}>
-                {savedVideos.length === 0
-                  ? 'Nenhum vídeo salvo ainda.'
-                  : 'Toque em um cartão para abrir ou compartilhar.'}
-              </Text>
-            </View>
-            <Pressable onPress={() => navigation.navigate('Library')}>
-              <Text style={styles.panelLink}>Ver todos →</Text>
-            </Pressable>
-          </View>
-          <View style={styles.panelDivider} />
-          {settings.showAudioLevelMeter && settings.audio ? (
-            <View style={styles.recordingMeterPanel}>
-              <View style={styles.recordingMeterHeader}>
-                <Text style={styles.recordingMeterLabel}>VU preview</Text>
-                <Text
-                  style={[
-                    styles.recordingMeterValue,
-                    audioMeterIsClipping && styles.recordingMeterValueClip,
-                  ]}
-                >
-                  {audioMeterIsClipping
-                    ? 'CLIP'
-                    : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
-                </Text>
+              <View style={styles.panelHeaderTitleRow}>
+                <Text style={styles.panelKicker}>Vídeos</Text>
+                <Pressable onPress={() => navigation.navigate('Library')}>
+                  <Text style={styles.panelLink}>Ver todos →</Text>
+                </Pressable>
               </View>
-              <View style={styles.recordingMeterTrack}>
-                <View
-                  style={[
-                    styles.recordingMeterFill,
-                    audioMeterFillStyle,
-                    {width: audioMeterWidth},
-                  ]}
-                />
-                <View style={styles.recordingMeterThreshold} />
-              </View>
-              <Text style={styles.recordingMeterHint}>
-                {audioMeterIsClipping
-                  ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
-                  : 'Prévia do ambiente antes de gravar. Verde indica zona segura.'}
-              </Text>
-            </View>
-          ) : null}
-          {settings.audio && !selectedVideo ? (
-            <Pressable
-              disabled={isAmbientAnalysisRunning}
-              onPress={onStartAmbientAnalysis}
-              style={[
-                styles.ambientAnalysisButton,
-                isAmbientAnalysisRunning &&
-                  styles.ambientAnalysisButtonDisabled,
-              ]}
-            >
-              <View style={styles.ambientAnalysisButtonIconWrap}>
-                <Icon
-                  name="sparkles-outline"
-                  size={22}
-                  color={cinematicTheme.colors.accent}
-                />
-              </View>
-              <View style={styles.ambientAnalysisButtonTextWrap}>
-                <Text style={styles.ambientAnalysisButtonTitle}>
-                  {ambientAnalysisButtonLabel}
-                </Text>
-                <Text style={styles.ambientAnalysisButtonSubtitle}>
-                  Analisa o ambiente e sugere a melhor configuração.
-                </Text>
-              </View>
-            </Pressable>
-          ) : null}
-          {selectedVideo ? (
+              {selectedVideo ? (
             <View style={styles.panelActions}>
               <Pressable
                 disabled={isDeletingSelectedVideo}
@@ -1472,6 +1404,70 @@ export default function CameraScreen({ navigation }) {
               }
             />
           )}
+            </View>
+            
+          </View>
+          <View style={styles.panelDivider} />
+          {settings.showAudioLevelMeter && settings.audio ? (
+            <View style={styles.recordingMeterPanel}>
+              <View style={styles.recordingMeterHeader}>
+                <Text style={styles.recordingMeterLabel}>VU preview</Text>
+                <Text
+                  style={[
+                    styles.recordingMeterValue,
+                    audioMeterIsClipping && styles.recordingMeterValueClip,
+                  ]}
+                >
+                  {audioMeterIsClipping
+                    ? 'CLIP'
+                    : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
+                </Text>
+              </View>
+              <View style={styles.recordingMeterTrack}>
+                <View
+                  style={[
+                    styles.recordingMeterFill,
+                    audioMeterFillStyle,
+                    {width: audioMeterWidth},
+                  ]}
+                />
+                <View style={styles.recordingMeterThreshold} />
+              </View>
+              <Text style={styles.recordingMeterHint}>
+                {audioMeterIsClipping
+                  ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
+                  : 'Prévia do ambiente antes de gravar. Verde indica zona segura.'}
+              </Text>
+            </View>
+          ) : null}
+          {settings.audio && !selectedVideo ? (
+            <Pressable
+              disabled={isAmbientAnalysisRunning}
+              onPress={onStartAmbientAnalysis}
+              style={[
+                styles.ambientAnalysisButton,
+                isAmbientAnalysisRunning &&
+                  styles.ambientAnalysisButtonDisabled,
+              ]}
+            >
+              <View style={styles.ambientAnalysisButtonIconWrap}>
+                <Icon
+                  name="sparkles-outline"
+                  size={22}
+                  color={cinematicTheme.colors.accent}
+                />
+              </View>
+              <View style={styles.ambientAnalysisButtonTextWrap}>
+                <Text style={styles.ambientAnalysisButtonTitle}>
+                  {ambientAnalysisButtonLabel}
+                </Text>
+                <Text style={styles.ambientAnalysisButtonSubtitle}>
+                  Analisa o ambiente e sugere a melhor configuração.
+                </Text>
+              </View>
+            </Pressable>
+          ) : null}
+          
         </View>
       )}
     </View>
