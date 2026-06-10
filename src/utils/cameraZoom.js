@@ -47,9 +47,18 @@ export function getZoomFromNormalizedValue(normalizedZoom, device) {
   return minZoom * Math.pow(maxZoom / minZoom, clampedNormalized);
 }
 
-export function getZoomFromTrackPosition(positionY, trackHeight, device) {
-  const usableHeight = Math.max(trackHeight, 1);
-  const normalizedFromTop = clamp(positionY / usableHeight, 0, 1);
+export function getZoomFromTrackPosition(
+  positionY,
+  trackHeight,
+  device,
+  thumbSize = 0,
+) {
+  const usableHeight = Math.max(trackHeight - thumbSize, 1);
+  const normalizedFromTop = clamp(
+    (positionY - thumbSize / 2) / usableHeight,
+    0,
+    1,
+  );
   const normalizedZoom = 1 - normalizedFromTop;
 
   return getZoomFromNormalizedValue(normalizedZoom, device);

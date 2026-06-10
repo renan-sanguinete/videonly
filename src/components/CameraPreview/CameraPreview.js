@@ -28,6 +28,7 @@ import { clamp, getInitialZoomValue } from '../../utils/cameraZoom';
 import { styles } from './styles';
 
 const {colors} = cinematicTheme;
+const PINCH_SENSITIVITY = 0.1;
 
 export default function CameraPreview({
   camera,
@@ -151,7 +152,8 @@ export default function CameraPreview({
       }
 
       const nextZoom = clamp(
-        pinchStartZoomRef.current * event.nativeEvent.scale,
+        pinchStartZoomRef.current *
+          Math.pow(event.nativeEvent.scale, PINCH_SENSITIVITY),
         minZoom,
         maxZoom,
       );

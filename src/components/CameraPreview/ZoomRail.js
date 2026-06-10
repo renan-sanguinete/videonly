@@ -118,14 +118,21 @@ export default function ZoomRail({
   const applyZoom = useCallback((pageY) => {
     const localY = pageYToLocalY(pageY);
     const nextZoom = clamp(
-      getZoomFromTrackPosition(localY, trackHeightRef.current, deviceRef.current),
+      getZoomFromTrackPosition(
+        localY,
+        trackHeightRef.current,
+        deviceRef.current,
+        THUMB_SIZE,
+      ),
       deviceRef.current?.minZoom ?? 1,
       deviceRef.current?.maxZoom ?? 1,
     );
 
     currentZoomRef.current = nextZoom;
     setDisplayZoom(nextZoom);
-    setThumbPos(computeThumbPos(getNormalizedZoomValue(nextZoom, deviceRef.current)));
+    setThumbPos(
+      computeThumbPos(getNormalizedZoomValue(nextZoom, deviceRef.current)),
+    );
 
     // Atualiza fill via Animated (native driver, sem re-render)
     normalizedAnim.setValue(getNormalizedZoomValue(nextZoom, deviceRef.current));
