@@ -58,12 +58,34 @@ export default function CameraPreview({
     return pickFormatForSettings(device?.formats ?? [], settings);
   }, [device, settings]);
   const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 0);
   const topOverlayStyle = useMemo(
     () => [
       styles.topOverlay,
       { paddingTop: insets.top ? insets.top + 50 : 60 },
     ],
     [insets.top],
+  );
+  const controlsStyle = useMemo(
+    () => [
+      styles.controls,
+      {bottom: 168 + bottomInset},
+    ],
+    [bottomInset],
+  );
+  const audioStatusStyle = useMemo(
+    () => [
+      styles.audioStatusWrap,
+      {bottom: 238 + bottomInset},
+    ],
+    [bottomInset],
+  );
+  const audioQuickMenuStyle = useMemo(
+    () => [
+      styles.audioQuickMenu,
+      {bottom: 20 + bottomInset},
+    ],
+    [bottomInset],
   );
   const progressNative = useRef(new Animated.Value(0)).current;
   const progressJS = useRef(new Animated.Value(0)).current;
@@ -261,7 +283,7 @@ export default function CameraPreview({
       />
 
       {isRecording && settings.showAudioStatus ? (
-        <View style={styles.audioStatusWrap}>
+        <View style={audioStatusStyle}>
           <View
             style={[
               styles.audioStatusPill,
@@ -286,11 +308,11 @@ export default function CameraPreview({
         </View>
       ) : null}
 
-      <View style={styles.controls}>
+      <View style={controlsStyle}>
         <View style={styles.controlsRow}>
           <View style={styles.controlsSideSlot}>
             {!isRecording && isAudioMenuOpen ? (
-              <View style={styles.audioQuickMenu}>
+              <View style={audioQuickMenuStyle}>
                 <Text style={styles.audioQuickMenuTitle}>
                   {settings.audio ? 'Captação' : 'Áudio'}
                 </Text>
