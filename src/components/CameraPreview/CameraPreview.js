@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -10,6 +10,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PinchGestureHandler, State } from 'react-native-gesture-handler';
 
 import {
   parseCameraNumber,
@@ -23,7 +24,7 @@ import {
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import ZoomRail from './ZoomRail';
 import { formatElapsedTime } from '../../utils/videoFormatters';
-import { getInitialZoomValue } from '../../utils/cameraZoom';
+import { clamp, getInitialZoomValue } from '../../utils/cameraZoom';
 import { styles } from './styles';
 
 const {colors} = cinematicTheme;
@@ -54,6 +55,8 @@ export default function CameraPreview({
   const [currentZoom, setCurrentZoom] = useState(() =>
     getInitialZoomValue(settings.zoom, null),
   );
+  const currentZoomRef = useRef(currentZoom);
+  const pinchStartZoomRef = useRef(currentZoom);
   const selectedFormat = useMemo(() => {
     return pickFormatForSettings(device?.formats ?? [], settings);
   }, [device, settings]);
@@ -123,6 +126,64 @@ export default function CameraPreview({
     setCurrentZoom(getInitialZoomValue(settings.zoom, device));
   }, [device, settings.zoom]);
 
+  useEffect(() => {
+    currentZoomRef.current = currentZoom;
+    pinchStartZoomRef.current = currentZoom;
+  }, [currentZoom]);
+
+  const minZoom = device?.minZoom ?? 1;
+  const maxZoom = device?.maxZoom ?? 1;
+
+  const commitZoom = useCallback(
+    nextZoom => {
+      const clampedZoom = clamp(nextZoom, minZoom, maxZoom);
+      currentZoomRef.current = clampedZoom;
+      setCurrentZoom(clampedZoom);
+      onZoomCommit?.(clampedZoom);
+    },
+    [maxZoom, minZoom, onZoomCommit],
+  );
+
+  const handlePinchGesture = useCallback(
+    event => {
+      if (!device || !settings.enableZoomGesture || !isRecording) {
+        return;
+      }
+
+      const nextZoom = clamp(
+        pinchStartZoomRef.current * event.nativeEvent.scale,
+        minZoom,
+        maxZoom,
+      );
+      currentZoomRef.current = nextZoom;
+      setCurrentZoom(nextZoom);
+    },
+    [device, isRecording, maxZoom, minZoom, settings.enableZoomGesture],
+  );
+
+  const handlePinchStateChange = useCallback(
+    event => {
+      if (!device || !settings.enableZoomGesture || !isRecording) {
+        return;
+      }
+
+      const {state} = event.nativeEvent;
+      if (state === State.BEGAN) {
+        pinchStartZoomRef.current = currentZoomRef.current;
+        return;
+      }
+
+      if (
+        state === State.END ||
+        state === State.CANCELLED ||
+        state === State.FAILED
+      ) {
+        commitZoom(currentZoomRef.current);
+      }
+    },
+    [commitZoom, device, isRecording, settings.enableZoomGesture],
+  );
+
   const cameraProps = useMemo(
     () => ({
       device,
@@ -136,7 +197,7 @@ export default function CameraPreview({
       audioSource: parseCameraNumber(settings.audioSource),
       video: true,
       preview: true,
-      enableZoomGesture: settings.enableZoomGesture,
+      enableZoomGesture: false,
       resizeMode: settings.resizeMode,
       zoom: currentZoom,
       exposure: parseCameraNumber(settings.exposure),
@@ -245,13 +306,21 @@ export default function CameraPreview({
       ) : null}
       <View style={styles.cameraVignetteTop} pointerEvents="none" />
       <View style={styles.cameraVignetteBottom} pointerEvents="none" />
-      <Camera
-        ref={camera}
-        style={StyleSheet.absoluteFill}
-        onError={onError}
-        onInitialized={onInitialized}
-        {...cameraProps}
-      />
+      <PinchGestureHandler
+        enabled={Boolean(device && settings.enableZoomGesture && isRecording)}
+        onGestureEvent={handlePinchGesture}
+        onHandlerStateChange={handlePinchStateChange}
+      >
+        <View style={StyleSheet.absoluteFill}>
+          <Camera
+            ref={camera}
+            style={StyleSheet.absoluteFill}
+            onError={onError}
+            onInitialized={onInitialized}
+            {...cameraProps}
+          />
+        </View>
+      </PinchGestureHandler>
       <View style={topOverlayStyle}>
         {isRecording ? (
           <View style={styles.recordingStatus}>

@@ -44,9 +44,11 @@ export default function ZoomRail({
   useEffect(() => {
     if (!isDraggingRef.current) {
       currentZoomRef.current = zoom;
+      setDisplayZoom(zoom);
+      setThumbPos(computeThumbPos(getNormalizedZoomValue(zoom, device)));
       normalizedAnim.setValue(getNormalizedZoomValue(zoom, device));
     }
-  }, [zoom, device, normalizedAnim]);
+  }, [computeThumbPos, device, normalizedAnim, zoom]);
 
   const fillHeightPercent = useMemo(
     () =>
@@ -122,6 +124,8 @@ export default function ZoomRail({
     );
 
     currentZoomRef.current = nextZoom;
+    setDisplayZoom(nextZoom);
+    setThumbPos(computeThumbPos(getNormalizedZoomValue(nextZoom, deviceRef.current)));
 
     // Atualiza fill via Animated (native driver, sem re-render)
     normalizedAnim.setValue(getNormalizedZoomValue(nextZoom, deviceRef.current));
@@ -133,7 +137,7 @@ export default function ZoomRail({
     if (rafRef.current === null) {
       rafRef.current = requestAnimationFrame(flushDisplay);
     }
-  }, [normalizedAnim, pageYToLocalY, flushDisplay]);
+  }, [computeThumbPos, normalizedAnim, pageYToLocalY, flushDisplay]);
 
   // ─── PanResponder criado UMA única vez ────────────────────────────────────
   const panResponder = useMemo(
