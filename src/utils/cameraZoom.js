@@ -11,6 +11,13 @@ export function formatZoomFactor(value) {
   return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}x`;
 }
 
+/**
+ * Converte um valor de zoom para uma posição normalizada [0, 1] na barra.
+ * Usa escala logarítmica para que a barra pareça uniforme ao usuário
+ * (cada "vez" percorre o mesmo espaço visual).
+ *
+ * 0 = fundo (minZoom), 1 = topo (maxZoom)
+ */
 export function getNormalizedZoomValue(zoom, device) {
   if (!device) {
     return 0;
@@ -51,6 +58,10 @@ export function getZoomSliderProgress(zoom, device) {
   return (clampedZoom - minZoom) / (maxZoom - minZoom);
 }
 
+/**
+ * Inverso exato de getNormalizedZoomValue (escala logarítmica → exponencial).
+ * normalizedZoom = 0 → minZoom, normalizedZoom = 1 → maxZoom
+ */
 export function getZoomFromNormalizedValue(normalizedZoom, device) {
   if (!device) {
     return 1;
@@ -79,6 +90,18 @@ export function getZoomFromSliderProgress(progress, device) {
   return minZoom + (maxZoom - minZoom) * clampedProgress;
 }
 
+/**
+ * Converte a posição Y do dedo na barra para um valor de zoom.
+ *
+ * IMPORTANTE: usa getZoomFromNormalizedValue (exponencial) para ser o
+ * inverso exato de getNormalizedZoomValue (logarítmica). Antes usava
+ * getZoomFromSliderProgress (linear), causando divergência entre a
+ * posição visual do fill/thumb e o valor real — visível como a barra
+ * excedendo o thumb nos valores altos (7x–10x).
+ *
+ * positionY = 0       → topo → maxZoom
+ * positionY = height  → fundo → minZoom
+ */
 export function getZoomFromTrackPosition(
   positionY,
   trackHeight,
@@ -91,9 +114,11 @@ export function getZoomFromTrackPosition(
     0,
     1,
   );
+  // progress: 0 = fundo (minZoom), 1 = topo (maxZoom)
   const progress = 1 - normalizedFromTop;
 
-  return getZoomFromSliderProgress(progress, device);
+  // Usa escala logarítmica — mesmo sistema de getNormalizedZoomValue
+  return getZoomFromNormalizedValue(progress, device);
 }
 
 export function getInitialZoomValue(settingsZoom, device) {
