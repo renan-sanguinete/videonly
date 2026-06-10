@@ -31,6 +31,26 @@ export function getNormalizedZoomValue(zoom, device) {
   return Math.log(clampedZoom / minZoom) / Math.log(maxZoom / minZoom);
 }
 
+export function getZoomSliderProgress(zoom, device) {
+  if (!device) {
+    return 0;
+  }
+
+  const minZoom = Number.isFinite(device.minZoom) ? device.minZoom : 1;
+  const maxZoom = Number.isFinite(device.maxZoom) ? device.maxZoom : minZoom;
+  const clampedZoom = clamp(
+    Number.isFinite(zoom) ? zoom : device.neutralZoom ?? minZoom,
+    minZoom,
+    maxZoom,
+  );
+
+  if (maxZoom === minZoom) {
+    return 0;
+  }
+
+  return (clampedZoom - minZoom) / (maxZoom - minZoom);
+}
+
 export function getZoomFromNormalizedValue(normalizedZoom, device) {
   if (!device) {
     return 1;
@@ -47,6 +67,18 @@ export function getZoomFromNormalizedValue(normalizedZoom, device) {
   return minZoom * Math.pow(maxZoom / minZoom, clampedNormalized);
 }
 
+export function getZoomFromSliderProgress(progress, device) {
+  if (!device) {
+    return 1;
+  }
+
+  const minZoom = Number.isFinite(device.minZoom) ? device.minZoom : 1;
+  const maxZoom = Number.isFinite(device.maxZoom) ? device.maxZoom : minZoom;
+  const clampedProgress = clamp(progress, 0, 1);
+
+  return minZoom + (maxZoom - minZoom) * clampedProgress;
+}
+
 export function getZoomFromTrackPosition(
   positionY,
   trackHeight,
@@ -59,9 +91,9 @@ export function getZoomFromTrackPosition(
     0,
     1,
   );
-  const normalizedZoom = 1 - normalizedFromTop;
+  const progress = 1 - normalizedFromTop;
 
-  return getZoomFromNormalizedValue(normalizedZoom, device);
+  return getZoomFromSliderProgress(progress, device);
 }
 
 export function getInitialZoomValue(settingsZoom, device) {

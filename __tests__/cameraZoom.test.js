@@ -4,6 +4,8 @@ import {
   getNormalizedZoomValue,
   getZoomFromNormalizedValue,
   getZoomFromTrackPosition,
+  getZoomFromSliderProgress,
+  getZoomSliderProgress,
 } from '../src/utils/cameraZoom';
 
 const device = {
@@ -26,6 +28,14 @@ test('camera zoom helpers map values and labels consistently', () => {
   const middleZoom = getZoomFromNormalizedValue(0.5, device);
   expect(getNormalizedZoomValue(middleZoom, device)).toBeCloseTo(0.5, 6);
 
-  expect(getZoomFromTrackPosition(0, 240, device)).toBeCloseTo(8, 6);
-  expect(getZoomFromTrackPosition(240, 240, device)).toBeCloseTo(0.5, 6);
+  expect(getZoomSliderProgress(0.5, device)).toBeCloseTo(0, 6);
+  expect(getZoomSliderProgress(4.25, device)).toBeCloseTo(0.5, 6);
+  expect(getZoomSliderProgress(8, device)).toBeCloseTo(1, 6);
+
+  expect(getZoomFromSliderProgress(0, device)).toBeCloseTo(0.5, 6);
+  expect(getZoomFromSliderProgress(0.5, device)).toBeCloseTo(4.25, 6);
+  expect(getZoomFromSliderProgress(1, device)).toBeCloseTo(8, 6);
+
+  expect(getZoomFromTrackPosition(0, 240, device, 34)).toBeCloseTo(8, 6);
+  expect(getZoomFromTrackPosition(240, 240, device, 34)).toBeCloseTo(0.5, 6);
 });
