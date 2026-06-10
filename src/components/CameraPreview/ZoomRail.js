@@ -11,6 +11,7 @@ import {
 
 const THUMB_SIZE = 34;
 const BUBBLE_HEIGHT = 28;
+const VISUAL_ZOOM_EXPONENT = 1.35;
 
 export default function ZoomRail({
   device,
@@ -40,13 +41,32 @@ export default function ZoomRail({
     new Animated.Value(getNormalizedZoomValue(zoom, device)),
   ).current;
 
+  const computeThumbPos = useCallback((normalizedZoom) => {
+    const h = trackHeightRef.current;
+    const visualNormalized = Math.pow(clamp(normalizedZoom, 0, 1), VISUAL_ZOOM_EXPONENT);
+
+    return {
+      thumb: clamp(
+        visualNormalized * h - THUMB_SIZE / 2,
+        0,
+        Math.max(h - THUMB_SIZE, 0),
+      ),
+      bubble: clamp(
+        visualNormalized * h - BUBBLE_HEIGHT / 2,
+        0,
+        Math.max(h - BUBBLE_HEIGHT, 0),
+      ),
+    };
+  }, []);
+
   // Sincroniza quando zoom muda externamente (não durante drag)
   useEffect(() => {
     if (!isDraggingRef.current) {
       currentZoomRef.current = zoom;
       setDisplayZoom(zoom);
-      setThumbPos(computeThumbPos(getNormalizedZoomValue(zoom, device)));
-      normalizedAnim.setValue(getNormalizedZoomValue(zoom, device));
+      const normalized = getNormalizedZoomValue(zoom, device);
+      setThumbPos(computeThumbPos(normalized));
+      normalizedAnim.setValue(normalized);
     }
   }, [computeThumbPos, device, normalizedAnim, zoom]);
 
@@ -60,25 +80,8 @@ export default function ZoomRail({
     [normalizedAnim],
   );
 
-  // ─── Estado de display: label + posição do thumb/bubble ──────────────────
   const [displayZoom, setDisplayZoom] = useState(zoom);
   const [thumbPos, setThumbPos] = useState({thumb: 0, bubble: 0});
-
-  const computeThumbPos = useCallback((normalizedZoom) => {
-    const h = trackHeightRef.current;
-    return {
-      thumb: clamp(
-        normalizedZoom * h - THUMB_SIZE / 2,
-        0,
-        Math.max(h - THUMB_SIZE, 0),
-      ),
-      bubble: clamp(
-        normalizedZoom * h - BUBBLE_HEIGHT / 2,
-        0,
-        Math.max(h - BUBBLE_HEIGHT, 0),
-      ),
-    };
-  }, []);
 
   const rafRef = useRef(null);
 

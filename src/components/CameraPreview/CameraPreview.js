@@ -147,7 +147,7 @@ export default function CameraPreview({
 
   const handlePinchGesture = useCallback(
     event => {
-      if (!device || !settings.enableZoomGesture || !isRecording) {
+      if (!device || !settings.enableZoomGesture) {
         return;
       }
 
@@ -160,12 +160,12 @@ export default function CameraPreview({
       currentZoomRef.current = nextZoom;
       setCurrentZoom(nextZoom);
     },
-    [device, isRecording, maxZoom, minZoom, settings.enableZoomGesture],
+    [device, maxZoom, minZoom, settings.enableZoomGesture],
   );
 
   const handlePinchStateChange = useCallback(
     event => {
-      if (!device || !settings.enableZoomGesture || !isRecording) {
+      if (!device || !settings.enableZoomGesture) {
         return;
       }
 
@@ -183,7 +183,7 @@ export default function CameraPreview({
         commitZoom(currentZoomRef.current);
       }
     },
-    [commitZoom, device, isRecording, settings.enableZoomGesture],
+    [commitZoom, device, settings.enableZoomGesture],
   );
 
   const cameraProps = useMemo(
@@ -309,7 +309,7 @@ export default function CameraPreview({
       <View style={styles.cameraVignetteTop} pointerEvents="none" />
       <View style={styles.cameraVignetteBottom} pointerEvents="none" />
       <PinchGestureHandler
-        enabled={Boolean(device && settings.enableZoomGesture && isRecording)}
+        enabled={Boolean(device && settings.enableZoomGesture)}
         onGestureEvent={handlePinchGesture}
         onHandlerStateChange={handlePinchStateChange}
       >
