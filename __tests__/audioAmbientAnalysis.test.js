@@ -14,17 +14,24 @@ function buildSamples({
   }));
 }
 
-test('ambient analysis only suggests audio optimization or none', () => {
+test('ambient analysis keeps optimization disabled', () => {
   const loudSuggestion = analyzeAmbientAudioSamples(
     buildSamples({ peakDb: -2, rmsDb: -8, isClipping: true }),
   );
 
   expect(loudSuggestion).toMatchObject({
-    optimizationMode: 'audio',
+    optimizationMode: 'none',
     audioLimiterPreset: 'strong',
     normalizeAudioLoudness: true,
   });
-  expect(['video', 'both']).not.toContain(loudSuggestion.optimizationMode);
+  expect(['audio', 'video', 'both']).not.toContain(
+    loudSuggestion.optimizationMode,
+  );
+  expect(loudSuggestion.settingsPatch).toMatchObject({
+    audioLimiterPreset: 'strong',
+    normalizeAudioLoudness: true,
+    audioProfile: 'custom',
+  });
 
   const quietSuggestion = analyzeAmbientAudioSamples(
     buildSamples({ peakDb: -20, rmsDb: -34 }),
@@ -34,5 +41,7 @@ test('ambient analysis only suggests audio optimization or none', () => {
     optimizationMode: 'none',
     normalizeAudioLoudness: false,
   });
-  expect(['video', 'both']).not.toContain(quietSuggestion.optimizationMode);
+  expect(['audio', 'video', 'both']).not.toContain(
+    quietSuggestion.optimizationMode,
+  );
 });

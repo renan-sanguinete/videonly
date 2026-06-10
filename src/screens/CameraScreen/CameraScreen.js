@@ -190,7 +190,8 @@ export default function CameraScreen({ navigation }) {
             text: 'Aplicar sugestão',
             onPress: () => {
               setSettings(prev => ({
-                ...applyMediaOptimizationMode(prev, suggestion.optimizationMode),
+                ...prev,
+                ...suggestion.settingsPatch,
                 audioLimiterPreset: suggestion.audioLimiterPreset,
                 normalizeAudioLoudness: suggestion.normalizeAudioLoudness,
                 audioProfile: 'custom',

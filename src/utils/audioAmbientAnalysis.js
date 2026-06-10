@@ -1,5 +1,3 @@
-import {applyMediaOptimizationMode} from '../constants/mediaOptimization';
-
 function average(values) {
   if (!values.length) {
     return 0;
@@ -17,7 +15,6 @@ function formatRatio(value) {
 }
 
 function buildSuggestion({
-  optimizationMode,
   audioLimiterPreset,
   normalizeAudioLoudness,
   title,
@@ -30,9 +27,8 @@ function buildSuggestion({
     confidence,
     audioLimiterPreset,
     normalizeAudioLoudness,
-    optimizationMode,
+    optimizationMode: 'none',
     settingsPatch: {
-      ...applyMediaOptimizationMode({}, optimizationMode),
       audioLimiterPreset,
       normalizeAudioLoudness,
       audioProfile: 'custom',
@@ -70,12 +66,12 @@ export function analyzeAmbientAudioSamples(samples) {
     return {
       ...summary,
       ...buildSuggestion({
-        optimizationMode: 'audio',
+        optimizationMode: 'none',
         audioLimiterPreset: 'strong',
         normalizeAudioLoudness: true,
-        title: 'Áudio',
+        title: 'Desativado',
         description:
-          'O ambiente está alto e com picos. Corrigir apenas o áudio evita sugerir compressão de vídeo sem necessidade.',
+          'O ambiente está alto e com picos. A sugestão automática é manter a otimização desativada e ajustar o áudio manualmente, se necessário.',
         confidence: 'alta',
       }),
     };
@@ -85,13 +81,13 @@ export function analyzeAmbientAudioSamples(samples) {
     return {
       ...summary,
       ...buildSuggestion({
-        optimizationMode: 'audio',
+        optimizationMode: 'none',
         audioLimiterPreset:
           averageRmsDb >= -14 || maxPeakDb >= -6 ? 'strong' : 'standard',
         normalizeAudioLoudness: true,
-        title: 'Áudio',
+        title: 'Desativado',
         description:
-          'O áudio está em nível médio/alto. Corrigir só o áudio evita a demora da compressão do vídeo.',
+          'O ambiente está em nível médio/alto. A sugestão automática é manter a otimização desativada e deixar o áudio para ajuste manual.',
         confidence: 'alta',
       }),
     };
@@ -115,12 +111,12 @@ export function analyzeAmbientAudioSamples(samples) {
   return {
     ...summary,
     ...buildSuggestion({
-      optimizationMode: 'audio',
+      optimizationMode: 'none',
       audioLimiterPreset: 'gentle',
       normalizeAudioLoudness: true,
-      title: 'Áudio',
+      title: 'Desativado',
       description:
-        'O ambiente tem variação moderada. Corrigir apenas o áudio é o melhor equilíbrio entre velocidade e segurança.',
+        'O ambiente tem variação moderada. A sugestão automática é manter a otimização desativada e só ajustar o áudio manualmente.',
       confidence: 'média',
     }),
   };
