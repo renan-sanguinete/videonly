@@ -1223,6 +1223,12 @@ export default function CameraScreen({ navigation }) {
           onSetAudioEnabled={onSetAudioEnabled}
           onOpenCustomAudioSettings={onOpenCustomAudioSettings}
           isOptimizationMenuOpen={isOptimizationMenuOpen}
+          onZoomCommit={nextZoom => {
+            setSettings(prev => ({
+              ...prev,
+              zoom: String(nextZoom),
+            }));
+          }}
           onError={error => {
             const errorCode = error?.code ?? null;
 

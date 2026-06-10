@@ -21,7 +21,9 @@ import {
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
 import {cinematicTheme} from '../../theme/cinematicTheme';
+import ZoomRail from './ZoomRail';
 import { formatElapsedTime } from '../../utils/videoFormatters';
+import { getInitialZoomValue } from '../../utils/cameraZoom';
 import { styles } from './styles';
 
 const {colors} = cinematicTheme;
@@ -45,9 +47,13 @@ export default function CameraPreview({
   onSetAudioEnabled,
   onOpenCustomAudioSettings,
   isOptimizationMenuOpen,
+  onZoomCommit,
 }) {
   const device = useCameraDevice(cameraPosition);
   const [isAudioMenuOpen, setIsAudioMenuOpen] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(() =>
+    getInitialZoomValue(settings.zoom, null),
+  );
   const selectedFormat = useMemo(() => {
     return pickFormatForSettings(device?.formats ?? [], settings);
   }, [device, settings]);
@@ -91,6 +97,10 @@ export default function CameraPreview({
     }).start();
   }, [isRecording, progressJS, progressNative]);
 
+  useEffect(() => {
+    setCurrentZoom(getInitialZoomValue(settings.zoom, device));
+  }, [device, settings.zoom]);
+
   const cameraProps = useMemo(
     () => ({
       device,
@@ -106,7 +116,7 @@ export default function CameraPreview({
       preview: true,
       enableZoomGesture: settings.enableZoomGesture,
       resizeMode: settings.resizeMode,
-      zoom: parseCameraNumber(settings.zoom),
+      zoom: currentZoom,
       exposure: parseCameraNumber(settings.exposure),
       ...(device?.supportsLowLightBoost
         ? { lowLightBoost: settings.lowLightBoost }
@@ -120,7 +130,7 @@ export default function CameraPreview({
         ? { videoHdr: settings.videoHdr }
         : {}),
     }),
-    [device, isActive, selectedFormat, settings, torch],
+    [currentZoom, device, isActive, selectedFormat, settings, torch],
   );
 
   const fpsLabel = `FPS ${String(cameraProps?.fps ?? 'AUTO').toUpperCase()}`;
@@ -241,6 +251,14 @@ export default function CameraPreview({
           <Text>{''}</Text>
         )}
       </View>
+
+      <ZoomRail
+        device={device}
+        visible={isRecording}
+        zoom={currentZoom}
+        onZoomChange={setCurrentZoom}
+        onZoomCommit={onZoomCommit}
+      />
 
       {isRecording && settings.showAudioStatus ? (
         <View style={styles.audioStatusWrap}>
