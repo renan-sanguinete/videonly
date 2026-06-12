@@ -41,5 +41,7 @@
 # - package-lock.json (sempre)
 
 src/**/*
+android/app/src/main/AndroidManifest.xml
+android/app/src/main/res/values/styles.xml
 App.js
 package.json

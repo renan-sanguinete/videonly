@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   AppState,
   FlatList,
+  Linking,
   Platform,
   Pressable,
   Text,
@@ -971,34 +972,17 @@ export default function CameraScreen({ navigation }) {
   }, [isRecording, showAlert]);
 
   const onPermissionPress = useCallback(async () => {
-    enqueuePermission(
-      'manual-permissions',
-      async () => {
-        const ok = await ensurePermissions();
-
-        if (!ok) {
-          return;
-        }
-
-        const galleryStatus = await getCameraRollVideoPermissionStatus();
-        setHasGalleryPermission(galleryStatus.granted);
-        await loadVideosFromGallery({ showLoader: true });
-        await promptManageMediaAccess();
-
-        if (!isUnmountedRef.current) {
-          setHasCompletedInitialBootstrap(true);
-        }
-      },
-      error => {
-        console.warn('Falha ao processar fila manual de permissoes.', error);
-      },
-    );
-  }, [
-    enqueuePermission,
-    ensurePermissions,
-    loadVideosFromGallery,
-    promptManageMediaAccess,
-  ]);
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      console.warn('Falha ao abrir as configuracoes do app.', error);
+      showAlert(
+        'Nao foi possivel abrir as configurações',
+        'Abra as configurações do app manualmente e permita câmera, microfone e galeria para continuar.',
+        [{ text: 'OK' }],
+      );
+    }
+  }, [showAlert]);
 
   const onToggleCamera = useCallback(() => {
     if (isRecording) {
@@ -1170,11 +1154,14 @@ export default function CameraScreen({ navigation }) {
       <View style={styles.center}>
         <Text style={styles.title}>Videonly</Text>
         <Text style={styles.subtitle}>
-          O app precisa de permissao para acessar a camera.
+          O app precisa de permissão para acessar a câmera, áudio e galeria.
+        </Text>
+        <Text style={styles.subtitle}>
+          Vá para as configurações e habilite as permissões.
         </Text>
         <Pressable style={styles.primaryButton} onPress={onPermissionPress}>
           <Text style={styles.primaryButtonText}>
-            Permitir camera, audio e galeria
+            Abrir configurações
           </Text>
         </Pressable>
       </View>
