@@ -305,7 +305,11 @@ export default function LibraryScreen({navigation}) {
                 ]}
               >
                 <Icon
-                  color={isDeleting ? colors.borderStrong : colors.rec}
+                  color={
+                    isDeleting
+                      ? colors.borderStrong
+                      : colors.destructiveSoftForeground
+                  }
                   name="trash-outline"
                   size={22}
                 />

@@ -123,15 +123,15 @@ export const styles = StyleSheet.create({
   destructiveButton: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: 'rgba(255, 47, 58, 0.16)',
+    backgroundColor: colors.destructiveSoft,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: 'rgba(255, 47, 58, 0.42)',
+    borderColor: colors.destructiveSoftBorder,
   },
   destructiveText: {
-    color: colors.rec,
+    color: colors.destructiveSoftForeground,
     fontWeight: '700',
     fontFamily: typography.body.fontFamily,
     textAlign: 'center',

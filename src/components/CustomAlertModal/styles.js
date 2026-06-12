@@ -76,9 +76,9 @@ export const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   destructiveButton: {
-    backgroundColor: 'rgba(255, 47, 58, 0.16)',
+    backgroundColor: colors.destructiveSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 47, 58, 0.42)',
+    borderColor: colors.destructiveSoftBorder,
   },
   buttonText: {
     fontSize: 15,
@@ -92,6 +92,6 @@ export const styles = StyleSheet.create({
     color: colors.foreground,
   },
   destructiveButtonText: {
-    color: colors.rec,
+    color: colors.destructiveSoftForeground,
   },
 });

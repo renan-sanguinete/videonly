@@ -12,6 +12,10 @@ export const cinematicTheme = {
     accent: '#F7A224',
     accentForeground: '#110C09',
     rec: '#FF2F3A',
+    destructive: '#E3747D',
+    destructiveSoft: 'rgba(227, 116, 125, 0.16)',
+    destructiveSoftBorder: 'rgba(227, 116, 125, 0.42)',
+    destructiveSoftForeground: '#F1B1B7',
     success: '#35C177',
     warning: '#F3BA25',
     info: '#3BACDA',
@@ -39,4 +43,3 @@ export const cinematicTheme = {
     },
   },
 };
-
