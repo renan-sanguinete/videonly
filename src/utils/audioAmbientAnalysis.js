@@ -32,6 +32,7 @@ function buildSuggestion({
       audioLimiterPreset,
       normalizeAudioLoudness,
       audioProfile: 'custom',
+      audioCustomProfileId: null,
     },
   };
 }

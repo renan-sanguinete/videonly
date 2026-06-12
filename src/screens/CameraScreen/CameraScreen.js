@@ -134,7 +134,17 @@ export default function CameraScreen({ navigation }) {
   const { hasPermission: hasMicrophonePermission } = useMicrophonePermission();
   const { isReady: isPermissionFlowReady, enqueuePermission } =
     usePermissionQueue();
-  const { isHydrated, settings, setSettings } = useCameraSettings();
+  const {
+    isHydrated,
+    settings,
+    savedAudioProfiles,
+    setSettings,
+    saveAudioProfile,
+    applySavedAudioProfile,
+    replaceSavedAudioProfile,
+    renameSavedAudioProfile,
+    deleteSavedAudioProfile,
+  } = useCameraSettings();
   const { showAlert } = useCustomAlert();
   const resolutionOptions = useMemo(
     () => buildVideoResolutionOptions(currentCameraDevice?.formats ?? []),
@@ -217,6 +227,7 @@ export default function CameraScreen({ navigation }) {
                 audioLimiterPreset: suggestion.audioLimiterPreset,
                 normalizeAudioLoudness: suggestion.normalizeAudioLoudness,
                 audioProfile: 'custom',
+                audioCustomProfileId: null,
               }));
             },
           },
@@ -509,21 +520,6 @@ export default function CameraScreen({ navigation }) {
     },
     [setSettings],
   );
-
-  const onOpenCustomAudioSettings = useCallback(() => {
-    showAlert(
-      'Ajustes personalizados',
-      'As edições do modo personalizado são feitas na tela de Configurações.',
-      [
-        {text: 'Agora não', style: 'cancel'},
-        {
-          text: 'Ir para Configurações',
-          onPress: () => navigation.navigate('Settings'),
-        },
-      ],
-      {cancelable: true},
-    );
-  }, [navigation, showAlert]);
 
   const onFlashModeChange = () => {
     setActiveFlashMode(prevMode => (prevMode === 'off' ? 'on' : 'off'));
@@ -1339,8 +1335,13 @@ export default function CameraScreen({ navigation }) {
           startRecording={startRecording}
           stopRecording={stopRecording}
           onApplyAudioProfile={onApplyAudioProfile}
+          savedAudioProfiles={savedAudioProfiles}
+          onSaveAudioProfile={saveAudioProfile}
+          onApplySavedAudioProfile={applySavedAudioProfile}
+          onReplaceSavedAudioProfile={replaceSavedAudioProfile}
+          onRenameSavedAudioProfile={renameSavedAudioProfile}
+          onDeleteSavedAudioProfile={deleteSavedAudioProfile}
           onSetAudioEnabled={onSetAudioEnabled}
-          onOpenCustomAudioSettings={onOpenCustomAudioSettings}
           isOptimizationMenuOpen={isOptimizationMenuOpen}
           onSlowMotionDurationChange={onSlowMotionDurationChange}
           onZoomCommit={nextZoom => {

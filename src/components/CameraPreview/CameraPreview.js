@@ -2,9 +2,11 @@ import React, { useCallback, useRef, useEffect, useMemo, useState } from 'react'
 import {
   Animated,
   Easing,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -20,6 +22,7 @@ import {
 import { getAudioSourceOption } from '../../constants/audioSources';
 import {
   AUDIO_PROFILE_OPTIONS,
+  MAX_SAVED_AUDIO_PROFILES,
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
 import {
@@ -63,8 +66,13 @@ export default function CameraPreview({
   torch,
   isActive,
   onApplyAudioProfile,
+  savedAudioProfiles = [],
+  onSaveAudioProfile,
+  onApplySavedAudioProfile,
+  onReplaceSavedAudioProfile,
+  onRenameSavedAudioProfile,
+  onDeleteSavedAudioProfile,
   onSetAudioEnabled,
-  onOpenCustomAudioSettings,
   isOptimizationMenuOpen,
   onSlowMotionDurationChange,
   onZoomCommit,
@@ -75,6 +83,13 @@ export default function CameraPreview({
     [settings],
   );
   const [isAudioMenuOpen, setIsAudioMenuOpen] = useState(false);
+  const [isCustomProfileMenuOpen, setIsCustomProfileMenuOpen] = useState(false);
+  const [profileNameInput, setProfileNameInput] = useState('');
+  const [profileNameError, setProfileNameError] = useState('');
+  const [profileNameMode, setProfileNameMode] = useState('save');
+  const [profileNameTargetId, setProfileNameTargetId] = useState(null);
+  const [isProfileNameModalVisible, setIsProfileNameModalVisible] =
+    useState(false);
   const [currentZoom, setCurrentZoom] = useState(() =>
     getInitialZoomValue(settings.zoom, null),
   );
@@ -132,7 +147,7 @@ export default function CameraPreview({
   const audioQuickMenuStyle = useMemo(
     () => [
       styles.audioQuickMenu,
-      {bottom: 20 + bottomInset},
+      {bottom: 48 + bottomInset},
     ],
     [bottomInset],
   );
@@ -275,6 +290,26 @@ export default function CameraPreview({
   const showAudioRiskWarning =
     isRecording && settings.audio && audioRisk.level === 'high';
   const quickAudioProfiles = useMemo(() => AUDIO_PROFILE_OPTIONS, []);
+  const activeSavedAudioProfile = useMemo(
+    () =>
+      savedAudioProfiles.find(
+        profile => profile.id === settings.audioCustomProfileId,
+      ) ?? null,
+    [savedAudioProfiles, settings.audioCustomProfileId],
+  );
+  const quickAudioProfileOptions = useMemo(
+    () =>
+      quickAudioProfiles.map(option =>
+        option.value === 'custom' && activeSavedAudioProfile
+          ? {
+              ...option,
+              label: activeSavedAudioProfile.name,
+              description: 'Perfil personalizado salvo em uso.',
+            }
+          : option,
+      ),
+    [activeSavedAudioProfile, quickAudioProfiles],
+  );
   const audioToggleOptions = useMemo(
     () => [
       {
@@ -293,10 +328,15 @@ export default function CameraPreview({
   const isAudioControlDisabled = isRecording || isProcessingVideo;
   const isLiveSafeProfile = settings.audioProfile === 'live-safe';
   const isCustomProfile = settings.audioProfile === 'custom';
+  const isSavedCustomProfile = Boolean(settings.audioCustomProfileId);
+  const canSaveMoreAudioProfiles =
+    savedAudioProfiles.length < MAX_SAVED_AUDIO_PROFILES;
 
   const audioProfileButtonStyle = useMemo(() => {
     if (isCustomProfile) {
-      return styles.audioProfileButtonCustom;
+      return isSavedCustomProfile
+        ? styles.audioProfileButtonSavedCustom
+        : styles.audioProfileButtonCustom;
     }
 
     if (isLiveSafeProfile) {
@@ -304,13 +344,237 @@ export default function CameraPreview({
     }
 
     return null;
-  }, [isCustomProfile, isLiveSafeProfile]);
+  }, [isCustomProfile, isLiveSafeProfile, isSavedCustomProfile]);
+
+  const audioProfileIconColor = isSavedCustomProfile
+    ? '#C4B5FD'
+    : colors.foreground;
 
   useEffect(() => {
     if (isAudioControlDisabled && isAudioMenuOpen) {
       setIsAudioMenuOpen(false);
     }
   }, [isAudioMenuOpen, isAudioControlDisabled]);
+
+  useEffect(() => {
+    if (!isAudioMenuOpen) {
+      setIsCustomProfileMenuOpen(false);
+    }
+  }, [isAudioMenuOpen]);
+
+  const closeProfileNameModal = () => {
+    setIsProfileNameModalVisible(false);
+    setProfileNameInput('');
+    setProfileNameError('');
+    setProfileNameTargetId(null);
+  };
+
+  const openSaveProfileModal = () => {
+    setProfileNameMode('save');
+    setProfileNameInput('');
+    setProfileNameError('');
+    setProfileNameTargetId(null);
+    setIsProfileNameModalVisible(true);
+  };
+
+  const openRenameProfileModal = profile => {
+    setProfileNameMode('rename');
+    setProfileNameInput(profile.name);
+    setProfileNameError('');
+    setProfileNameTargetId(profile.id);
+    setIsProfileNameModalVisible(true);
+  };
+
+  const submitProfileName = () => {
+    const nextName = profileNameInput.trim();
+
+    if (!nextName) {
+      setProfileNameError('Informe um nome para salvar o perfil.');
+      return;
+    }
+
+    if (profileNameMode === 'rename') {
+      onRenameSavedAudioProfile?.(profileNameTargetId, nextName);
+    } else {
+      onSaveAudioProfile?.(nextName);
+    }
+
+    closeProfileNameModal();
+    setIsAudioMenuOpen(false);
+  };
+
+  const renderCustomProfileMenu = () => (
+    <>
+      <Pressable
+        onPress={() => setIsCustomProfileMenuOpen(false)}
+        style={styles.audioQuickBackButton}
+      >
+        <Icon name="chevron-back" size={14} color={colors.mutedForeground} />
+        <Text style={styles.audioQuickBackButtonText}>Perfis</Text>
+      </Pressable>
+
+      {canSaveMoreAudioProfiles ? (
+        <Pressable
+          onPress={openSaveProfileModal}
+          style={styles.audioQuickOption}
+        >
+          <Text style={styles.audioQuickOptionLabel}>Salvar configuração</Text>
+          <Text style={styles.audioQuickOptionDescription}>
+            Guarda os ajustes atuais como um novo perfil.
+          </Text>
+        </Pressable>
+      ) : (
+        <View style={styles.audioQuickOptionDisabled}>
+          <Text style={styles.audioQuickOptionLabel}>Limite atingido</Text>
+          <Text style={styles.audioQuickOptionDescription}>
+            Substitua ou apague um perfil para salvar outro.
+          </Text>
+        </View>
+      )}
+
+      {savedAudioProfiles.length > 0 ? (
+        savedAudioProfiles.map(profile => {
+          const isSelected = profile.id === settings.audioCustomProfileId;
+
+          return (
+            <View
+              key={profile.id}
+              style={[
+                styles.savedAudioProfileCard,
+                isSelected && styles.savedAudioProfileCardSelected,
+              ]}
+            >
+              <Pressable
+                onPress={() => {
+                  onApplySavedAudioProfile?.(profile.id);
+                  setIsAudioMenuOpen(false);
+                }}
+                style={styles.savedAudioProfileMainAction}
+              >
+                <Text
+                  style={[
+                    styles.audioQuickOptionLabel,
+                    isSelected && styles.audioQuickOptionLabelSelectedSaved,
+                  ]}
+                >
+                  {profile.name}
+                </Text>
+                <Text style={styles.audioQuickOptionDescription}>
+                  {isSelected ? 'Perfil ativo.' : 'Toque para usar este perfil.'}
+                </Text>
+              </Pressable>
+              <View style={styles.savedAudioProfileActions}>
+                <Pressable
+                  onPress={() => onReplaceSavedAudioProfile?.(profile.id)}
+                  style={styles.savedAudioProfileActionButton}
+                >
+                  <Text style={styles.savedAudioProfileActionText}>
+                    Substituir
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => openRenameProfileModal(profile)}
+                  style={styles.savedAudioProfileActionButton}
+                >
+                  <Text style={styles.savedAudioProfileActionText}>Nome</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => onDeleteSavedAudioProfile?.(profile.id)}
+                  style={styles.savedAudioProfileActionButton}
+                >
+                  <Text style={styles.savedAudioProfileActionTextDanger}>
+                    Apagar
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })
+      ) : (
+        <View style={styles.audioQuickEmptyState}>
+          <Text style={styles.audioQuickOptionDescription}>
+            Nenhum perfil salvo ainda.
+          </Text>
+        </View>
+      )}
+    </>
+  );
+
+  const renderAudioQuickMenuContent = () => {
+    if (!settings.audio) {
+      return audioToggleOptions.map(option => {
+        const isSelected = option.value === 'keep-off';
+
+        return (
+          <Pressable
+            key={option.value}
+            onPress={() => {
+              if (option.value === 'enable') {
+                onSetAudioEnabled(true);
+              }
+
+              setIsAudioMenuOpen(false);
+            }}
+            style={[
+              styles.audioQuickOption,
+              isSelected && styles.audioQuickOptionSelectedStandard,
+            ]}
+          >
+            <Text
+              style={[
+                styles.audioQuickOptionLabel,
+                isSelected && styles.audioQuickOptionLabelSelectedStandard,
+              ]}
+            >
+              {option.label}
+            </Text>
+            <Text style={styles.audioQuickOptionDescription}>
+              {option.description}
+            </Text>
+          </Pressable>
+        );
+      });
+    }
+
+    if (isCustomProfileMenuOpen) {
+      return renderCustomProfileMenu();
+    }
+
+    return quickAudioProfileOptions.map(option => {
+      const isSelected = settings.audioProfile === option.value;
+
+      return (
+        <Pressable
+          key={option.value}
+          onPress={() => {
+            if (option.value === 'custom') {
+              setIsCustomProfileMenuOpen(true);
+              return;
+            }
+
+            onApplyAudioProfile(option.value);
+            setIsAudioMenuOpen(false);
+          }}
+          style={[
+            styles.audioQuickOption,
+            isSelected && getQuickOptionSelectedStyle(option.value),
+          ]}
+        >
+          <Text
+            style={[
+              styles.audioQuickOptionLabel,
+              isSelected && getQuickOptionSelectedLabelStyle(option.value),
+            ]}
+          >
+            {option.label}
+          </Text>
+          <Text style={styles.audioQuickOptionDescription}>
+            {option.description}
+          </Text>
+        </Pressable>
+      );
+    });
+  };
 
   const getQuickOptionSelectedStyle = optionValue => {
     if (optionValue === 'custom') {
@@ -478,78 +742,7 @@ export default function CameraPreview({
                 <Text style={styles.audioQuickMenuTitle}>
                   {settings.audio ? 'Captação' : 'Áudio'}
                 </Text>
-                {settings.audio
-                  ? quickAudioProfiles.map(option => {
-                      const isSelected = settings.audioProfile === option.value;
-
-                      return (
-                        <Pressable
-                          key={option.value}
-                          onPress={() => {
-                            if (option.value === 'custom') {
-                              onOpenCustomAudioSettings();
-                              setIsAudioMenuOpen(false);
-                              return;
-                            }
-
-                            onApplyAudioProfile(option.value);
-                            setIsAudioMenuOpen(false);
-                          }}
-                          style={[
-                            styles.audioQuickOption,
-                            isSelected &&
-                              getQuickOptionSelectedStyle(option.value),
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.audioQuickOptionLabel,
-                              isSelected &&
-                                getQuickOptionSelectedLabelStyle(option.value),
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                          <Text style={styles.audioQuickOptionDescription}>
-                            {option.description}
-                          </Text>
-                        </Pressable>
-                      );
-                    })
-                  : audioToggleOptions.map(option => {
-                      const isSelected = option.value === 'keep-off';
-
-                      return (
-                        <Pressable
-                          key={option.value}
-                          onPress={() => {
-                            if (option.value === 'enable') {
-                              onSetAudioEnabled(true);
-                            }
-
-                            setIsAudioMenuOpen(false);
-                          }}
-                          style={[
-                            styles.audioQuickOption,
-                            isSelected &&
-                              styles.audioQuickOptionSelectedStandard,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.audioQuickOptionLabel,
-                              isSelected &&
-                                styles.audioQuickOptionLabelSelectedStandard,
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                          <Text style={styles.audioQuickOptionDescription}>
-                            {option.description}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                {renderAudioQuickMenuContent()}
               </View>
             ) : null}
             {isRecording ? (
@@ -571,7 +764,7 @@ export default function CameraPreview({
                 <Icon
                   name={settings.audio ? 'mic' : 'mic-off-outline'}
                   size={20}
-                  color={colors.foreground}
+                  color={audioProfileIconColor}
                 />
               </Pressable>
             )}
@@ -621,6 +814,51 @@ export default function CameraPreview({
           </Pressable>
         </View>
       </View>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isProfileNameModalVisible}
+        onRequestClose={closeProfileNameModal}
+      >
+        <View style={styles.profileNameModalBackdrop}>
+          <View style={styles.profileNameModalCard}>
+            <Text style={styles.profileNameModalTitle}>
+              {profileNameMode === 'rename' ? 'Renomear perfil' : 'Salvar perfil'}
+            </Text>
+            <TextInput
+              autoFocus
+              maxLength={32}
+              onChangeText={value => {
+                setProfileNameInput(value);
+                setProfileNameError('');
+              }}
+              placeholder="Nome do perfil"
+              placeholderTextColor={colors.mutedForeground}
+              style={styles.profileNameInput}
+              value={profileNameInput}
+            />
+            {profileNameError ? (
+              <Text style={styles.profileNameError}>{profileNameError}</Text>
+            ) : null}
+            <View style={styles.profileNameModalActions}>
+              <Pressable
+                onPress={closeProfileNameModal}
+                style={styles.profileNameModalButton}
+              >
+                <Text style={styles.profileNameModalButtonText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                onPress={submitProfileName}
+                style={styles.profileNameModalButtonPrimary}
+              >
+                <Text style={styles.profileNameModalButtonPrimaryText}>
+                  Salvar
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

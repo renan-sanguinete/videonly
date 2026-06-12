@@ -1,5 +1,20 @@
 import { UNPROCESSED_AUDIO_SOURCE } from './audioSources';
 
+export const MAX_SAVED_AUDIO_PROFILES = 3;
+
+export const AUDIO_PROFILE_SETTING_KEYS = [
+  'audioCodec',
+  'audioChannels',
+  'audioSampleRate',
+  'audioBitRateKbps',
+  'audioGain',
+  'audioSource',
+  'optimizationMode',
+  'applyAudioCleanup',
+  'audioLimiterPreset',
+  'normalizeAudioLoudness',
+];
+
 export const AUDIO_PROFILE_OPTIONS = [
   {
     value: 'standard',
@@ -58,6 +73,25 @@ export function applyAudioProfile(settings, value) {
   return {
     ...settings,
     ...buildAudioProfilePatch(value),
+    audioCustomProfileId: null,
+  };
+}
+
+export function buildSavedAudioProfileSettings(settings) {
+  return AUDIO_PROFILE_SETTING_KEYS.reduce((profileSettings, key) => {
+    if (settings[key] !== undefined) {
+      profileSettings[key] = settings[key];
+    }
+
+    return profileSettings;
+  }, {});
+}
+
+export function buildSavedAudioProfilePatch(profile) {
+  return {
+    ...profile.settings,
+    audioProfile: 'custom',
+    audioCustomProfileId: profile.id,
   };
 }
 

@@ -192,6 +192,7 @@ export default function SettingsScreen({navigation}) {
       ...prev,
       ...patch,
       audioProfile: 'custom',
+      audioCustomProfileId: null,
     }));
 
   const onAudioProfileChange = value => {
