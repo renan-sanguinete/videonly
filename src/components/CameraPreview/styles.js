@@ -397,6 +397,10 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(247, 162, 36, 0.14)',
     borderColor: colors.accent,
   },
+  audioQuickOptionSelectedSaved: {
+    backgroundColor: 'rgba(196, 181, 253, 0.14)',
+    borderColor: 'rgba(196, 181, 253, 0.72)',
+  },
   audioQuickOptionDisabled: {
     borderRadius: radii.md,
     paddingVertical: 10,

@@ -34,6 +34,7 @@ import {cinematicTheme} from '../../theme/cinematicTheme';
 import ZoomRail from './ZoomRail';
 import { formatElapsedTime } from '../../utils/videoFormatters';
 import { clamp, getInitialZoomValue } from '../../utils/cameraZoom';
+import { useCustomAlert } from '../../context/CustomAlertContext';
 import { styles } from './styles';
 
 const {colors} = cinematicTheme;
@@ -77,6 +78,7 @@ export default function CameraPreview({
   onSlowMotionDurationChange,
   onZoomCommit,
 }) {
+  const {showAlert} = useCustomAlert();
   const device = useCameraDevice(cameraPosition);
   const captureSettings = useMemo(
     () => getCaptureSettingsForRecordingMode(settings),
@@ -329,6 +331,9 @@ export default function CameraPreview({
   const isLiveSafeProfile = settings.audioProfile === 'live-safe';
   const isCustomProfile = settings.audioProfile === 'custom';
   const isSavedCustomProfile = Boolean(settings.audioCustomProfileId);
+  const isUnsavedCustomProfile = isCustomProfile && !isSavedCustomProfile;
+  const shouldShowSaveAudioProfileAction = isUnsavedCustomProfile;
+  const shouldShowReplaceAudioProfileAction = isUnsavedCustomProfile;
   const canSaveMoreAudioProfiles =
     savedAudioProfiles.length < MAX_SAVED_AUDIO_PROFILES;
 
@@ -403,6 +408,43 @@ export default function CameraPreview({
     setIsAudioMenuOpen(false);
   };
 
+  const confirmReplaceSavedAudioProfile = profile => {
+    showAlert(
+      'Substituir perfil',
+      `Deseja substituir "${profile.name}" pela configuração personalizada atual?`,
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {
+          text: 'Substituir',
+          onPress: () => {
+            onReplaceSavedAudioProfile?.(profile.id);
+            setIsAudioMenuOpen(false);
+          },
+        },
+      ],
+      {cancelable: true},
+    );
+  };
+
+  const confirmDeleteSavedAudioProfile = profile => {
+    showAlert(
+      'Apagar perfil',
+      `Deseja apagar "${profile.name}"?`,
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {
+          text: 'Apagar',
+          style: 'destructive',
+          onPress: () => {
+            onDeleteSavedAudioProfile?.(profile.id);
+            setIsAudioMenuOpen(false);
+          },
+        },
+      ],
+      {cancelable: true},
+    );
+  };
+
   const renderCustomProfileMenu = () => (
     <>
       <Pressable
@@ -413,24 +455,26 @@ export default function CameraPreview({
         <Text style={styles.audioQuickBackButtonText}>Perfis</Text>
       </Pressable>
 
-      {canSaveMoreAudioProfiles ? (
-        <Pressable
-          onPress={openSaveProfileModal}
-          style={styles.audioQuickOption}
-        >
-          <Text style={styles.audioQuickOptionLabel}>Salvar configuração</Text>
-          <Text style={styles.audioQuickOptionDescription}>
-            Guarda os ajustes atuais como um novo perfil.
-          </Text>
-        </Pressable>
-      ) : (
-        <View style={styles.audioQuickOptionDisabled}>
-          <Text style={styles.audioQuickOptionLabel}>Limite atingido</Text>
-          <Text style={styles.audioQuickOptionDescription}>
-            Substitua ou apague um perfil para salvar outro.
-          </Text>
-        </View>
-      )}
+      {shouldShowSaveAudioProfileAction ? (
+        canSaveMoreAudioProfiles ? (
+          <Pressable
+            onPress={openSaveProfileModal}
+            style={styles.audioQuickOption}
+          >
+            <Text style={styles.audioQuickOptionLabel}>Salvar configuração</Text>
+            <Text style={styles.audioQuickOptionDescription}>
+              Guarda os ajustes atuais como um novo perfil.
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={styles.audioQuickOptionDisabled}>
+            <Text style={styles.audioQuickOptionLabel}>Limite atingido</Text>
+            <Text style={styles.audioQuickOptionDescription}>
+              Substitua ou apague um perfil para salvar outro.
+            </Text>
+          </View>
+        )
+      ) : null}
 
       {savedAudioProfiles.length > 0 ? (
         savedAudioProfiles.map(profile => {
@@ -464,22 +508,24 @@ export default function CameraPreview({
                 </Text>
               </Pressable>
               <View style={styles.savedAudioProfileActions}>
-                <Pressable
-                  onPress={() => onReplaceSavedAudioProfile?.(profile.id)}
-                  style={styles.savedAudioProfileActionButton}
-                >
-                  <Text style={styles.savedAudioProfileActionText}>
-                    Substituir
-                  </Text>
-                </Pressable>
+                {shouldShowReplaceAudioProfileAction ? (
+                  <Pressable
+                    onPress={() => confirmReplaceSavedAudioProfile(profile)}
+                    style={styles.savedAudioProfileActionButton}
+                  >
+                    <Text style={styles.savedAudioProfileActionText}>
+                      Substituir
+                    </Text>
+                  </Pressable>
+                ) : null}
                 <Pressable
                   onPress={() => openRenameProfileModal(profile)}
                   style={styles.savedAudioProfileActionButton}
                 >
-                  <Text style={styles.savedAudioProfileActionText}>Nome</Text>
+                  <Text style={styles.savedAudioProfileActionText}>Editar</Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => onDeleteSavedAudioProfile?.(profile.id)}
+                  onPress={() => confirmDeleteSavedAudioProfile(profile)}
                   style={styles.savedAudioProfileActionButton}
                 >
                   <Text style={styles.savedAudioProfileActionTextDanger}>
@@ -578,6 +624,10 @@ export default function CameraPreview({
 
   const getQuickOptionSelectedStyle = optionValue => {
     if (optionValue === 'custom') {
+      if (isSavedCustomProfile) {
+        return styles.audioQuickOptionSelectedSaved;
+      }
+
       return styles.audioQuickOptionSelectedCustom;
     }
 
@@ -590,6 +640,10 @@ export default function CameraPreview({
 
   const getQuickOptionSelectedLabelStyle = optionValue => {
     if (optionValue === 'custom') {
+      if (isSavedCustomProfile) {
+        return styles.audioQuickOptionLabelSelectedSaved;
+      }
+
       return styles.audioQuickOptionLabelSelectedCustom;
     }
 
