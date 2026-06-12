@@ -179,19 +179,6 @@ export default function CameraHeaderActions({
           </View>
 
           <View style={styles.rightGroup}>
-            {!isFrontCamera && (
-              <Pressable
-                accessibilityLabel="Alternar flash"
-                hitSlop={10}
-                onPress={onToggleFlash}
-                style={styles.headerIconButton}>
-                <Icon
-                  name={flashMode === 'off' ? 'flashlight-outline' : 'flashlight'}
-                  size={22}
-                  color={colors.mutedForeground}
-                />
-              </Pressable>
-            )}
             <Pressable
               accessibilityLabel="Abrir análise de ambiente"
               hitSlop={10}
@@ -214,6 +201,19 @@ export default function CameraHeaderActions({
                 color={colors.foreground}
               />
             </Pressable>
+            {!isFrontCamera && (
+              <Pressable
+                accessibilityLabel="Alternar flash"
+                hitSlop={10}
+                onPress={onToggleFlash}
+                style={styles.headerIconButton}>
+                <Icon
+                  name={flashMode === 'off' ? 'flashlight-outline' : 'flashlight'}
+                  size={22}
+                  color={colors.mutedForeground}
+                />
+              </Pressable>
+            )}
             <Pressable
               accessibilityLabel="Abrir otimização"
               hitSlop={10}
