@@ -155,6 +155,49 @@ export const styles = StyleSheet.create({
   recordingModeOptionLabelSelected: {
     color: colors.accent,
   },
+  resolutionSection: {
+    gap: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  resolutionTitle: {
+    color: colors.mutedForeground,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1.8,
+    fontFamily: typography.mono.fontFamily,
+  },
+  resolutionOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  resolutionOption: {
+    minHeight: 38,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resolutionOptionSelected: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(247, 162, 36, 0.14)',
+  },
+  resolutionOptionLabel: {
+    color: colors.foreground,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: typography.body.fontFamily,
+  },
+  resolutionOptionLabelSelected: {
+    color: colors.accent,
+  },
   ambientAnalysisOptionDescription: {
     color: colors.mutedForeground,
     fontSize: 11,

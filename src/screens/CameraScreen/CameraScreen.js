@@ -22,6 +22,7 @@ import RNFS from 'react-native-fs';
 import {
   useCameraPermission,
   useMicrophonePermission,
+  useCameraDevice,
 } from 'react-native-vision-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -63,6 +64,7 @@ import {
   applyMediaOptimizationMode,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
+import {buildVideoResolutionOptions} from '../../utils/videoResolutionOptions';
 import {getCaptureSettingsForRecordingMode} from '../../constants/recordingModes';
 import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
 import { useAmbientAudioAnalysis } from '../../hooks/useAmbientAudioAnalysis';
@@ -134,6 +136,10 @@ export default function CameraScreen({ navigation }) {
     usePermissionQueue();
   const { isHydrated, settings, setSettings } = useCameraSettings();
   const { showAlert } = useCustomAlert();
+  const resolutionOptions = useMemo(
+    () => buildVideoResolutionOptions(currentCameraDevice?.formats ?? []),
+    [currentCameraDevice],
+  );
 
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
@@ -146,6 +152,7 @@ export default function CameraScreen({ navigation }) {
   const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [cameraPosition, setCameraPosition] = useState('back');
+  const currentCameraDevice = useCameraDevice(cameraPosition);
   const currentCameraLabel = cameraPosition === 'back' ? 'traseira' : 'frontal';
   const [appState, setAppState] = useState(AppState.currentState);
   const [cameraSessionKey, setCameraSessionKey] = useState(0);
@@ -465,6 +472,17 @@ export default function CameraScreen({ navigation }) {
     [setSettings],
   );
 
+  const onResolutionChange = useCallback(
+    value => {
+      setSettings(prev => ({
+        ...prev,
+        videoResolutionPreset: value,
+        formatIndex: '',
+      }));
+    },
+    [setSettings],
+  );
+
   const onSlowMotionDurationChange = useCallback(
     value => {
       setSettings(prev => ({
@@ -556,6 +574,9 @@ export default function CameraScreen({ navigation }) {
         onOptimizationModeChange={onOptimizationModeChange}
         recordingMode={settings.recordingMode}
         onRecordingModeChange={onRecordingModeChange}
+        resolutionOptions={resolutionOptions}
+        resolutionPreset={settings.videoResolutionPreset}
+        onResolutionChange={onResolutionChange}
         isOptimizationMenuOpen={isOptimizationMenuOpen}
         setIsOptimizationMenuOpen={setIsOptimizationMenuOpen}
         isAmbientAnalysisMenuOpen={isAmbientAnalysisMenuOpen}
@@ -577,7 +598,10 @@ export default function CameraScreen({ navigation }) {
         isOptimizationMenuOpen,
         onOptimizationModeChange,
         onRecordingModeChange,
+        onResolutionChange,
         onStartAmbientAnalysis,
+        resolutionOptions,
+        settings.videoResolutionPreset,
         settings.recordingMode,
         settings.optimizationMode,
         settings.audio,

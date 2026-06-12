@@ -10,6 +10,7 @@ import {
   RECORDING_MODE_OPTIONS,
   getRecordingModeOption,
 } from '../../constants/recordingModes';
+import { buildVideoResolutionOptions } from '../../utils/videoResolutionOptions';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
 
@@ -27,6 +28,9 @@ export default function CameraHeaderActions({
   onOptimizationModeChange,
   recordingMode,
   onRecordingModeChange,
+  resolutionOptions,
+  resolutionPreset,
+  onResolutionChange,
   isOptimizationMenuOpen,
   setIsOptimizationMenuOpen,
   isAmbientAnalysisMenuOpen,
@@ -174,6 +178,39 @@ export default function CameraHeaderActions({
                       style={[
                         styles.recordingModeOptionLabel,
                         isSelected && styles.recordingModeOptionLabelSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <View style={styles.resolutionSection}>
+            <Text style={styles.resolutionTitle}>Resolução de vídeo</Text>
+            <View style={styles.resolutionOptions}>
+              {(resolutionOptions?.length
+                ? resolutionOptions
+                : buildVideoResolutionOptions([])).map(option => {
+                const isSelected = resolutionPreset === option.value;
+
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => {
+                      onResolutionChange(option.value);
+                      setIsOptimizationMenuOpen(false);
+                    }}
+                    style={[
+                      styles.resolutionOption,
+                      isSelected && styles.resolutionOptionSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.resolutionOptionLabel,
+                        isSelected && styles.resolutionOptionLabelSelected,
                       ]}
                     >
                       {option.label}

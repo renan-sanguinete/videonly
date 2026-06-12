@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Pressable, ScrollView, Text, View} from 'react-native';
 import {useCameraDevice} from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -8,6 +8,7 @@ import {
   Card,
   NumberField,
   OptionChips,
+  SliderField,
   SectionTitle,
   ToggleRow,
 } from '../../components/SettingRow/SettingRow';
@@ -32,6 +33,14 @@ import {
   getAudioSourceOption,
   UNPROCESSED_AUDIO_SOURCE,
 } from '../../constants/audioSources';
+import { pickFormatForSettings } from '../../utils/cameraFormatUtils';
+import {
+  clamp,
+  formatZoomFactor,
+  getZoomFromSliderProgress,
+  getZoomSliderProgress,
+} from '../../utils/cameraZoom';
+import {buildVideoResolutionOptions} from '../../utils/videoResolutionOptions';
 import {
   deleteVideoRecordingMetadata,
   exportVideoRecordingMetadata,
@@ -85,29 +94,61 @@ const RECORD_VIDEO_CODEC_OPTIONS = [
   { label: 'h265', value: 'h265' },
 ];
 
-function buildResolutionOptions(formats) {
-  const heights = new Set(
-    (formats || []).map(format => format.videoHeight).filter(Boolean),
+function formatSignedExposure(value) {
+  if (!Number.isFinite(value)) {
+    return '0 EV';
+  }
+
+  const rounded = Math.round(value);
+  return `${rounded > 0 ? '+' : ''}${rounded} EV`;
+}
+
+function getFpsRange(formats, settings) {
+  const selectedFormat = pickFormatForSettings(formats, {
+    ...settings,
+    fps: '',
+  });
+
+  if (selectedFormat) {
+    return {
+      min: Math.round(selectedFormat.minFps ?? 1),
+      max: Math.round(selectedFormat.maxFps ?? selectedFormat.minFps ?? 120),
+    };
+  }
+
+  if (!Array.isArray(formats) || formats.length === 0) {
+    return {min: 1, max: 120};
+  }
+
+  const min = Math.min(
+    ...formats.map(format =>
+      Number.isFinite(format.minFps) ? format.minFps : 1,
+    ),
   );
-  const options = [{ label: 'Auto', value: 'auto' }];
+  const max = Math.max(
+    ...formats.map(format =>
+      Number.isFinite(format.maxFps) ? format.maxFps : 120,
+    ),
+  );
 
-  if (heights.has(480)) {
-    options.push({ label: '480p', value: '480p' });
-  }
-  if (heights.has(720)) {
-    options.push({ label: '720p', value: '720p' });
-  }
-  if (heights.has(1080)) {
-    options.push({ label: '1080p', value: '1080p' });
-  }
-  if (heights.has(1440)) {
-    options.push({ label: '2K', value: '2k' });
-  }
-  if (heights.has(2160)) {
-    options.push({ label: '4K', value: '4k' });
-  }
+  return {
+    min: Math.max(1, Math.round(min)),
+    max: Math.max(1, Math.round(max)),
+  };
+}
 
-  return options;
+function getZoomRange(device) {
+  return {
+    min: Number.isFinite(device?.minZoom) ? device.minZoom : 1,
+    max: Number.isFinite(device?.maxZoom) ? device.maxZoom : 1,
+  };
+}
+
+function getExposureRange(device) {
+  return {
+    min: Number.isFinite(device?.minExposure) ? device.minExposure : -3,
+    max: Number.isFinite(device?.maxExposure) ? device.maxExposure : 3,
+  };
 }
 
 export default function SettingsScreen({navigation}) {
@@ -118,17 +159,33 @@ export default function SettingsScreen({navigation}) {
   const insets = useSafeAreaInsets();
   const formats = useMemo(() => device?.formats ?? [], [device]);
   const resolutionOptions = useMemo(
-    () => buildResolutionOptions(formats),
+    () => buildVideoResolutionOptions(formats),
     [formats],
   );
+  const fpsRange = useMemo(
+    () => getFpsRange(formats, settings),
+    [formats, settings],
+  );
+  const zoomRange = useMemo(() => getZoomRange(device), [device]);
+  const exposureRange = useMemo(() => getExposureRange(device), [device]);
+  const fpsMode = settings.fps === '' ? 'auto' : 'manual';
 
-  const update = patch => setSettings(prev => ({ ...prev, ...patch }));
+  const update = useCallback(
+    patch => setSettings(prev => ({ ...prev, ...patch })),
+    [setSettings],
+  );
   const currentAudioSource = getAudioSourceOption(settings.audioSource);
   const audioRisk = getAudioRiskLevel(settings);
   const optimizationMode = getMediaOptimizationModeOption(
     settings.optimizationMode,
   );
   const limiterPreset = getAudioLimiterPresetOption(settings.audioLimiterPreset);
+  const fpsSliderValue = settings.fps === '' ? '' : settings.fps;
+  const zoomSliderValue =
+    settings.zoom === ''
+      ? String(device?.neutralZoom ?? zoomRange.min)
+      : settings.zoom;
+  const exposureSliderValue = settings.exposure === '' ? '0' : settings.exposure;
 
   const updateAudioSetting = patch =>
     setSettings(prev => ({
@@ -151,6 +208,62 @@ export default function SettingsScreen({navigation}) {
   const onAudioLimiterPresetChange = value => {
     updateAudioSetting({ audioLimiterPreset: value });
   };
+
+  const onFpsModeChange = value => {
+    if (value === 'auto') {
+      update({fps: ''});
+      return;
+    }
+
+    if (settings.fps === '') {
+      const defaultFps = clamp(30, fpsRange.min, fpsRange.max);
+      update({fps: String(defaultFps)});
+    }
+  };
+
+  useEffect(() => {
+    if (settings.fps === '') {
+      return;
+    }
+
+    const currentValue = Number(settings.fps);
+    if (!Number.isFinite(currentValue)) {
+      return;
+    }
+
+    const nextValue = clamp(currentValue, fpsRange.min, fpsRange.max);
+    if (nextValue !== currentValue) {
+      update({fps: String(nextValue)});
+    }
+  }, [fpsRange.max, fpsRange.min, settings.fps, update]);
+
+  useEffect(() => {
+    const currentValue = Number(settings.zoom);
+    if (!Number.isFinite(currentValue)) {
+      return;
+    }
+
+    const nextValue = clamp(currentValue, zoomRange.min, zoomRange.max);
+    if (nextValue !== currentValue) {
+      update({zoom: String(nextValue)});
+    }
+  }, [settings.zoom, update, zoomRange.max, zoomRange.min]);
+
+  useEffect(() => {
+    const currentValue = Number(settings.exposure);
+    if (!Number.isFinite(currentValue)) {
+      return;
+    }
+
+    const nextValue = clamp(
+      currentValue,
+      exposureRange.min,
+      exposureRange.max,
+    );
+    if (nextValue !== currentValue) {
+      update({exposure: String(nextValue)});
+    }
+  }, [exposureRange.max, exposureRange.min, settings.exposure, update]);
 
   const onExportMetadata = useCallback(async () => {
     if (isExportingMetadata) {
@@ -233,10 +346,9 @@ export default function SettingsScreen({navigation}) {
           >
             <Icon name="chevron-back" size={20} color="#FAF8F5" />
           </Pressable>
-          <Text style={styles.headerEyebrow}>Audio · Ajustes</Text>
+          <Text style={styles.headerEyebrow}>Configurações</Text>
           <View style={{width: 34}} />
         </View>
-        <Text style={styles.title}>Configurações</Text>
         <Text style={styles.subtitle}>
           Ajuste o comportamento de captura, os perfis de áudio e os formatos de gravação.
         </Text>
@@ -288,25 +400,62 @@ export default function SettingsScreen({navigation}) {
         />
       </Card>
 
-      <SectionTitle>Valores numéricos</SectionTitle>
+      <SectionTitle>Controles visuais</SectionTitle>
       <Card>
-        <NumberField
-          label="FPS"
-          value={settings.fps}
-          onChangeText={text => update({ fps: text })}
-          placeholder="ex.: 30"
+        <Text style={styles.label}>FPS</Text>
+        <OptionChips
+          value={fpsMode}
+          options={[
+            {label: 'Auto', value: 'auto'},
+            {label: 'Manual', value: 'manual'},
+          ]}
+          onChange={onFpsModeChange}
         />
-        <NumberField
+
+        <View style={styles.sectionSpacer} />
+
+        {fpsMode === 'manual' ? (
+          <SliderField
+            label="FPS"
+            value={fpsSliderValue}
+            onValueChange={value => update({fps: value})}
+            min={fpsRange.min}
+            max={fpsRange.max}
+            step={1}
+            precision={0}
+            formatValue={value => `${Math.round(value)} FPS`}
+            minimumLabel={`${fpsRange.min} FPS`}
+            maximumLabel={`${fpsRange.max} FPS`}
+          />
+        ) : null}
+
+        <SliderField
           label="Zoom"
-          value={settings.zoom}
-          onChangeText={text => update({ zoom: text })}
-          placeholder="ex.: 1"
+          value={zoomSliderValue}
+          onValueChange={value => update({zoom: value})}
+          min={zoomRange.min}
+          max={zoomRange.max}
+          step={0.1}
+          precision={2}
+          formatValue={formatZoomFactor}
+          minimumLabel={formatZoomFactor(zoomRange.min)}
+          maximumLabel={formatZoomFactor(zoomRange.max)}
+          progressFromValue={value => getZoomSliderProgress(value, device)}
+          valueFromProgress={progress => getZoomFromSliderProgress(progress, device)}
         />
-        <NumberField
+
+        <SliderField
           label="Exposure"
-          value={settings.exposure}
-          onChangeText={text => update({ exposure: text })}
-          placeholder="ex.: 0"
+          description="Padrão: 0 EV"
+          value={exposureSliderValue}
+          onValueChange={value => update({exposure: value})}
+          min={exposureRange.min}
+          max={exposureRange.max}
+          step={1}
+          precision={0}
+          formatValue={formatSignedExposure}
+          minimumLabel={formatSignedExposure(exposureRange.min)}
+          maximumLabel={formatSignedExposure(exposureRange.max)}
         />
       </Card>
 
