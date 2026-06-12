@@ -10,6 +10,7 @@ class VideoIntentPackage : ReactPackage {
     return listOf(
       VideoIntentModule(reactContext),
       VideoCompressionModule(reactContext),
+      MediaProcessingModule(reactContext),
       AudioLevelMonitorModule(reactContext),
       MediaManagementModule(reactContext),
     )

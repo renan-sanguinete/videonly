@@ -28,6 +28,10 @@ function getAutoPreferredHeights() {
   return [1080, 720, 480, 1440, 2160];
 }
 
+function getHighFpsPreferredHeights() {
+  return [1080, 720, 480, 1440, 2160];
+}
+
 function sortFormatsByPreference(formats, preferredHeights) {
   return [...formats].sort((left, right) => {
     const leftHeight = left.videoHeight ?? 0;
@@ -107,4 +111,42 @@ export function pickFormatForSettings(formats, settings) {
 
 export function parseCameraNumber(value) {
   return parseMaybeNumber(value);
+}
+
+export function pickHighFpsFormat(formats, targetFps) {
+  if (!Array.isArray(formats) || formats.length === 0) {
+    return undefined;
+  }
+
+  const target = Number(targetFps);
+  const normalizedTarget = Number.isFinite(target) ? target : 120;
+  const candidates = formats.filter(
+    format =>
+      typeof format.maxFps === 'number' && format.maxFps >= normalizedTarget,
+  );
+
+  if (candidates.length === 0) {
+    return [...formats].sort(
+      (left, right) => (right.maxFps ?? 0) - (left.maxFps ?? 0),
+    )[0];
+  }
+
+  const preferredHeights = getHighFpsPreferredHeights();
+
+  return candidates.sort((left, right) => {
+    const leftHeight = left.videoHeight ?? 0;
+    const rightHeight = right.videoHeight ?? 0;
+    const leftPreferredIndex = preferredHeights.indexOf(leftHeight);
+    const rightPreferredIndex = preferredHeights.indexOf(rightHeight);
+    const normalizedLeftIndex =
+      leftPreferredIndex === -1 ? preferredHeights.length : leftPreferredIndex;
+    const normalizedRightIndex =
+      rightPreferredIndex === -1 ? preferredHeights.length : rightPreferredIndex;
+
+    if (normalizedLeftIndex !== normalizedRightIndex) {
+      return normalizedLeftIndex - normalizedRightIndex;
+    }
+
+    return (right.maxFps ?? 0) - (left.maxFps ?? 0);
+  })[0];
 }

@@ -6,6 +6,10 @@ import {
   MEDIA_OPTIMIZATION_MODES,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
+import {
+  RECORDING_MODE_OPTIONS,
+  getRecordingModeOption,
+} from '../../constants/recordingModes';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
 
@@ -21,6 +25,8 @@ export default function CameraHeaderActions({
   isRecording,
   optimizationMode,
   onOptimizationModeChange,
+  recordingMode,
+  onRecordingModeChange,
   isOptimizationMenuOpen,
   setIsOptimizationMenuOpen,
   isAmbientAnalysisMenuOpen,
@@ -32,6 +38,10 @@ export default function CameraHeaderActions({
     () => getMediaOptimizationModeOption(optimizationMode),
     [optimizationMode],
   );
+  const currentRecordingMode = useMemo(
+    () => getRecordingModeOption(recordingMode),
+    [recordingMode],
+  );
   const isOptimizationControlDisabled = isRecording;
   const isAmbientAnalysisControlDisabled =
     isAmbientAnalysisDisabled || isRecording || isAmbientAnalysisRunning;
@@ -40,7 +50,11 @@ export default function CameraHeaderActions({
     if (isOptimizationControlDisabled && isOptimizationMenuOpen) {
       setIsOptimizationMenuOpen(false);
     }
-  }, [isOptimizationControlDisabled, isOptimizationMenuOpen]);
+  }, [
+    isOptimizationControlDisabled,
+    isOptimizationMenuOpen,
+    setIsOptimizationMenuOpen,
+  ]);
 
   useEffect(() => {
     if (isAmbientAnalysisControlDisabled && isAmbientAnalysisMenuOpen) {
@@ -132,6 +146,42 @@ export default function CameraHeaderActions({
                 </Pressable>
               );
             })}
+          </View>
+          <View style={styles.recordingModeSection}>
+            <Text style={styles.recordingModeTitle}>Modo de gravação</Text>
+            <View style={styles.recordingModeOptions}>
+              {RECORDING_MODE_OPTIONS.map(option => {
+                const isSelected = currentRecordingMode.value === option.value;
+
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => {
+                      onRecordingModeChange(option.value);
+                      setIsOptimizationMenuOpen(false);
+                    }}
+                    style={[
+                      styles.recordingModeOption,
+                      isSelected && styles.recordingModeOptionSelected,
+                    ]}
+                  >
+                    <Icon
+                      name={option.icon}
+                      size={17}
+                      color={isSelected ? colors.accent : colors.mutedForeground}
+                    />
+                    <Text
+                      style={[
+                        styles.recordingModeOptionLabel,
+                        isSelected && styles.recordingModeOptionLabelSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </View>
       ) : isAmbientAnalysisMenuOpen ? (

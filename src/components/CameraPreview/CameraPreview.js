@@ -15,12 +15,18 @@ import { PinchGestureHandler, State } from 'react-native-gesture-handler';
 import {
   parseCameraNumber,
   pickFormatForSettings,
+  pickHighFpsFormat,
 } from '../../utils/cameraFormatUtils';
 import { getAudioSourceOption } from '../../constants/audioSources';
 import {
   AUDIO_PROFILE_OPTIONS,
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
+import {
+  SLOW_MOTION_DURATION_OPTIONS,
+  getCaptureSettingsForRecordingMode,
+  getRecordingModeOption,
+} from '../../constants/recordingModes';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import ZoomRail from './ZoomRail';
 import { formatElapsedTime } from '../../utils/videoFormatters';
@@ -29,6 +35,17 @@ import { styles } from './styles';
 
 const {colors} = cinematicTheme;
 const PINCH_SENSITIVITY = 0.1;
+
+function clampFpsToFormat(format, requestedFps) {
+  if (!format || requestedFps === undefined) {
+    return undefined;
+  }
+
+  const minFps = typeof format.minFps === 'number' ? format.minFps : requestedFps;
+  const maxFps = typeof format.maxFps === 'number' ? format.maxFps : requestedFps;
+
+  return Math.max(minFps, Math.min(requestedFps, maxFps));
+}
 
 export default function CameraPreview({
   camera,
@@ -49,9 +66,14 @@ export default function CameraPreview({
   onSetAudioEnabled,
   onOpenCustomAudioSettings,
   isOptimizationMenuOpen,
+  onSlowMotionDurationChange,
   onZoomCommit,
 }) {
   const device = useCameraDevice(cameraPosition);
+  const captureSettings = useMemo(
+    () => getCaptureSettingsForRecordingMode(settings),
+    [settings],
+  );
   const [isAudioMenuOpen, setIsAudioMenuOpen] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(() =>
     getInitialZoomValue(settings.zoom, null),
@@ -59,8 +81,31 @@ export default function CameraPreview({
   const currentZoomRef = useRef(currentZoom);
   const pinchStartZoomRef = useRef(currentZoom);
   const selectedFormat = useMemo(() => {
-    return pickFormatForSettings(device?.formats ?? [], settings);
-  }, [device, settings]);
+    if (captureSettings.recordingMode === 'slowMotion') {
+      return pickHighFpsFormat(
+        device?.formats ?? [],
+        captureSettings.slowMotionTargetFps,
+      );
+    }
+
+    return pickFormatForSettings(device?.formats ?? [], captureSettings);
+  }, [captureSettings, device]);
+  const effectiveFps = useMemo(() => {
+    if (captureSettings.recordingMode === 'slowMotion') {
+      return clampFpsToFormat(
+        selectedFormat,
+        parseCameraNumber(captureSettings.slowMotionTargetFps),
+      );
+    }
+
+    return captureSettings.fps !== ''
+      ? parseCameraNumber(captureSettings.fps)
+      : undefined;
+  }, [captureSettings, selectedFormat]);
+  const currentRecordingMode = useMemo(
+    () => getRecordingModeOption(settings.recordingMode),
+    [settings.recordingMode],
+  );
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 0);
   const topOverlayStyle = useMemo(
@@ -191,31 +236,37 @@ export default function CameraPreview({
       device,
       torch,
       isActive,
-      audio: settings.audio,
-      audioChannels: settings.audioChannels,
-      audioSampleRate: parseCameraNumber(settings.audioSampleRate),
-      audioBitRateKbps: parseCameraNumber(settings.audioBitRateKbps),
-      audioGain: parseCameraNumber(settings.audioGain),
-      audioSource: parseCameraNumber(settings.audioSource),
+      audio: captureSettings.audio,
+      audioChannels: captureSettings.audioChannels,
+      audioSampleRate: parseCameraNumber(captureSettings.audioSampleRate),
+      audioBitRateKbps: parseCameraNumber(captureSettings.audioBitRateKbps),
+      audioGain: parseCameraNumber(captureSettings.audioGain),
+      audioSource: parseCameraNumber(captureSettings.audioSource),
       video: true,
       preview: true,
       enableZoomGesture: false,
-      resizeMode: settings.resizeMode,
+      resizeMode: captureSettings.resizeMode,
       zoom: currentZoom,
-      exposure: parseCameraNumber(settings.exposure),
+      exposure: parseCameraNumber(captureSettings.exposure),
       ...(device?.supportsLowLightBoost
-        ? { lowLightBoost: settings.lowLightBoost }
+        ? { lowLightBoost: captureSettings.lowLightBoost }
         : {}),
       ...(selectedFormat ? { format: selectedFormat } : {}),
-      ...(selectedFormat ? { videoBitRate: settings.videoBitRate } : {}),
-      ...(selectedFormat && settings.fps !== ''
-        ? { fps: parseCameraNumber(settings.fps) }
-        : {}),
+      ...(selectedFormat ? { videoBitRate: captureSettings.videoBitRate } : {}),
+      ...(selectedFormat && effectiveFps !== undefined ? {fps: effectiveFps} : {}),
       ...(selectedFormat?.supportsVideoHdr
-        ? { videoHdr: settings.videoHdr }
+        ? { videoHdr: captureSettings.videoHdr }
         : {}),
     }),
-    [currentZoom, device, isActive, selectedFormat, settings, torch],
+    [
+      captureSettings,
+      currentZoom,
+      device,
+      effectiveFps,
+      isActive,
+      selectedFormat,
+      torch,
+    ],
   );
 
   const fpsLabel = `FPS ${String(cameraProps?.fps ?? 'AUTO').toUpperCase()}`;
@@ -380,6 +431,46 @@ export default function CameraPreview({
       ) : null}
 
       <View style={controlsStyle}>
+        {currentRecordingMode.indicatorLabel ? (
+          <View style={styles.recordingModeIndicatorRow}>
+            <View style={styles.recordingModeIndicator}>
+              <Text style={styles.recordingModeIndicatorText}>
+                {currentRecordingMode.indicatorLabel}
+              </Text>
+            </View>
+            {settings.recordingMode === 'slowMotion' ? (
+              <View style={styles.slowMotionDurationOptions}>
+                {SLOW_MOTION_DURATION_OPTIONS.map(option => {
+                  const isSelected =
+                    settings.slowMotionMaxDurationMs === option.value;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() =>
+                        onSlowMotionDurationChange?.(option.value)
+                      }
+                      style={[
+                        styles.slowMotionDurationOption,
+                        isSelected && styles.slowMotionDurationOptionSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.slowMotionDurationOptionText,
+                          isSelected &&
+                            styles.slowMotionDurationOptionTextSelected,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
         <View style={styles.controlsRow}>
           <View style={styles.controlsSideSlot}>
             {!isRecording && isAudioMenuOpen ? (

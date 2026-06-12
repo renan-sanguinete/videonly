@@ -109,6 +109,52 @@ export const styles = StyleSheet.create({
   optimizationOptionLabelSelected: {
     color: colors.accent,
   },
+  recordingModeSection: {
+    gap: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  recordingModeTitle: {
+    color: colors.mutedForeground,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1.8,
+    fontFamily: typography.mono.fontFamily,
+  },
+  recordingModeOptions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  recordingModeOption: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radii.md,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 5,
+  },
+  recordingModeOptionSelected: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(247, 162, 36, 0.14)',
+  },
+  recordingModeOptionLabel: {
+    color: colors.foreground,
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+    fontFamily: typography.body.fontFamily,
+  },
+  recordingModeOptionLabelSelected: {
+    color: colors.accent,
+  },
   ambientAnalysisOptionDescription: {
     color: colors.mutedForeground,
     fontSize: 11,

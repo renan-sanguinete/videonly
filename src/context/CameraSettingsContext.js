@@ -7,6 +7,7 @@ import {
   getDerivedMediaOptimizationMode,
   getMediaOptimizationPatch,
 } from '../constants/mediaOptimization';
+import {getRecordingModeOption} from '../constants/recordingModes';
 
 const CameraSettingsContext = createContext(null);
 const CAMERA_SETTINGS_STORAGE_KEY = '@videonly/camera-settings';
@@ -29,6 +30,13 @@ const DEFAULT_SETTINGS = {
   compressVideoBeforeSave: false,
   recordFileType: 'mp4',
   recordVideoCodec: 'h264',
+  recordingMode: 'normal',
+  slowMotionTargetFps: '120',
+  slowMotionPlaybackFps: '30',
+  slowMotionMaxDurationMs: '5000',
+  timelapseIntervalMs: '1000',
+  timelapseOutputFps: '24',
+  timelapseSpeedFactor: '8',
   videoResolutionPreset: 'auto',
   enableZoomGesture: true,
   lowLightBoost: false,
@@ -50,6 +58,46 @@ function normalizePersistedSettings(parsedSettings) {
   const normalized = {...parsedSettings};
   normalized.video = true;
   normalized.preview = true;
+  normalized.recordingMode = getRecordingModeOption(
+    normalized.recordingMode,
+  ).value;
+  if (
+    normalized.slowMotionTargetFps === undefined ||
+    normalized.slowMotionTargetFps === null
+  ) {
+    normalized.slowMotionTargetFps = DEFAULT_SETTINGS.slowMotionTargetFps;
+  }
+  if (
+    normalized.slowMotionPlaybackFps === undefined ||
+    normalized.slowMotionPlaybackFps === null
+  ) {
+    normalized.slowMotionPlaybackFps = DEFAULT_SETTINGS.slowMotionPlaybackFps;
+  }
+  if (
+    normalized.slowMotionMaxDurationMs === undefined ||
+    normalized.slowMotionMaxDurationMs === null
+  ) {
+    normalized.slowMotionMaxDurationMs =
+      DEFAULT_SETTINGS.slowMotionMaxDurationMs;
+  }
+  if (
+    normalized.timelapseIntervalMs === undefined ||
+    normalized.timelapseIntervalMs === null
+  ) {
+    normalized.timelapseIntervalMs = DEFAULT_SETTINGS.timelapseIntervalMs;
+  }
+  if (
+    normalized.timelapseOutputFps === undefined ||
+    normalized.timelapseOutputFps === null
+  ) {
+    normalized.timelapseOutputFps = DEFAULT_SETTINGS.timelapseOutputFps;
+  }
+  if (
+    normalized.timelapseSpeedFactor === undefined ||
+    normalized.timelapseSpeedFactor === null
+  ) {
+    normalized.timelapseSpeedFactor = DEFAULT_SETTINGS.timelapseSpeedFactor;
+  }
   if (normalized.audioSource === undefined || normalized.audioSource === null) {
     normalized.audioSource = UNPROCESSED_AUDIO_SOURCE;
   }

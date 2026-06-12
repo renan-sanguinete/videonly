@@ -48,6 +48,10 @@ import {
 } from '../../utils/cameraRollVideos';
 import { openVideoUri, shareVideo } from '../../utils/videoActions';
 import { optimizeVideo } from '../../utils/videoCompression';
+import {
+  applySlowMotionEffect,
+  applyTimelapseEffect,
+} from '../../utils/videoEffects';
 import { generateVideoFileName } from '../../utils/videoFormatters';
 import {
   buildVideoRecordingMetadata,
@@ -59,6 +63,7 @@ import {
   applyMediaOptimizationMode,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
+import {getCaptureSettingsForRecordingMode} from '../../constants/recordingModes';
 import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
 import { useAmbientAudioAnalysis } from '../../hooks/useAmbientAudioAnalysis';
 import { cinematicTheme } from '../../theme/cinematicTheme';
@@ -91,6 +96,14 @@ async function deleteIfExists(pathLike) {
 }
 
 function getOptimizationLoadingTitle(mode) {
+  if (mode === 'slowMotion') {
+    return 'Criando Slow Motion';
+  }
+
+  if (mode === 'timelapse') {
+    return 'Criando Timelapse';
+  }
+
   if (mode === 'audio') {
     return 'Otimizando áudio';
   }
@@ -107,6 +120,7 @@ export default function CameraScreen({ navigation }) {
   const recordingStartedAtRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
   const isRecordingRef = useRef(false);
+  const recordingLimitTimeoutRef = useRef(null);
   const recoveryTimeoutRef = useRef(null);
   const isUnmountedRef = useRef(false);
   const hasBootstrappedInitialFlowRef = useRef(false);
@@ -250,6 +264,10 @@ export default function CameraScreen({ navigation }) {
         clearTimeout(recoveryTimeoutRef.current);
         recoveryTimeoutRef.current = null;
       }
+      if (recordingLimitTimeoutRef.current) {
+        clearTimeout(recordingLimitTimeoutRef.current);
+        recordingLimitTimeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -315,6 +333,10 @@ export default function CameraScreen({ navigation }) {
   const forceReleaseCameraSession = useCallback(async () => {
     clearPendingRecovery();
     setIsCameraReady(false);
+    if (recordingLimitTimeoutRef.current) {
+      clearTimeout(recordingLimitTimeoutRef.current);
+      recordingLimitTimeoutRef.current = null;
+    }
 
     if (camera.current && isRecordingRef.current) {
       try {
@@ -433,6 +455,26 @@ export default function CameraScreen({ navigation }) {
     [setSettings],
   );
 
+  const onRecordingModeChange = useCallback(
+    value => {
+      setSettings(prev => ({
+        ...prev,
+        recordingMode: value,
+      }));
+    },
+    [setSettings],
+  );
+
+  const onSlowMotionDurationChange = useCallback(
+    value => {
+      setSettings(prev => ({
+        ...prev,
+        slowMotionMaxDurationMs: value,
+      }));
+    },
+    [setSettings],
+  );
+
   const onApplyAudioProfile = useCallback(
     value => {
       setSettings(prev => applyAudioProfile(prev, value));
@@ -512,6 +554,8 @@ export default function CameraScreen({ navigation }) {
         isRecording={isRecording}
         optimizationMode={settings.optimizationMode}
         onOptimizationModeChange={onOptimizationModeChange}
+        recordingMode={settings.recordingMode}
+        onRecordingModeChange={onRecordingModeChange}
         isOptimizationMenuOpen={isOptimizationMenuOpen}
         setIsOptimizationMenuOpen={setIsOptimizationMenuOpen}
         isAmbientAnalysisMenuOpen={isAmbientAnalysisMenuOpen}
@@ -532,7 +576,9 @@ export default function CameraScreen({ navigation }) {
         isRecording,
         isOptimizationMenuOpen,
         onOptimizationModeChange,
+        onRecordingModeChange,
         onStartAmbientAnalysis,
+        settings.recordingMode,
         settings.optimizationMode,
         settings.audio,
       ],
@@ -745,7 +791,8 @@ export default function CameraScreen({ navigation }) {
   const handleRecordingFinished = useCallback(
     async video => {
       const originalPath = video.path;
-      const extension = settings.recordFileType === 'mp4' ? 'mp4' : 'mov';
+      const captureSettings = getCaptureSettingsForRecordingMode(settings);
+      const extension = captureSettings.recordFileType === 'mp4' ? 'mp4' : 'mov';
       const newFileName = generateVideoFileName(extension);
       const newPath = `${RNFS.CachesDirectoryPath}/${newFileName}`;
       let sourcePath = originalPath;
@@ -769,7 +816,11 @@ export default function CameraScreen({ navigation }) {
 
       let pathToSave = sourcePath;
       let compressedPath = null;
+      let effectPath = null;
       let shouldDeleteOriginal = false;
+      const shouldApplyEffect =
+        settings.recordingMode === 'slowMotion' ||
+        settings.recordingMode === 'timelapse';
       const shouldProcessMedia =
         shouldOptimize && (optimizationMode !== 'audio' || settings.audio);
       const saveRecordingMetadata = async finalPath => {
@@ -804,6 +855,27 @@ export default function CameraScreen({ navigation }) {
           pathToSave = compressedPath;
         }
 
+        if (settings.recordingMode === 'slowMotion') {
+          setProcessingOptimizationMode('slowMotion');
+          setIsProcessingVideo(true);
+          effectPath = await applySlowMotionEffect(
+            pathToSave,
+            extension,
+            captureSettings.slowMotionTargetFps,
+            captureSettings.slowMotionPlaybackFps,
+          );
+          pathToSave = effectPath;
+        } else if (settings.recordingMode === 'timelapse') {
+          setProcessingOptimizationMode('timelapse');
+          setIsProcessingVideo(true);
+          effectPath = await applyTimelapseEffect(
+            pathToSave,
+            extension,
+            captureSettings.timelapseSpeedFactor,
+          );
+          pathToSave = effectPath;
+        }
+
         await saveVideoToCameraRoll(pathToSave);
         try {
           await saveRecordingMetadata(pathToSave);
@@ -816,7 +888,7 @@ export default function CameraScreen({ navigation }) {
         shouldDeleteOriginal = true;
         await loadVideosFromGallery();
       } catch (error) {
-        if (shouldProcessMedia) {
+        if (shouldProcessMedia || shouldApplyEffect) {
           try {
             await saveVideoToCameraRoll(sourcePath);
             try {
@@ -830,8 +902,12 @@ export default function CameraScreen({ navigation }) {
             shouldDeleteOriginal = true;
             await loadVideosFromGallery();
             showAlert(
-              'Otimização indisponível',
-              'Nao foi possivel otimizar este video. A versao original foi salva normalmente.',
+              shouldApplyEffect
+                ? 'Efeito indisponível'
+                : 'Otimização indisponível',
+              shouldApplyEffect
+                ? 'Nao foi possivel aplicar o efeito neste video. A versao original foi salva normalmente.'
+                : 'Nao foi possivel otimizar este video. A versao original foi salva normalmente.',
             );
           } catch (fallbackError) {
             showAlert(
@@ -850,10 +926,13 @@ export default function CameraScreen({ navigation }) {
         setIsProcessingVideo(false);
         setProcessingOptimizationMode('none');
         if (shouldDeleteOriginal) {
+          await deleteIfExists(effectPath);
           await deleteIfExists(compressedPath);
           await deleteIfExists(sourcePath);
         } else if (compressedPath && compressedPath !== sourcePath) {
           await deleteIfExists(compressedPath);
+        } else if (effectPath && effectPath !== sourcePath) {
+          await deleteIfExists(effectPath);
         }
         recordingStartedAtRef.current = null;
         setRecordingElapsedMs(0);
@@ -884,6 +963,10 @@ export default function CameraScreen({ navigation }) {
     error => {
       const errorCode = error?.code ?? null;
 
+      if (recordingLimitTimeoutRef.current) {
+        clearTimeout(recordingLimitTimeoutRef.current);
+        recordingLimitTimeoutRef.current = null;
+      }
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
@@ -926,10 +1009,15 @@ export default function CameraScreen({ navigation }) {
       recordingStartedAtRef.current = Date.now();
       setRecordingElapsedMs(0);
       setIsRecording(true);
+      const captureSettings = getCaptureSettingsForRecordingMode(settings);
       camera.current.startRecording({
-        fileType: settings.recordFileType,
-        videoCodec: settings.recordVideoCodec,
+        fileType: captureSettings.recordFileType,
+        videoCodec: captureSettings.recordVideoCodec,
         onRecordingFinished: video => {
+          if (recordingLimitTimeoutRef.current) {
+            clearTimeout(recordingLimitTimeoutRef.current);
+            recordingLimitTimeoutRef.current = null;
+          }
           recordingStartedAtRef.current = null;
           setRecordingElapsedMs(0);
           setIsRecording(false);
@@ -937,7 +1025,24 @@ export default function CameraScreen({ navigation }) {
         },
         onRecordingError: handleRecordingError,
       });
+      if (settings.recordingMode === 'slowMotion') {
+        const maxDurationMs = Number(settings.slowMotionMaxDurationMs);
+
+        recordingLimitTimeoutRef.current = setTimeout(() => {
+          if (!isRecordingRef.current || !camera.current) {
+            return;
+          }
+
+          camera.current.stopRecording().catch(error => {
+            console.warn('Falha ao parar Slow Motion automaticamente.', error);
+          });
+        }, Number.isFinite(maxDurationMs) ? maxDurationMs : 5000);
+      }
     } catch (error) {
+      if (recordingLimitTimeoutRef.current) {
+        clearTimeout(recordingLimitTimeoutRef.current);
+        recordingLimitTimeoutRef.current = null;
+      }
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
@@ -951,8 +1056,7 @@ export default function CameraScreen({ navigation }) {
     isCameraReady,
     isRecording,
     isRecoveringCamera,
-    settings.recordFileType,
-    settings.recordVideoCodec,
+    settings,
     showAlert,
   ]);
 
@@ -962,6 +1066,10 @@ export default function CameraScreen({ navigation }) {
     }
 
     try {
+      if (recordingLimitTimeoutRef.current) {
+        clearTimeout(recordingLimitTimeoutRef.current);
+        recordingLimitTimeoutRef.current = null;
+      }
       await camera.current.stopRecording();
     } catch (error) {
       recordingStartedAtRef.current = null;
@@ -1210,6 +1318,7 @@ export default function CameraScreen({ navigation }) {
           onSetAudioEnabled={onSetAudioEnabled}
           onOpenCustomAudioSettings={onOpenCustomAudioSettings}
           isOptimizationMenuOpen={isOptimizationMenuOpen}
+          onSlowMotionDurationChange={onSlowMotionDurationChange}
           onZoomCommit={nextZoom => {
             setSettings(prev => ({
               ...prev,
