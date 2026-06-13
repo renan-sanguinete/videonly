@@ -174,6 +174,9 @@ export default function CameraScreen({ navigation }) {
     useState(false);
   const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
     useState(false);
+  const [canMountCameraPreview, setCanMountCameraPreview] = useState(false);
+  const [canActivateCameraPreview, setCanActivateCameraPreview] =
+    useState(false);
   const {
     analysisProgress: ambientAnalysisProgress,
     cancelAnalysis: cancelAmbientAnalysis,
@@ -411,22 +414,52 @@ export default function CameraScreen({ navigation }) {
     return () => sub.remove();
   }, [forceReleaseCameraSession, scheduleCameraRecovery]);
 
-  const isCameraActive = useMemo(
+  const canPrepareCameraPreview = useMemo(
     () =>
       isPermissionFlowReady &&
       hasCompletedInitialBootstrap &&
+      hasCameraPermission &&
       isFocused &&
       appState === 'active' &&
-      !isProcessingVideo &&
-      !isRecoveringCamera,
+      !isProcessingVideo,
     [
       appState,
       hasCompletedInitialBootstrap,
+      hasCameraPermission,
       isFocused,
       isPermissionFlowReady,
       isProcessingVideo,
-      isRecoveringCamera,
     ],
+  );
+
+  useEffect(() => {
+    let mountTimeout;
+    let activateTimeout;
+
+    if (!canPrepareCameraPreview) {
+      setCanActivateCameraPreview(false);
+      setCanMountCameraPreview(false);
+      return undefined;
+    }
+
+    mountTimeout = setTimeout(() => {
+      setCanMountCameraPreview(true);
+
+      activateTimeout = setTimeout(() => {
+        setCanActivateCameraPreview(true);
+      }, 120);
+    }, 300);
+
+    return () => {
+      clearTimeout(mountTimeout);
+      clearTimeout(activateTimeout);
+      setCanActivateCameraPreview(false);
+    };
+  }, [canPrepareCameraPreview]);
+
+  const isCameraActive = useMemo(
+    () => canActivateCameraPreview && !isRecoveringCamera,
+    [canActivateCameraPreview, isRecoveringCamera],
   );
 
   useEffect(() => {
@@ -1317,57 +1350,67 @@ export default function CameraScreen({ navigation }) {
         visible={isDeletingSelectedVideo}
       />
       <View style={styles.previewStage}>
-        <CameraPreview
-          key={cameraSessionKey}
-          camera={camera}
-          cameraPosition={cameraPosition}
-          currentCameraLabel={currentCameraLabel}
-          isProcessingVideo={isProcessingVideo}
-          isRecording={isRecording}
-          isActive={isCameraActive}
-          torch={activeFlashMode}
-          onInitialized={() => {
-            setIsCameraReady(true);
-          }}
-          onToggleCamera={onToggleCamera}
-          recordingElapsedMs={recordingElapsedMs}
-          settings={settings}
-          startRecording={startRecording}
-          stopRecording={stopRecording}
-          onApplyAudioProfile={onApplyAudioProfile}
-          savedAudioProfiles={savedAudioProfiles}
-          onSaveAudioProfile={saveAudioProfile}
-          onApplySavedAudioProfile={applySavedAudioProfile}
-          onReplaceSavedAudioProfile={replaceSavedAudioProfile}
-          onRenameSavedAudioProfile={renameSavedAudioProfile}
-          onDeleteSavedAudioProfile={deleteSavedAudioProfile}
-          onSetAudioEnabled={onSetAudioEnabled}
-          isOptimizationMenuOpen={isOptimizationMenuOpen}
-          onSlowMotionDurationChange={onSlowMotionDurationChange}
-          onZoomCommit={nextZoom => {
-            setSettings(prev => ({
-              ...prev,
-              zoom: String(nextZoom),
-            }));
-          }}
-          onError={error => {
-            const errorCode = error?.code ?? null;
+        {canMountCameraPreview ? (
+          <CameraPreview
+            key={cameraSessionKey}
+            camera={camera}
+            cameraPosition={cameraPosition}
+            currentCameraLabel={currentCameraLabel}
+            isProcessingVideo={isProcessingVideo}
+            isRecording={isRecording}
+            isActive={isCameraActive}
+            torch={activeFlashMode}
+            onInitialized={() => {
+              setIsCameraReady(true);
+            }}
+            onToggleCamera={onToggleCamera}
+            recordingElapsedMs={recordingElapsedMs}
+            settings={settings}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            onApplyAudioProfile={onApplyAudioProfile}
+            savedAudioProfiles={savedAudioProfiles}
+            onSaveAudioProfile={saveAudioProfile}
+            onApplySavedAudioProfile={applySavedAudioProfile}
+            onReplaceSavedAudioProfile={replaceSavedAudioProfile}
+            onRenameSavedAudioProfile={renameSavedAudioProfile}
+            onDeleteSavedAudioProfile={deleteSavedAudioProfile}
+            onSetAudioEnabled={onSetAudioEnabled}
+            isOptimizationMenuOpen={isOptimizationMenuOpen}
+            onSlowMotionDurationChange={onSlowMotionDurationChange}
+            onZoomCommit={nextZoom => {
+              setSettings(prev => ({
+                ...prev,
+                zoom: String(nextZoom),
+              }));
+            }}
+            onError={error => {
+              const errorCode = error?.code ?? null;
 
-            setIsCameraReady(false);
-            setIsRecording(false);
-            recordingStartedAtRef.current = null;
-            setRecordingElapsedMs(0);
+              setIsCameraReady(false);
+              setIsRecording(false);
+              recordingStartedAtRef.current = null;
+              setRecordingElapsedMs(0);
 
-            scheduleCameraRecovery({
-              delayMs:
-                errorCode === 'system/camera-is-restricted'
-                  ? 1500
-                  : errorCode === 'device/camera-already-in-use'
-                  ? 1200
-                  : 700,
-            });
-          }}
-        />
+              scheduleCameraRecovery({
+                delayMs:
+                  errorCode === 'system/camera-is-restricted'
+                    ? 1500
+                    : errorCode === 'device/camera-already-in-use'
+                    ? 1200
+                    : 700,
+              });
+            }}
+          />
+        ) : (
+          <View style={styles.center}>
+            <ActivityIndicator
+              size="small"
+              color={cinematicTheme.colors.mutedForeground}
+            />
+            <Text style={styles.subtitle}>Preparando camera...</Text>
+          </View>
+        )}
 
         {!isRecording ? (
           <View

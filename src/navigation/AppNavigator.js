@@ -26,7 +26,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Camera"
         component={CameraScreen}
-        options={{title: ''}}
+        options={{title: '', animation: 'none'}}
       />
       <Stack.Screen
         name="Settings"
