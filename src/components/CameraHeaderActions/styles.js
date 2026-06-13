@@ -57,12 +57,13 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  optimizationMenuTitle: {
-    color: colors.accent,
-    fontSize: 11,
-    fontWeight: '700',
+  optimizationModeTitle: {
+    color: colors.mutedForeground,
+    fontSize: 10,
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 2.2,
+    letterSpacing: 1.8,
+    fontFamily: typography.mono.fontFamily,
   },
   optimizationCloseButton: {
     width: 28,

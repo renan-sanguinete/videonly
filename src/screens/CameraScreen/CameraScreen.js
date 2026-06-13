@@ -1548,18 +1548,6 @@ export default function CameraScreen({ navigation }) {
                       </Text>
                     }
                   />
-                  {savedVideos.length > 1 ? (
-                    <>
-                      <View
-                        pointerEvents="none"
-                        style={[styles.savedVideosEdgeFade, styles.savedVideosEdgeFadeLeft]}
-                      />
-                      <View
-                        pointerEvents="none"
-                        style={[styles.savedVideosEdgeFade, styles.savedVideosEdgeFadeRight]}
-                      />
-                    </>
-                  ) : null}
                 </View>
               )}
 

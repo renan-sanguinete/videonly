@@ -103,7 +103,7 @@ export default function CameraHeaderActions({
       {isOptimizationMenuOpen ? (
         <View style={styles.optimizationMenuExpanded}>
           <View style={styles.optimizationMenuHeader}>
-            <Text style={styles.optimizationMenuTitle}>Otimizar</Text>
+            <Text style={styles.optimizationModeTitle}>Otimizar</Text>
             <Pressable
               accessibilityLabel="Fechar otimização"
               hitSlop={10}
