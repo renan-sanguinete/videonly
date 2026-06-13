@@ -10,8 +10,8 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     width: 62,
-    top: '54%',
-    bottom: '22.9%',
+    top: '66%',
+    bottom: '10.9%',
     zIndex: 13,
   },
   zoomControlBody: {
