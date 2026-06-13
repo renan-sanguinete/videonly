@@ -262,10 +262,6 @@ export default function CameraHeaderActions({
         </View>
       ) : (
         <>
-          <View style={styles.leftGroup}>
-            {/* espaço para futuro (ex: fechar câmera, voltar, etc) */}
-          </View>
-
           <View style={styles.rightGroup}>
             <Pressable
               accessibilityLabel="Abrir análise de ambiente"

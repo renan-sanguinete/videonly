@@ -18,8 +18,6 @@ export const styles = StyleSheet.create({
     zIndex: 8,
     paddingHorizontal: 10,
     paddingBottom: 10,
-    backgroundColor: 'rgba(10, 7, 5, 0.42)',
-
   },
   panel: {
     backgroundColor: 'rgba(10, 7, 5, 0.68)',

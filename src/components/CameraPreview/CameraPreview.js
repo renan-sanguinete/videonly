@@ -736,10 +736,6 @@ export default function CameraPreview({
           />
         </View>
       </PinchGestureHandler>
-      <View style={styles.cameraVignetteTop} pointerEvents="none" />
-      <View style={styles.cameraVignetteTopMid} pointerEvents="none" />
-      <View style={styles.cameraVignetteTopFade} pointerEvents="none" />
-      <View style={styles.cameraVignetteBottom} pointerEvents="none" />
       <View style={topOverlayStyle}>
         {isRecording ? (
           <View style={styles.recordingStatus}>

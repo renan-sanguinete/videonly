@@ -8,24 +8,19 @@ export const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     paddingHorizontal: 14,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  leftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
   rightGroup: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 8,
   },
   headerIconButton: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.pill,
@@ -37,10 +32,10 @@ export const styles = StyleSheet.create({
     opacity: 0.35,
   },
   headerOptimizationButton: {
-    marginRight: 4,
+    marginRight: 0,
   },
   headerAmbientButton: {
-    marginRight: 4,
+    marginRight: 0,
   },
   optimizationMenuExpanded: {
     width: '100%',

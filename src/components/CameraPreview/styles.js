@@ -6,38 +6,6 @@ const {colors, radii, typography} = cinematicTheme;
 
 export const styles = StyleSheet.create({
   cameraWrap: {flex: 1, backgroundColor: colors.background},
-  cameraVignetteTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 220,
-    backgroundColor: 'rgba(0,0,0,0.34)',
-  },
-  cameraVignetteTopMid: {
-    position: 'absolute',
-    top: 88,
-    left: 0,
-    right: 0,
-    height: 120,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-  },
-  cameraVignetteTopFade: {
-    position: 'absolute',
-    top: 176,
-    left: 0,
-    right: 0,
-    height: 90,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-  },
-  cameraVignetteBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 220,
-    backgroundColor: 'rgba(0,0,0,0.26)',
-  },
   zoomControl: {
     position: 'absolute',
     left: 12,
@@ -586,11 +554,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(250, 248, 245, 0.06)',
     borderWidth: 3,
-    borderColor: colors.accent,
+    borderColor: 'rgba(250, 248, 245, 0.92)',
   },
   recordButtonActive: {
     backgroundColor: 'rgba(250, 248, 245, 0.06)',
-    borderColor: colors.rec,
   },
   recordButtonInner: {
     backgroundColor: colors.rec,
