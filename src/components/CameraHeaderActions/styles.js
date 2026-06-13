@@ -24,7 +24,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(14, 18, 22, 0.34)',
+    backgroundColor: 'rgba(14, 18, 22, 0.9)',
     borderWidth: 1,
     borderColor: 'rgba(250, 248, 245, 0.13)',
   },

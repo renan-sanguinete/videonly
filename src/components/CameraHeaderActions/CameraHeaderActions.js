@@ -110,7 +110,7 @@ export default function CameraHeaderActions({
               onPress={() => setIsOptimizationMenuOpen(false)}
               style={styles.optimizationCloseButton}
             >
-              <Icon name="close-outline" size={24} color={colors.mutedForeground} />
+              <Icon name="close-outline" size={24} color={colors.foreground} />
             </Pressable>
           </View>
           <View style={styles.optimizationMenuOptions}>
@@ -172,7 +172,7 @@ export default function CameraHeaderActions({
                     <Icon
                       name={option.icon}
                       size={17}
-                      color={isSelected ? colors.accent : colors.mutedForeground}
+                      color={isSelected ? colors.accent : colors.foreground}
                     />
                     <Text
                       style={[
@@ -234,7 +234,7 @@ export default function CameraHeaderActions({
               <Icon
                 name="close-outline"
                 size={24}
-                color={colors.mutedForeground}
+                color={colors.foreground}
               />
             </Pressable>
           </View>
@@ -294,7 +294,7 @@ export default function CameraHeaderActions({
                 <Icon
                   name={flashMode === 'off' ? 'flashlight-outline' : 'flashlight'}
                   size={18}
-                  color={colors.mutedForeground}
+                  color={colors.foreground}
                 />
               </Pressable>
             )}
@@ -329,7 +329,7 @@ export default function CameraHeaderActions({
                 isRecording && styles.headerIconButtonDisabled,
               ]}
             >
-              <Icon name="images-outline" size={18} color={colors.mutedForeground} />
+              <Icon name="images-outline" size={18} color={colors.foreground} />
             </Pressable>
             <Pressable
               accessibilityLabel="Abrir configurações"
@@ -341,7 +341,7 @@ export default function CameraHeaderActions({
                 isRecording && styles.headerIconButtonDisabled,
               ]}
             >
-              <Icon name="settings-outline" size={18} color={colors.mutedForeground} />
+              <Icon name="settings-outline" size={18} color={colors.foreground} />
             </Pressable>
           </View>
         </>
