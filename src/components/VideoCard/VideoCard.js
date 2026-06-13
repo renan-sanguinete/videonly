@@ -3,7 +3,7 @@ import {Image, Pressable, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import {
-  formatDate,
+  formatFriendlyDate,
   formatSize,
   formatVideoDuration,
 } from '../../utils/videoFormatters';
@@ -56,19 +56,16 @@ export default function VideoCard({
       <View style={styles.content}>
         {!compact ? (
           <Text style={styles.name} numberOfLines={1}>
-            {item.filename || 'Sem nome'}
+            {formatFriendlyDate(item.timestamp ? item.timestamp * 1000 : null)}
           </Text>
         ) : null}
 
-        {!compact && showDurationLabel ? (
-          <Text style={styles.meta}>Duração: {Math.round(item.duration || 0)}s</Text>
-        ) : null}
-
         {!compact ? (
-          <Text style={styles.meta}>{formatDate(item.timestamp * 1000)}</Text>
-        ) : null}
-        {!compact ? (
-          <Text style={styles.meta}>{formatSize(item.size)}</Text>
+          <Text style={styles.meta}>
+            {showDurationLabel
+              ? `${formatVideoDuration(item.duration)} • ${formatSize(item.size)}`
+              : formatSize(item.size)}
+          </Text>
         ) : null}
       </View>
 

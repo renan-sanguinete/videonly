@@ -9,9 +9,8 @@ import {
   getZoomSliderProgress,
 } from '../../utils/cameraZoom';
 
-// Deve bater com zoomRailThumb.height nos estilos
-const THUMB_SIZE = 22;
-const BUBBLE_HEIGHT = 24;
+// Deve bater com zoomRailThumb.height nos estilos.
+const THUMB_SIZE = 30;
 
 export default function ZoomRail({
   device,
@@ -40,7 +39,6 @@ export default function ZoomRail({
   // fillHeight em pixels (não percentual) para alinhar exatamente com o thumb
   const fillHeightAnim = useRef(new Animated.Value(0)).current;
   const thumbBottomAnim = useRef(new Animated.Value(0)).current;
-  const bubbleBottomAnim = useRef(new Animated.Value(0)).current;
 
   // ─── Calcula geometria a partir do progress [0,1] ─────────────────────────
   // thumbTravel = range em pixels que o centro do thumb percorre
@@ -49,22 +47,19 @@ export default function ZoomRail({
     const h = trackHeightRef.current;
     const p = clamp(progress, 0, 1);
     const thumbTravel = Math.max(h - THUMB_SIZE, 0);
-    const bubbleTravel = Math.max(h - BUBBLE_HEIGHT, 0);
 
     const thumbBottom = p * thumbTravel;
-    const bubbleBottom = p * bubbleTravel;
     // fill cresce do fundo até o CENTRO do thumb
     const fillHeight = clamp(thumbBottom + THUMB_SIZE / 2, 0, h);
 
-    return {thumbBottom, bubbleBottom, fillHeight};
+    return {thumbBottom, fillHeight};
   }, []);
 
   const applyPositions = useCallback((progress) => {
-    const {thumbBottom, bubbleBottom, fillHeight} = computePositions(progress);
+    const {thumbBottom, fillHeight} = computePositions(progress);
     fillHeightAnim.setValue(fillHeight);
     thumbBottomAnim.setValue(thumbBottom);
-    bubbleBottomAnim.setValue(bubbleBottom);
-  }, [computePositions, fillHeightAnim, thumbBottomAnim, bubbleBottomAnim]);
+  }, [computePositions, fillHeightAnim, thumbBottomAnim]);
 
   // ─── Estado de display (só label e cor do thumb — mínimo de re-renders) ───
   const [displayZoom, setDisplayZoom] = useState(zoom);
@@ -177,38 +172,23 @@ export default function ZoomRail({
           onLayout={handleLayout}
           style={styles.zoomRail}
         >
-          
-
-          {/* Track de fundo */}
           <View style={styles.zoomRailTrack} pointerEvents="none" />
 
-          {/* Fill em pixels, alinhado ao centro do thumb */}
           <Animated.View
             pointerEvents="none"
             style={[
               styles.zoomRailFill,
-              {
-                position: 'absolute',
-                bottom: 0,
-                width: 8,
-                height: fillHeightAnim,
-              },
+              styles.zoomRailFillPosition,
+              {height: fillHeightAnim},
             ]}
           />
 
-          {/* Thumb */}
           <Animated.View
             style={[
               styles.zoomRailThumb,
               isAboveNeutral ? styles.zoomRailThumbActive : null,
               {bottom: thumbBottomAnim},
             ]}
-          />
-
-          {/* Bubble com valor */}
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.zoomRailBubble, {bottom: bubbleBottomAnim}]}
           >
             <Text style={styles.zoomRailBubbleText}>
               {formatZoomFactor(displayZoom)}

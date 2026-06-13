@@ -238,24 +238,25 @@ export default function CameraHeaderActions({
               />
             </Pressable>
           </View>
-          <View style={styles.optimizationMenuOptions}>
+          <View style={styles.ambientAnalysisMenuBody}>
+            <View style={styles.ambientAnalysisIconWrap}>
+              <Icon
+                name="sparkles-outline"
+                size={22}
+                color={colors.accent}
+              />
+            </View>
+            <Text style={styles.ambientAnalysisOptionDescription}>
+              Analisa o ambiente por 10 segundos e sugere a melhor configuração de captação.
+            </Text>
             <Pressable
               onPress={() => {
                 setIsAmbientAnalysisMenuOpen(false);
                 onStartAmbientAnalysis();
               }}
-              style={styles.optimizationOption}
+              style={styles.ambientAnalysisCta}
             >
-              <View style={styles.optimizationOptionIconWrap}>
-                <Icon
-                  name="sparkles-outline"
-                  size={22}
-                  color={colors.accent}
-                />
-              </View>
-              <Text style={styles.ambientAnalysisOptionDescription}>
-                Analisa o ambiente por 10 segundos e sugere a melhor configuração de captação.
-              </Text>
+              <Text style={styles.ambientAnalysisCtaText}>Iniciar análise</Text>
             </Pressable>
           </View>
         </View>
@@ -284,7 +285,7 @@ export default function CameraHeaderActions({
             >
               <Icon
                 name="sparkles-outline"
-                size={20}
+                size={18}
                 color={colors.foreground}
               />
             </Pressable>
@@ -296,7 +297,7 @@ export default function CameraHeaderActions({
                 style={styles.headerIconButton}>
                 <Icon
                   name={flashMode === 'off' ? 'flashlight-outline' : 'flashlight'}
-                  size={22}
+                  size={18}
                   color={colors.mutedForeground}
                 />
               </Pressable>
@@ -318,7 +319,7 @@ export default function CameraHeaderActions({
             >
               <Icon
                 name="options-outline"
-                size={20}
+                size={18}
                 color={currentOptimizationMode.iconColor ?? colors.foreground}
               />
             </Pressable>
@@ -332,7 +333,7 @@ export default function CameraHeaderActions({
                 isRecording && styles.headerIconButtonDisabled,
               ]}
             >
-              <Icon name="images-outline" size={24} color={colors.mutedForeground} />
+              <Icon name="images-outline" size={18} color={colors.mutedForeground} />
             </Pressable>
             <Pressable
               accessibilityLabel="Abrir configurações"
@@ -344,7 +345,7 @@ export default function CameraHeaderActions({
                 isRecording && styles.headerIconButtonDisabled,
               ]}
             >
-              <Icon name="settings-outline" size={22} color={colors.mutedForeground} />
+              <Icon name="settings-outline" size={18} color={colors.mutedForeground} />
             </Pressable>
           </View>
         </>

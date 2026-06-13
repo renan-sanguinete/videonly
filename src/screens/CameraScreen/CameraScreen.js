@@ -613,7 +613,7 @@ export default function CameraScreen({ navigation }) {
       headerTitleAlign: 'center',
       headerTransparent: true,
       headerStyle: {
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'transparent',
         elevation: 0,
         shadowOpacity: 0,
         borderBottomWidth: 0,
@@ -1457,7 +1457,7 @@ export default function CameraScreen({ navigation }) {
                   <Icon
                     name="trash-outline"
                     size={22}
-                    color={cinematicTheme.colors.rec}
+                    color={cinematicTheme.colors.destructiveSoftForeground}
                   />
                 </View>
                 <Text style={styles.panelActionLabel}>Excluir</Text>
@@ -1524,27 +1524,43 @@ export default function CameraScreen({ navigation }) {
                   </Text>
                 </View>
               ) : (
-                <FlatList
-                  data={savedVideos}
-                  keyExtractor={item => item.uri}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.savedVideosContent}
-                  style={styles.savedVideosRow}
-                  renderItem={({item}) => (
-                    <VideoCard
-                      compact
-                      item={item}
-                      selected={item.uri === selectedVideoUri}
-                      onPress={() => onVideoCardPress(item)}
-                    />
-                  )}
-                  ListEmptyComponent={
-                    <Text style={styles.emptyText}>
-                      Nenhum vídeo salvo ainda.
-                    </Text>
-                  }
-                />
+                <View style={styles.savedVideosViewport}>
+                  <FlatList
+                    data={savedVideos}
+                    keyExtractor={item => item.uri}
+                    horizontal
+                    snapToInterval={120}
+                    decelerationRate="fast"
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.savedVideosContent}
+                    style={styles.savedVideosRow}
+                    renderItem={({item}) => (
+                      <VideoCard
+                        compact
+                        item={item}
+                        selected={item.uri === selectedVideoUri}
+                        onPress={() => onVideoCardPress(item)}
+                      />
+                    )}
+                    ListEmptyComponent={
+                      <Text style={styles.emptyText}>
+                        Nenhum vídeo salvo ainda.
+                      </Text>
+                    }
+                  />
+                  {savedVideos.length > 1 ? (
+                    <>
+                      <View
+                        pointerEvents="none"
+                        style={[styles.savedVideosEdgeFade, styles.savedVideosEdgeFadeLeft]}
+                      />
+                      <View
+                        pointerEvents="none"
+                        style={[styles.savedVideosEdgeFade, styles.savedVideosEdgeFadeRight]}
+                      />
+                    </>
+                  ) : null}
+                </View>
               )}
 
             </View>

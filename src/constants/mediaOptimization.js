@@ -6,7 +6,7 @@ export const MEDIA_OPTIMIZATION_MODES = [
     description: 'Mantém o arquivo como foi gravado.',
     helper: 'Sem compressão e sem correção de áudio.',
     iconColor: '#ffffff',
-    icon: 'remove-outline',
+    icon: 'power-outline',
   },
   {
     value: 'video',

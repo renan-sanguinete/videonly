@@ -18,11 +18,11 @@ export const styles = StyleSheet.create({
     zIndex: 8,
     paddingHorizontal: 10,
     paddingBottom: 10,
-    backgroundColor: colors.overlay,
+    backgroundColor: 'rgba(10, 7, 5, 0.42)',
 
   },
   panel: {
-    backgroundColor: colors.overlay,
+    backgroundColor: 'rgba(10, 7, 5, 0.68)',
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.border,
@@ -81,7 +81,7 @@ export const styles = StyleSheet.create({
   },
   panelDivider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: 'rgba(250, 248, 245, 0.08)',
   },
   recordingMeterPanel: {
     gap: 8,
@@ -170,8 +170,8 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   panelActionIconDanger: {
-    borderColor: 'rgba(255, 47, 58, 0.42)',
-    backgroundColor: 'rgba(255, 47, 58, 0.14)',
+    borderColor: colors.destructiveSoftBorder,
+    backgroundColor: colors.destructiveSoft,
   },
   panelActionLabel: {
     color: colors.foreground,
@@ -182,7 +182,26 @@ export const styles = StyleSheet.create({
   },
   savedVideosContent: {
     gap: 8,
-    paddingRight: 8,
+    paddingHorizontal: 2,
+    paddingRight: 22,
+  },
+  savedVideosViewport: {
+    position: 'relative',
+  },
+  savedVideosEdgeFade: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 20,
+    zIndex: 2,
+  },
+  savedVideosEdgeFadeLeft: {
+    left: 0,
+    backgroundColor: 'rgba(10, 7, 5, 0.22)',
+  },
+  savedVideosEdgeFadeRight: {
+    right: 0,
+    backgroundColor: 'rgba(10, 7, 5, 0.38)',
   },
   emptyText: {
     color: colors.mutedForeground,

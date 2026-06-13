@@ -27,10 +27,24 @@ import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
 
 const {colors} = cinematicTheme;
+const FILTER_OPTIONS = [
+  {label: 'Todos', value: 'all'},
+  {label: 'Hoje', value: 'today'},
+  {label: 'Esta semana', value: 'week'},
+];
+
+function isSameDay(left, right) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
 
 export default function LibraryScreen({navigation}) {
   const [videos, setVideos] = useState([]);
   const [selectedUris, setSelectedUris] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -52,6 +66,26 @@ export default function LibraryScreen({navigation}) {
     selectedCount > 0
       ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}`
       : `${String(videos.length).padStart(2, '0')} / ${totalSizeMb} MB`;
+  const storageProgress = Math.min(totalSizeMb / 1200, 1);
+  const filteredVideos = useMemo(() => {
+    if (activeFilter === 'all') {
+      return videos;
+    }
+
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 7);
+
+    return videos.filter(video => {
+      const videoDate = new Date((video.timestamp || 0) * 1000);
+
+      if (activeFilter === 'today') {
+        return isSameDay(videoDate, now);
+      }
+
+      return videoDate >= weekAgo;
+    });
+  }, [activeFilter, videos]);
 
   const load = useCallback(async ({showLoader = false} = {}) => {
     if (showLoader) {
@@ -318,6 +352,39 @@ export default function LibraryScreen({navigation}) {
           </View>
         </View>
         <Text style={styles.headerTitle}>Vídeos salvos</Text>
+        <View style={styles.storageTrack}>
+          <View
+            style={[
+              styles.storageFill,
+              {width: `${Math.round(storageProgress * 100)}%`},
+            ]}
+          />
+        </View>
+        <View style={styles.filterChips}>
+          {FILTER_OPTIONS.map(option => {
+            const isSelected = activeFilter === option.value;
+
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => setActiveFilter(option.value)}
+                style={[
+                  styles.filterChip,
+                  isSelected && styles.filterChipSelected,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    isSelected && styles.filterChipTextSelected,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
       <LoadingModal
         message={deletingMessage}
@@ -335,14 +402,14 @@ export default function LibraryScreen({navigation}) {
         </View>
       ) : (
         <FlatList
-          data={videos}
+          data={filteredVideos}
           style={styles.list}
           keyExtractor={item => item.uri}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           contentContainerStyle={
-            videos.length === 0 ? styles.emptyContainer : styles.listContent
+            filteredVideos.length === 0 ? styles.emptyContainer : styles.listContent
           }
           renderItem={({item}) => (
             <VideoCard
@@ -355,9 +422,18 @@ export default function LibraryScreen({navigation}) {
             />
           )}
           ListEmptyComponent={
-            <View>
-              <Text style={styles.emptyTitle}>Nenhum vídeo encontrado</Text>
-              <Text style={styles.emptyText}>Grave um vídeo para vê-lo aqui.</Text>
+            <View style={styles.emptyStateCard}>
+              <View style={styles.emptyLogoMark}>
+                <Icon name="radio-button-on-outline" size={28} color={colors.accent} />
+              </View>
+              <Text style={styles.emptyTitle}>
+                {videos.length === 0 ? 'Nenhum vídeo ainda' : 'Nada neste filtro'}
+              </Text>
+              <Text style={styles.emptyText}>
+                {videos.length === 0
+                  ? 'Toque no botão de gravação para criar o primeiro vídeo.'
+                  : 'Tente trocar o filtro para ver outros vídeos salvos.'}
+              </Text>
             </View>
           }
         />

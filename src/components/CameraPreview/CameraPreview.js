@@ -155,6 +155,7 @@ export default function CameraPreview({
   );
   const progressNative = useRef(new Animated.Value(0)).current;
   const progressJS = useRef(new Animated.Value(0)).current;
+  const recPulse = useRef(new Animated.Value(0)).current;
 
   const animatedBorderRadius = progressJS.interpolate({
     inputRange: [0, 1],
@@ -184,6 +185,51 @@ export default function CameraPreview({
       useNativeDriver: true,
     }).start();
   }, [isRecording, progressJS, progressNative]);
+
+  useEffect(() => {
+    let pulseAnimation;
+
+    if (isRecording) {
+      pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(recPulse, {
+            toValue: 1,
+            duration: 860,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(recPulse, {
+            toValue: 0,
+            duration: 860,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+      pulseAnimation.start();
+    } else {
+      recPulse.setValue(0);
+    }
+
+    return () => {
+      pulseAnimation?.stop();
+    };
+  }, [isRecording, recPulse]);
+
+  const recPulseStyle = {
+    opacity: recPulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.65, 1],
+    }),
+    transform: [
+      {
+        scale: recPulse.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.55],
+        }),
+      },
+    ],
+  };
 
   useEffect(() => {
     setCurrentZoom(getInitialZoomValue(settings.zoom, device));
@@ -675,8 +721,6 @@ export default function CameraPreview({
           style={styles.audioQuickMenuBackdrop}
         />
       ) : null}
-      <View style={styles.cameraVignetteTop} pointerEvents="none" />
-      <View style={styles.cameraVignetteBottom} pointerEvents="none" />
       <PinchGestureHandler
         enabled={Boolean(device && settings.enableZoomGesture)}
         onGestureEvent={handlePinchGesture}
@@ -692,10 +736,15 @@ export default function CameraPreview({
           />
         </View>
       </PinchGestureHandler>
+      <View style={styles.cameraVignetteTop} pointerEvents="none" />
+      <View style={styles.cameraVignetteTopMid} pointerEvents="none" />
+      <View style={styles.cameraVignetteTopFade} pointerEvents="none" />
+      <View style={styles.cameraVignetteBottom} pointerEvents="none" />
       <View style={topOverlayStyle}>
         {isRecording ? (
           <View style={styles.recordingStatus}>
             <View style={styles.badge}>
+              <Animated.View style={[styles.recPulseDot, recPulseStyle]} />
               <Text style={styles.badgeText}>REC</Text>
             </View>
             <View style={styles.timerPill}>

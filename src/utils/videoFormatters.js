@@ -19,6 +19,20 @@ export function formatDate(dateLike) {
   }).format(date);
 }
 
+export function formatFriendlyDate(dateLike) {
+  if (!dateLike) return '—';
+
+  const date = new Date(dateLike);
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+    .format(date)
+    .replace('.', '');
+}
+
 export function formatVideoDuration(secondsLike) {
   const totalSeconds = Math.max(0, Math.round(secondsLike || 0));
   const hours = Math.floor(totalSeconds / 3600);

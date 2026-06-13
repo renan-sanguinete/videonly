@@ -2,34 +2,39 @@ import {StyleSheet} from 'react-native';
 
 import {cinematicTheme} from '../../theme/cinematicTheme';
 
-const {colors, radii, typography} = cinematicTheme;
+const {colors, typography} = cinematicTheme;
 
 export const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
+    padding: 12,
     flexDirection: 'row',
     gap: 12,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   selectedCard: {
     borderColor: colors.accent,
-    borderWidth: 2,
+    borderWidth: 1.5,
     backgroundColor: colors.surface2,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: {width: 0, height: 0},
+    elevation: 4,
   },
   compactCard: {
     width: 112,
     height: 76,
-    borderRadius: radii.md,
+    borderRadius: 12,
     padding: 2,
   },
   thumbWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: radii.md,
+    width: 116,
+    height: 82,
+    borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: colors.surface2,
     position: 'relative',
@@ -65,8 +70,10 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     left: 6,
     bottom: 6,
-    backgroundColor: 'rgba(21, 16, 12, 0.84)',
+    backgroundColor: 'rgba(21, 16, 12, 0.58)',
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 248, 245, 0.14)',
     paddingHorizontal: 6,
     paddingVertical: 3,
   },
@@ -79,19 +86,17 @@ export const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: 2,
+    gap: 5,
   },
   name: {
     color: colors.foreground,
     fontWeight: '800',
-    fontSize: 15,
-    marginBottom: 4,
+    fontSize: 16,
     fontFamily: typography.display.fontFamily,
   },
   meta: {
     color: colors.mutedForeground,
-    fontSize: 10,
-    marginBottom: 2,
+    fontSize: 11,
     fontFamily: typography.mono.fontFamily,
   },
   compactMeta: {
