@@ -276,7 +276,7 @@ export function CameraSettingsProvider({children}) {
   }, [isHydrated, savedAudioProfiles]);
 
   const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS);
+    setSettings(applyAudioProfile(DEFAULT_SETTINGS, 'standard'));
   }, []);
 
   const saveAudioProfile = useCallback(name => {

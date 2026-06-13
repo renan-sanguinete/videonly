@@ -24,7 +24,7 @@ import {
 } from '../../constants/audioProcessing';
 import {
   MEDIA_OPTIMIZATION_MODES,
-  applyMediaOptimizationMode,
+  getMediaOptimizationPatch,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
 import { useCameraSettings } from '../../context/CameraSettingsContext';
@@ -200,10 +200,7 @@ export default function SettingsScreen({navigation}) {
   };
 
   const onOptimizationModeChange = value => {
-    setSettings(prev => ({
-      ...applyMediaOptimizationMode(prev, value),
-      audioProfile: prev.audioProfile,
-    }));
+    updateAudioSetting(getMediaOptimizationPatch(value));
   };
 
   const onAudioLimiterPresetChange = value => {
