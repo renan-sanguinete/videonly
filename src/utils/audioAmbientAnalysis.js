@@ -1,3 +1,16 @@
+import {UNPROCESSED_AUDIO_SOURCE} from '../constants/audioSources';
+
+const SAFE_CAPTURE_SETTINGS = {
+  audioChannels: 'mono',
+  audioSampleRate: '48000',
+  audioBitRateKbps: '256',
+  audioSource: UNPROCESSED_AUDIO_SOURCE,
+};
+
+const REDUCED_GAIN_SETTINGS = {
+  audioGain: -6,
+};
+
 function average(values) {
   if (!values.length) {
     return 0;
@@ -16,6 +29,7 @@ function formatRatio(value) {
 
 function buildSuggestion({
   audioLimiterPreset,
+  captureSettingsPatch = {},
   normalizeAudioLoudness,
   title,
   description,
@@ -27,8 +41,8 @@ function buildSuggestion({
     confidence,
     audioLimiterPreset,
     normalizeAudioLoudness,
-    optimizationMode: 'none',
     settingsPatch: {
+      ...captureSettingsPatch,
       audioLimiterPreset,
       normalizeAudioLoudness,
       audioProfile: 'custom',
@@ -67,43 +81,62 @@ export function analyzeAmbientAudioSamples(samples) {
     return {
       ...summary,
       ...buildSuggestion({
-        optimizationMode: 'none',
+        captureSettingsPatch: {
+          ...SAFE_CAPTURE_SETTINGS,
+          audioGain: -12,
+        },
         audioLimiterPreset: 'strong',
         normalizeAudioLoudness: true,
-        title: 'Desativado',
+        title: 'Áudio protegido',
         description:
-          'O ambiente está alto e com picos. A sugestão automática é manter a otimização desativada e ajustar o áudio manualmente, se necessário.',
+          'O ambiente está alto e com picos. A sugestão automática é reduzir o ganho e usar captação sem processamento para preservar melhor o áudio.',
         confidence: 'alta',
       }),
     };
   }
 
-  if (averageRmsDb >= -18 || maxPeakDb >= -9) {
+  if (clipRatio >= 0.03 || maxPeakDb >= -6 || averagePeakDb >= -9 || averageRmsDb >= -14) {
     return {
       ...summary,
       ...buildSuggestion({
-        optimizationMode: 'none',
-        audioLimiterPreset:
-          averageRmsDb >= -14 || maxPeakDb >= -6 ? 'strong' : 'standard',
+        captureSettingsPatch: {
+          ...SAFE_CAPTURE_SETTINGS,
+          audioGain: -9,
+        },
+        audioLimiterPreset: 'standard',
         normalizeAudioLoudness: true,
-        title: 'Desativado',
+        title: 'Áudio protegido',
         description:
-          'O ambiente está em nível médio/alto. A sugestão automática é manter a otimização desativada e deixar o áudio para ajuste manual.',
+          'O ambiente está alto, mas sem clipping constante. A sugestão automática é usar captação sem processamento e reduzir o ganho sem chegar ao ajuste mais agressivo.',
         confidence: 'alta',
       }),
     };
   }
 
-  if (averageRmsDb <= -30 && maxPeakDb <= -18 && clipRatio === 0) {
+  if (averageRmsDb >= -18 || maxPeakDb >= -9 || averagePeakDb >= -12) {
     return {
       ...summary,
       ...buildSuggestion({
-        optimizationMode: 'none',
+        captureSettingsPatch: REDUCED_GAIN_SETTINGS,
+        audioLimiterPreset: 'standard',
+        normalizeAudioLoudness: true,
+        title: 'Ambiente moderado',
+        description:
+          'O ambiente tem volume moderado. A sugestão automática é só reduzir um pouco o ganho e manter a captação atual.',
+        confidence: 'média',
+      }),
+    };
+  }
+
+  if (averageRmsDb <= -26 && maxPeakDb <= -12 && clipRatio === 0) {
+    return {
+      ...summary,
+      ...buildSuggestion({
         audioLimiterPreset: 'gentle',
         normalizeAudioLoudness: false,
-        title: 'Desativado',
+        title: 'Ambiente suave',
         description:
-          'O ambiente está limpo e sem picos relevantes. Você pode gravar sem correção.',
+          'O ambiente está limpo ou com pouco ruído. A sugestão automática é preservar a captação atual e evitar ajustes agressivos.',
         confidence: 'alta',
       }),
     };
@@ -112,12 +145,12 @@ export function analyzeAmbientAudioSamples(samples) {
   return {
     ...summary,
     ...buildSuggestion({
-      optimizationMode: 'none',
+      captureSettingsPatch: REDUCED_GAIN_SETTINGS,
       audioLimiterPreset: 'gentle',
-      normalizeAudioLoudness: true,
-      title: 'Desativado',
+      normalizeAudioLoudness: false,
+      title: 'Ambiente levemente variável',
       description:
-        'O ambiente tem variação moderada. A sugestão automática é manter a otimização desativada e só ajustar o áudio manualmente.',
+        'O ambiente tem alguma variação, mas não justifica trocar canal, sample rate ou fonte. A sugestão automática é apenas reduzir levemente o ganho.',
       confidence: 'média',
     }),
   };

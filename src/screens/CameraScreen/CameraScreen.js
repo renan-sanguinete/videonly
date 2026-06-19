@@ -196,9 +196,6 @@ export default function CameraScreen({ navigation }) {
         return;
       }
 
-      const optimizationOption = getMediaOptimizationModeOption(
-        suggestion.optimizationMode,
-      );
       const limiterOption = getAudioLimiterPresetOption(
         suggestion.audioLimiterPreset,
       );
@@ -206,7 +203,7 @@ export default function CameraScreen({ navigation }) {
       showAlert(
         'Sugestão pronta',
         [
-          `${optimizationOption.label} · ${suggestion.confidence}`,
+          `${suggestion.title} · ${suggestion.confidence}`,
           suggestion.description,
           '',
           `Média RMS: ${suggestion.averageRmsLabel}`,
