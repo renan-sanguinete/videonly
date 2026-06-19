@@ -10,6 +10,9 @@ export const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
+  videoItemWrap: {
+    gap: 8,
+  },
   header: {
     paddingHorizontal: 16,
     paddingTop: 10,
@@ -164,6 +167,44 @@ export const styles = StyleSheet.create({
   },
   checkboxDisabled: {
     opacity: 0.5,
+  },
+  panelActions: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 2,
+    paddingHorizontal: 4,
+    paddingBottom: 4,
+  },
+  panelActionButton: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  panelActionIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  panelActionIconDanger: {
+    borderColor: colors.destructiveSoftBorder,
+    backgroundColor: colors.destructiveSoft,
+  },
+  panelActionLabel: {
+    color: colors.foreground,
+    fontSize: 10,
+    fontWeight: '400',
+    textAlign: 'center',
+    fontFamily: typography.body.fontFamily,
+  },
+  loadingMore: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerActions: {
     flexDirection: 'row',

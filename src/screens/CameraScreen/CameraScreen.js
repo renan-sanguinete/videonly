@@ -1297,7 +1297,12 @@ export default function CameraScreen({ navigation }) {
       } finally {
         setIsProcessingVideo(false);
         setProcessingOptimizationMode('none');
-        if (optimizedPath) {
+        if (
+          optimizedPath &&
+          optimizedPath !== sourcePath &&
+          optimizedPath !== item.path &&
+          optimizedPath !== item.uri
+        ) {
           await deleteIfExists(optimizedPath);
         }
       }

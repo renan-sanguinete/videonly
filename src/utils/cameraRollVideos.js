@@ -4,6 +4,7 @@ import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import {canManageAndroidMedia, ensureCameraRollVideoPermission} from './appPermissions';
 
 export const VIDEONLY_ALBUM = 'Videonly';
+const DEFAULT_PAGE_SIZE = 20;
 
 function mapEdgeToVideo(edge) {
   const node = edge.node;
@@ -28,31 +29,71 @@ function isVideonlyAsset(video) {
   return typeof video.filename === 'string' && video.filename.startsWith('videonly-');
 }
 
-export async function loadSavedVideosFromCameraRoll() {
+function sortVideosByTimestamp(videos) {
+  return videos.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+}
+
+export async function loadVideosPageFromCameraRoll({
+  after = null,
+  first = DEFAULT_PAGE_SIZE,
+  source = 'videonly',
+} = {}) {
   const granted = await ensureCameraRollVideoPermission();
   if (!granted) {
     throw new Error('Permissao para ler videos da galeria nao foi concedida.');
   }
 
-  const baseParams = {
-    first: 10,
+  const params = {
+    first,
     assetType: 'Videos',
     include: ['filename', 'fileSize', 'playableDuration', 'imageSize'],
   };
 
-  const albumResult = await CameraRoll.getPhotos({
-    ...baseParams,
-    groupName: VIDEONLY_ALBUM,
-  });
-
-  let videos = albumResult.edges.map(mapEdgeToVideo);
-
-  if (videos.length === 0) {
-    const allVideosResult = await CameraRoll.getPhotos(baseParams);
-    videos = allVideosResult.edges.map(mapEdgeToVideo).filter(isVideonlyAsset);
+  if (after) {
+    params.after = after;
   }
 
-  return videos.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  if (source === 'videonly') {
+    params.groupName = VIDEONLY_ALBUM;
+  }
+
+  const result = await CameraRoll.getPhotos(params);
+  let videos = result.edges.map(mapEdgeToVideo);
+
+  if (source === 'videonly' && videos.length === 0 && !after) {
+    const fallbackResult = await CameraRoll.getPhotos({
+      first,
+      assetType: 'Videos',
+      include: ['filename', 'fileSize', 'playableDuration', 'imageSize'],
+    });
+
+    videos = fallbackResult.edges.map(mapEdgeToVideo).filter(isVideonlyAsset);
+
+    return {
+      videos: sortVideosByTimestamp(videos),
+      pageInfo: fallbackResult.page_info ?? {
+        has_next_page: false,
+        end_cursor: null,
+      },
+    };
+  }
+
+  return {
+    videos: sortVideosByTimestamp(videos),
+    pageInfo: result.page_info ?? {
+      has_next_page: false,
+      end_cursor: null,
+    },
+  };
+}
+
+export async function loadSavedVideosFromCameraRoll(options = {}) {
+  const {videos} = await loadVideosPageFromCameraRoll({
+    first: options.first ?? 10,
+    source: 'videonly',
+  });
+
+  return videos;
 }
 
 export async function saveVideoToCameraRoll(path) {

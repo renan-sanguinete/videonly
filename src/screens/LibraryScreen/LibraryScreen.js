@@ -1,4 +1,4 @@
-import React, {useCallback, useLayoutEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import RNFS from 'react-native-fs';
 
 import LoadingModal from '../../components/LoadingModal/LoadingModal';
 import VideoCard from '../../components/VideoCard/VideoCard';
+import {useCameraSettings} from '../../context/CameraSettingsContext';
 import {useCustomAlert} from '../../context/CustomAlertContext';
 import {
   canManageAndroidMedia,
@@ -20,9 +22,11 @@ import {
 } from '../../utils/appPermissions';
 import {
   deleteVideoFromCameraRoll,
-  loadSavedVideosFromCameraRoll,
+  loadVideosPageFromCameraRoll,
+  saveVideoToCameraRoll,
 } from '../../utils/cameraRollVideos';
 import {openVideoUri, shareVideo} from '../../utils/videoActions';
+import {optimizeVideo} from '../../utils/videoCompression';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
 
@@ -31,7 +35,9 @@ const FILTER_OPTIONS = [
   {label: 'Todos', value: 'all'},
   {label: 'Hoje', value: 'today'},
   {label: 'Esta semana', value: 'week'},
+  {label: 'Galeria', value: 'gallery'},
 ];
+const PAGE_SIZE = 20;
 
 function isSameDay(left, right) {
   return (
@@ -41,16 +47,63 @@ function isSameDay(left, right) {
   );
 }
 
+function getOptimizationLoadingTitle(mode) {
+  if (mode === 'audio') {
+    return 'Otimizando áudio';
+  }
+
+  if (mode === 'both') {
+    return 'Otimizando vídeo e áudio';
+  }
+
+  return 'Otimizando vídeo';
+}
+
+function getVideoExtensionFromItem(item) {
+  const extensionMatch = String(item?.filename || item?.uri || '')
+    .split('?')[0]
+    .match(/\.([a-zA-Z0-9]+)$/);
+  const extension = extensionMatch?.[1]?.toLowerCase();
+
+  return extension === 'mov' ? 'mov' : 'mp4';
+}
+
+function mergeVideos(currentVideos, nextVideos) {
+  const seenUris = new Set();
+
+  return [...currentVideos, ...nextVideos].filter(video => {
+    if (seenUris.has(video.uri)) {
+      return false;
+    }
+
+    seenUris.add(video.uri);
+    return true;
+  });
+}
+
 export default function LibraryScreen({navigation}) {
   const [videos, setVideos] = useState([]);
   const [selectedUris, setSelectedUris] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [pageInfo, setPageInfo] = useState({
+    has_next_page: false,
+    end_cursor: null,
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [processingOptimizationMode, setProcessingOptimizationMode] =
+    useState('none');
   const [deleteProgress, setDeleteProgress] = useState({current: 0, total: 0});
+  const [actionVideoUri, setActionVideoUri] = useState(null);
+  const [isActionOptimizationOpen, setIsActionOptimizationOpen] =
+    useState(false);
+  const {settings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
   const insets = useSafeAreaInsets();
+  const activeSource = activeFilter === 'gallery' ? 'gallery' : 'videonly';
 
   const selectedCount = selectedUris.length;
   const totalSizeMb = useMemo(
@@ -68,7 +121,7 @@ export default function LibraryScreen({navigation}) {
       : `${String(videos.length).padStart(2, '0')} / ${totalSizeMb} MB`;
   const storageProgress = Math.min(totalSizeMb / 1200, 1);
   const filteredVideos = useMemo(() => {
-    if (activeFilter === 'all') {
+    if (activeFilter === 'all' || activeFilter === 'gallery') {
       return videos;
     }
 
@@ -87,17 +140,38 @@ export default function LibraryScreen({navigation}) {
     });
   }, [activeFilter, videos]);
 
-  const load = useCallback(async ({showLoader = false} = {}) => {
+  const load = useCallback(async ({
+    after = null,
+    append = false,
+    showLoader = false,
+  } = {}) => {
     if (showLoader) {
       setIsLoading(true);
     }
 
     try {
-      const items = await loadSavedVideosFromCameraRoll();
-      setVideos(items);
-      setSelectedUris(current =>
-        current.filter(uri => items.some(video => video.uri === uri)),
-      );
+      const nextPage = await loadVideosPageFromCameraRoll({
+        after,
+        first: PAGE_SIZE,
+        source: activeSource,
+      });
+      const items = nextPage.videos;
+
+      setVideos(current => {
+        const nextVideos = append ? mergeVideos(current, items) : items;
+
+        setSelectedUris(selected =>
+          selected.filter(uri => nextVideos.some(video => video.uri === uri)),
+        );
+        setActionVideoUri(currentActionUri =>
+          nextVideos.some(video => video.uri === currentActionUri)
+            ? currentActionUri
+            : null,
+        );
+
+        return nextVideos;
+      });
+      setPageInfo(nextPage.pageInfo);
     } catch (error) {
       showAlert(
         'Erro ao carregar videos',
@@ -106,13 +180,17 @@ export default function LibraryScreen({navigation}) {
     } finally {
       setIsLoading(false);
     }
-  }, [showAlert]);
+  }, [activeSource, showAlert]);
 
   const clearSelection = useCallback(() => {
     setSelectedUris([]);
+    setActionVideoUri(null);
+    setIsActionOptimizationOpen(false);
   }, []);
 
   const toggleSelection = useCallback(uri => {
+    setActionVideoUri(null);
+    setIsActionOptimizationOpen(false);
     setSelectedUris(current =>
       current.includes(uri)
         ? current.filter(itemUri => itemUri !== uri)
@@ -211,22 +289,56 @@ export default function LibraryScreen({navigation}) {
     );
   }, [deleteVideos, isDeleting, selectedCount, showAlert]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    setVideos([]);
+    setPageInfo({has_next_page: false, end_cursor: null});
+    clearSelection();
     load({showLoader: true});
-  }, [load]);
+  }, [activeSource, clearSelection, load]);
+
+  useEffect(() => {
+    clearSelection();
+  }, [activeFilter, clearSelection]);
 
   const onRefresh = useCallback(async () => {
-    if (isDeleting) {
+    if (isDeleting || isOptimizing) {
       return;
     }
 
     setRefreshing(true);
     try {
-      await load();
+      await load({append: false});
     } finally {
       setRefreshing(false);
     }
-  }, [isDeleting, load]);
+  }, [isDeleting, isOptimizing, load]);
+
+  const loadMore = useCallback(async () => {
+    if (
+      isDeleting ||
+      isLoading ||
+      isLoadingMore ||
+      isOptimizing ||
+      !pageInfo.has_next_page
+    ) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      await load({after: pageInfo.end_cursor, append: true});
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [
+    isDeleting,
+    isLoading,
+    isLoadingMore,
+    isOptimizing,
+    load,
+    pageInfo.end_cursor,
+    pageInfo.has_next_page,
+  ]);
 
   const onOpen = useCallback(
     async item => {
@@ -256,9 +368,125 @@ export default function LibraryScreen({navigation}) {
     [showAlert],
   );
 
+  const deleteSingleVideo = useCallback(
+    async item => {
+      if (!item || isDeleting) {
+        return;
+      }
+
+      setIsDeleting(true);
+      setDeleteProgress({current: 1, total: 1});
+
+      try {
+        const result = await deleteVideoFromCameraRoll(item.uri);
+        setActionVideoUri(null);
+        setIsActionOptimizationOpen(false);
+        await load({showLoader: false});
+
+        if (!result?.bypassedSystemPrompt) {
+          await maybeWarnAboutManageMedia();
+        }
+      } catch (error) {
+        showAlert(
+          'Erro',
+          error?.message || 'Nao foi possivel excluir este video.',
+        );
+      } finally {
+        setIsDeleting(false);
+        setDeleteProgress({current: 0, total: 0});
+      }
+    },
+    [isDeleting, load, maybeWarnAboutManageMedia, showAlert],
+  );
+
+  const confirmDeleteVideo = useCallback(
+    item => {
+      if (!item || isDeleting) {
+        return;
+      }
+
+      showAlert('Excluir vídeo', 'Excluir o vídeo selecionado?', [
+        {text: 'Cancelar', style: 'cancel'},
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => {
+            deleteSingleVideo(item).catch(error => {
+              console.warn('Falha ao excluir vídeo na biblioteca.', error);
+            });
+          },
+        },
+      ]);
+    },
+    [deleteSingleVideo, isDeleting, showAlert],
+  );
+
+  const optimizeSelectedVideo = useCallback(
+    async (item, optimizationMode) => {
+      if (!item || isOptimizing) {
+        return;
+      }
+
+      const sourcePath = item.path || item.uri;
+      const extension = getVideoExtensionFromItem(item);
+      let optimizedPath = null;
+
+      setIsActionOptimizationOpen(false);
+      setProcessingOptimizationMode(optimizationMode);
+      setIsOptimizing(true);
+
+      try {
+        optimizedPath = await optimizeVideo(sourcePath, extension, {
+          optimizationMode,
+          audioLimiterPreset: settings.audioLimiterPreset,
+          normalizeAudioLoudness: settings.normalizeAudioLoudness,
+        });
+
+        await saveVideoToCameraRoll(optimizedPath);
+        await load({showLoader: false});
+
+        showAlert(
+          'Otimização concluída',
+          'Uma nova cópia otimizada foi salva. O vídeo original foi mantido.',
+          [{text: 'Ok'}],
+        );
+      } catch (error) {
+        showAlert(
+          'Otimização indisponível',
+          error?.message ||
+            'Não foi possível otimizar este vídeo. O original foi mantido.',
+          [{text: 'Ok'}],
+        );
+      } finally {
+        setIsOptimizing(false);
+        setProcessingOptimizationMode('none');
+        if (
+          optimizedPath &&
+          optimizedPath !== sourcePath &&
+          optimizedPath !== item.path &&
+          optimizedPath !== item.uri
+        ) {
+          await RNFS.unlink(optimizedPath).catch(cleanupError => {
+            console.warn(
+              'Nao foi possivel remover arquivo otimizado temporario.',
+              cleanupError,
+            );
+          });
+        }
+      }
+    },
+    [
+      isOptimizing,
+      load,
+      settings.audioLimiterPreset,
+      settings.normalizeAudioLoudness,
+      showAlert,
+    ],
+  );
+
   const onCardPress = useCallback(
     item => {
-      if (isDeleting) {
+      if (isDeleting || isOptimizing) {
         return;
       }
 
@@ -267,13 +495,147 @@ export default function LibraryScreen({navigation}) {
         return;
       }
 
-      showAlert(item.filename || 'Vídeo', 'Escolha o que deseja fazer com este vídeo.', [
-        {text: 'Visualizar', onPress: () => onOpen(item)},
-        {text: 'Compartilhar', onPress: () => onShare(item)},
-        {text: 'Cancelar', style: 'cancel'},
-      ]);
+      setActionVideoUri(currentUri => (currentUri === item.uri ? null : item.uri));
+      setIsActionOptimizationOpen(false);
     },
-    [isDeleting, onOpen, onShare, selectedCount, showAlert, toggleSelection],
+    [isDeleting, isOptimizing, selectedCount, toggleSelection],
+  );
+
+  const renderPanelAction = useCallback(
+    ({danger = false, disabled = false, icon, label, onPress}) => (
+      <Pressable
+        disabled={disabled}
+        onPress={onPress}
+        style={styles.panelActionButton}
+      >
+        <View
+          style={[
+            styles.panelActionIconWrap,
+            danger && styles.panelActionIconDanger,
+          ]}
+        >
+          <Icon
+            name={icon}
+            size={22}
+            color={
+              danger
+                ? colors.destructiveSoftForeground
+                : colors.foreground
+            }
+          />
+        </View>
+        <Text style={styles.panelActionLabel}>{label}</Text>
+      </Pressable>
+    ),
+    [],
+  );
+
+  const renderVideoActions = useCallback(
+    item => {
+      const disabled = isDeleting || isOptimizing;
+
+      if (isActionOptimizationOpen) {
+        return (
+          <View style={styles.panelActions}>
+            {renderPanelAction({
+              disabled,
+              icon: 'musical-notes-outline',
+              label: 'Áudio',
+              onPress: () => {
+                optimizeSelectedVideo(item, 'audio').catch(error => {
+                  console.warn('Falha ao otimizar audio na biblioteca.', error);
+                });
+              },
+            })}
+            {renderPanelAction({
+              disabled,
+              icon: 'videocam-outline',
+              label: 'Vídeo',
+              onPress: () => {
+                optimizeSelectedVideo(item, 'video').catch(error => {
+                  console.warn('Falha ao otimizar video na biblioteca.', error);
+                });
+              },
+            })}
+            {renderPanelAction({
+              disabled,
+              icon: 'layers-outline',
+              label: 'V+A',
+              onPress: () => {
+                optimizeSelectedVideo(item, 'both').catch(error => {
+                  console.warn('Falha ao otimizar midia na biblioteca.', error);
+                });
+              },
+            })}
+            {renderPanelAction({
+              disabled,
+              icon: 'close-outline',
+              label: 'Fechar',
+              onPress: () => setIsActionOptimizationOpen(false),
+            })}
+          </View>
+        );
+      }
+
+      return (
+        <View style={styles.panelActions}>
+          {renderPanelAction({
+            disabled,
+            icon: 'folder-open-outline',
+            label: 'Abrir',
+            onPress: () => {
+              setActionVideoUri(null);
+              onOpen(item).catch(error => {
+                console.warn('Falha ao abrir video na biblioteca.', error);
+              });
+            },
+          })}
+          {renderPanelAction({
+            disabled,
+            icon: 'color-wand-outline',
+            label: 'Otimizar',
+            onPress: () => setIsActionOptimizationOpen(true),
+          })}
+          {renderPanelAction({
+            disabled,
+            icon: 'share-social-outline',
+            label: 'Compart.',
+            onPress: () => {
+              setActionVideoUri(null);
+              onShare(item).catch(error => {
+                console.warn('Falha ao compartilhar video na biblioteca.', error);
+              });
+            },
+          })}
+          {renderPanelAction({
+            danger: true,
+            disabled,
+            icon: 'trash-outline',
+            label: 'Excluir',
+            onPress: () => confirmDeleteVideo(item),
+          })}
+          {renderPanelAction({
+            disabled,
+            icon: 'close-outline',
+            label: 'Cancelar',
+            onPress: () => {
+              setActionVideoUri(null);
+              setIsActionOptimizationOpen(false);
+            },
+          })}
+        </View>
+      );
+    },
+    [
+      confirmDeleteVideo,
+      isActionOptimizationOpen,
+      isDeleting,
+      isOptimizing,
+      onOpen,
+      onShare,
+      optimizeSelectedVideo,
+      renderPanelAction,
+    ],
   );
 
   const renderSelectionControl = useCallback(
@@ -391,6 +753,11 @@ export default function LibraryScreen({navigation}) {
         title="Excluindo vídeos"
         visible={isDeleting}
       />
+      <LoadingModal
+        message="Uma nova cópia será salva. O vídeo original será mantido."
+        title={getOptimizationLoadingTitle(processingOptimizationMode)}
+        visible={isOptimizing}
+      />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -405,6 +772,8 @@ export default function LibraryScreen({navigation}) {
           data={filteredVideos}
           style={styles.list}
           keyExtractor={item => item.uri}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.45}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -412,15 +781,30 @@ export default function LibraryScreen({navigation}) {
             filteredVideos.length === 0 ? styles.emptyContainer : styles.listContent
           }
           renderItem={({item}) => (
-            <VideoCard
-              action={renderSelectionControl(item)}
-              disabled={isDeleting}
-              item={item}
-              onPress={() => onCardPress(item)}
-              selected={selectedUris.includes(item.uri)}
-              showDurationLabel
-            />
+            <View style={styles.videoItemWrap}>
+              <VideoCard
+                action={renderSelectionControl(item)}
+                disabled={isDeleting || isOptimizing}
+                item={item}
+                onPress={() => onCardPress(item)}
+                selected={
+                  selectedUris.includes(item.uri) || actionVideoUri === item.uri
+                }
+                showDurationLabel
+              />
+              {actionVideoUri === item.uri ? renderVideoActions(item) : null}
+            </View>
           )}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator
+                  size="small"
+                  color={colors.mutedForeground}
+                />
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyStateCard}>
               <View style={styles.emptyLogoMark}>
