@@ -117,6 +117,15 @@ function getOptimizationLoadingTitle(mode) {
   return 'Otimizando vídeo';
 }
 
+function getVideoExtensionFromItem(item) {
+  const extensionMatch = String(item?.filename || item?.uri || '')
+    .split('?')[0]
+    .match(/\.([a-zA-Z0-9]+)$/);
+  const extension = extensionMatch?.[1]?.toLowerCase();
+
+  return extension === 'mov' ? 'mov' : 'mp4';
+}
+
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
   const recordingStartedAtRef = useRef(null);
@@ -172,6 +181,10 @@ export default function CameraScreen({ navigation }) {
   const [isOptimizationMenuOpen, setIsOptimizationMenuOpen] = useState(false);
   const [isAmbientAnalysisMenuOpen, setIsAmbientAnalysisMenuOpen] =
     useState(false);
+  const [
+    isSelectedVideoOptimizationOpen,
+    setIsSelectedVideoOptimizationOpen,
+  ] = useState(false);
   const [hasCompletedInitialBootstrap, setHasCompletedInitialBootstrap] =
     useState(false);
   const [canMountCameraPreview, setCanMountCameraPreview] = useState(false);
@@ -1182,6 +1195,7 @@ export default function CameraScreen({ navigation }) {
   );
 
   const clearSelectedVideo = useCallback(() => {
+    setIsSelectedVideoOptimizationOpen(false);
     setSelectedVideoUri(null);
   }, []);
 
@@ -1242,6 +1256,60 @@ export default function CameraScreen({ navigation }) {
     [loadVideosFromGallery, maybeWarnAboutManageMedia, showAlert],
   );
 
+  const optimizeSelectedVideo = useCallback(
+    async (item, optimizationMode) => {
+      const mode = getMediaOptimizationModeOption(optimizationMode).value;
+
+      if (!item || mode === 'none') {
+        return;
+      }
+
+      const sourcePath = item.path || item.uri;
+      const extension = getVideoExtensionFromItem(item);
+      let optimizedPath = null;
+
+      setIsSelectedVideoOptimizationOpen(false);
+      setProcessingOptimizationMode(mode);
+      setIsProcessingVideo(true);
+
+      try {
+        optimizedPath = await optimizeVideo(sourcePath, extension, {
+          optimizationMode: mode,
+          audioLimiterPreset: settings.audioLimiterPreset,
+          normalizeAudioLoudness: settings.normalizeAudioLoudness,
+        });
+
+        await saveVideoToCameraRoll(optimizedPath);
+        await loadVideosFromGallery({ showLoader: false });
+
+        showAlert(
+          'Otimização concluída',
+          'Uma nova cópia otimizada foi salva. O vídeo original foi mantido.',
+          [{ text: 'Ok' }],
+        );
+      } catch (error) {
+        showAlert(
+          'Otimização indisponível',
+          error?.message ??
+            'Não foi possível otimizar este vídeo. O original foi mantido.',
+          [{ text: 'Ok' }],
+        );
+      } finally {
+        setIsProcessingVideo(false);
+        setProcessingOptimizationMode('none');
+        if (optimizedPath) {
+          await deleteIfExists(optimizedPath);
+        }
+      }
+    },
+    [
+      loadVideosFromGallery,
+      settings.audioLimiterPreset,
+      settings.normalizeAudioLoudness,
+      showAlert,
+    ],
+  );
+
   const onDeleteSelectedVideo = useCallback(() => {
     if (!selectedVideo || isDeletingSelectedVideo) {
       return;
@@ -1276,6 +1344,7 @@ export default function CameraScreen({ navigation }) {
         return;
       }
 
+      setIsSelectedVideoOptimizationOpen(false);
       setSelectedVideoUri(item.uri);
     },
     [isDeletingSelectedVideo],
@@ -1436,91 +1505,197 @@ export default function CameraScreen({ navigation }) {
               ) : null}
 
               {selectedVideo ? (
-            <View style={styles.panelActions}>
-              <Pressable
-                disabled={isDeletingSelectedVideo}
-                onPress={() => {
-                  clearSelectedVideo();
-                  onOpenVideo(selectedVideo).catch(error => {
-                    console.warn(
-                      'Falha ao abrir video pela barra de ações.',
-                      error,
-                    );
-                  });
-                }}
-                style={styles.panelActionButton}
-              >
-                <View style={styles.panelActionIconWrap}>
-                  <Icon
-                    name="folder-open-outline"
-                    size={22}
-                    color={cinematicTheme.colors.foreground}
-                  />
-                </View>
-                <Text style={styles.panelActionLabel}>Abrir</Text>
-              </Pressable>
+                isSelectedVideoOptimizationOpen ? (
+                  <View style={styles.panelActions}>
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={() => {
+                        optimizeSelectedVideo(selectedVideo, 'audio').catch(
+                          error => {
+                            console.warn(
+                              'Falha ao otimizar audio pela barra de ações.',
+                              error,
+                            );
+                          },
+                        );
+                      }}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="musical-notes-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Áudio</Text>
+                    </Pressable>
 
-              <Pressable
-                disabled={isDeletingSelectedVideo}
-                onPress={() => {
-                  clearSelectedVideo();
-                  onShareVideo(selectedVideo).catch(error => {
-                    console.warn(
-                      'Falha ao compartilhar video pela barra de ações.',
-                      error,
-                    );
-                  });
-                }}
-                style={styles.panelActionButton}
-              >
-                <View style={styles.panelActionIconWrap}>
-                  <Icon
-                    name="share-social-outline"
-                    size={22}
-                    color={cinematicTheme.colors.foreground}
-                  />
-                </View>
-                <Text style={styles.panelActionLabel}>Compartilhar</Text>
-              </Pressable>
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={() => {
+                        optimizeSelectedVideo(selectedVideo, 'video').catch(
+                          error => {
+                            console.warn(
+                              'Falha ao otimizar video pela barra de ações.',
+                              error,
+                            );
+                          },
+                        );
+                      }}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="videocam-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Vídeo</Text>
+                    </Pressable>
 
-              <Pressable
-                disabled={isDeletingSelectedVideo}
-                onPress={onDeleteSelectedVideo}
-                style={styles.panelActionButton}
-              >
-                <View
-                  style={[
-                    styles.panelActionIconWrap,
-                    styles.panelActionIconDanger,
-                  ]}
-                >
-                  <Icon
-                    name="trash-outline"
-                    size={22}
-                    color={cinematicTheme.colors.destructiveSoftForeground}
-                  />
-                </View>
-                <Text style={styles.panelActionLabel}>Excluir</Text>
-              </Pressable>
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={() => {
+                        optimizeSelectedVideo(selectedVideo, 'both').catch(
+                          error => {
+                            console.warn(
+                              'Falha ao otimizar midia pela barra de ações.',
+                              error,
+                            );
+                          },
+                        );
+                      }}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="layers-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>V+A</Text>
+                    </Pressable>
 
-              <Pressable
-                disabled={isDeletingSelectedVideo}
-                onPress={clearSelectedVideo}
-                style={styles.panelActionButton}
-              >
-                <View style={styles.panelActionIconWrap}>
-                  <Icon
-                    name="close-outline"
-                    size={22}
-                    color={cinematicTheme.colors.foreground}
-                  />
-                </View>
-                <Text style={styles.panelActionLabel}>Cancelar</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View />
-          )}
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={() => setIsSelectedVideoOptimizationOpen(false)}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="close-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Fechar</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.panelActions}>
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={() => {
+                        clearSelectedVideo();
+                        onOpenVideo(selectedVideo).catch(error => {
+                          console.warn(
+                            'Falha ao abrir video pela barra de ações.',
+                            error,
+                          );
+                        });
+                      }}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="folder-open-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Abrir</Text>
+                    </Pressable>
+
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={() => setIsSelectedVideoOptimizationOpen(true)}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="color-wand-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Otimizar</Text>
+                    </Pressable>
+
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={() => {
+                        clearSelectedVideo();
+                        onShareVideo(selectedVideo).catch(error => {
+                          console.warn(
+                            'Falha ao compartilhar video pela barra de ações.',
+                            error,
+                          );
+                        });
+                      }}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="share-social-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Compart.</Text>
+                    </Pressable>
+
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={onDeleteSelectedVideo}
+                      style={styles.panelActionButton}
+                    >
+                      <View
+                        style={[
+                          styles.panelActionIconWrap,
+                          styles.panelActionIconDanger,
+                        ]}
+                      >
+                        <Icon
+                          name="trash-outline"
+                          size={22}
+                          color={cinematicTheme.colors.destructiveSoftForeground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Excluir</Text>
+                    </Pressable>
+
+                    <Pressable
+                      disabled={isDeletingSelectedVideo || isProcessingVideo}
+                      onPress={clearSelectedVideo}
+                      style={styles.panelActionButton}
+                    >
+                      <View style={styles.panelActionIconWrap}>
+                        <Icon
+                          name="close-outline"
+                          size={22}
+                          color={cinematicTheme.colors.foreground}
+                        />
+                      </View>
+                      <Text style={styles.panelActionLabel}>Cancelar</Text>
+                    </Pressable>
+                  </View>
+                )
+              ) : (
+                <View />
+              )}
 
               {settings.showAudioLevelMeter && settings.audio ? (
                 <View style={styles.recordingMeterPanel}>
