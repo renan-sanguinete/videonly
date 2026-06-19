@@ -70,6 +70,10 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
         if (shouldCleanupAudio) {
           val audioProcessors = mutableListOf<AudioProcessor>(
             HighPassAudioProcessor(),
+            LowLevelNoiseReducerAudioProcessor(
+              resolveNoiseReductionThreshold(limiterPreset),
+              resolveNoiseReductionAmount(limiterPreset),
+            ),
           )
 
           loudnessAnalysis?.let { analysis ->
@@ -78,6 +82,10 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
               audioProcessors.add(GainAudioProcessor(gainLinear))
             }
           }
+
+          audioProcessors.add(
+            ClipRepairAudioProcessor(resolveClipRepairKnee(limiterPreset)),
+          )
 
           audioProcessors.add(
             HardLimiterAudioProcessor(resolveLimiterThreshold(limiterPreset)),
@@ -250,6 +258,30 @@ class VideoCompressionModule(reactContext: ReactApplicationContext) :
       "gentle" -> 0.95f
       "strong" -> 0.8f
       else -> 0.9f
+    }
+  }
+
+  private fun resolveClipRepairKnee(preset: String): Float {
+    return when (preset) {
+      "gentle" -> 0.94f
+      "strong" -> 0.82f
+      else -> 0.88f
+    }
+  }
+
+  private fun resolveNoiseReductionThreshold(preset: String): Float {
+    return when (preset) {
+      "gentle" -> -54f
+      "strong" -> -44f
+      else -> -49f
+    }
+  }
+
+  private fun resolveNoiseReductionAmount(preset: String): Float {
+    return when (preset) {
+      "gentle" -> 4f
+      "strong" -> 10f
+      else -> 7f
     }
   }
 }
