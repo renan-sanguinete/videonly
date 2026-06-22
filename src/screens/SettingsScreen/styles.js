@@ -142,6 +142,65 @@ export const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'stretch',
   },
+  actionButtonDisabled: {
+    opacity: 0.55,
+  },
+  proHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  proTitleGroup: {
+    flex: 1,
+    gap: 4,
+  },
+  proTitle: {
+    color: colors.foreground,
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: typography.display.fontFamily,
+  },
+  proStatusPill: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  proStatusPillActive: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(247, 162, 36, 0.14)',
+  },
+  proStatusText: {
+    color: colors.mutedForeground,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: typography.body.fontFamily,
+  },
+  proStatusTextActive: {
+    color: colors.accent,
+  },
+  proDescription: {
+    color: colors.mutedForeground,
+    marginTop: 10,
+    lineHeight: 19,
+    fontFamily: typography.body.fontFamily,
+  },
+  proPriceText: {
+    color: colors.foreground,
+    marginTop: 12,
+    marginBottom: 12,
+    fontWeight: '800',
+    fontFamily: typography.body.fontFamily,
+  },
+  proRestoreButton: {
+    flex: 1,
+    marginTop: 0,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
   secondaryActionButton: {
     marginTop: 12,
     alignSelf: 'flex-start',

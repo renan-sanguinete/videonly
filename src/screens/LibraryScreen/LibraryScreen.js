@@ -16,6 +16,7 @@ import LoadingModal from '../../components/LoadingModal/LoadingModal';
 import VideoCard from '../../components/VideoCard/VideoCard';
 import {useCameraSettings} from '../../context/CameraSettingsContext';
 import {useCustomAlert} from '../../context/CustomAlertContext';
+import {useProAccess} from '../../context/ProAccessContext';
 import {useI18n} from '../../i18n/I18nContext';
 import {
   canManageAndroidMedia,
@@ -104,6 +105,7 @@ export default function LibraryScreen({navigation}) {
     useState(false);
   const {settings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
+  const {billingError, isPro, purchasePro} = useProAccess();
   const insets = useSafeAreaInsets();
   const activeSource = activeFilter === 'gallery' ? 'gallery' : 'videonly';
   const filterOptions = useMemo(
@@ -431,8 +433,41 @@ export default function LibraryScreen({navigation}) {
     [deleteSingleVideo, isDeleting, showAlert, t],
   );
 
+  const showProLockedAlert = useCallback(() => {
+    showAlert(
+      t('camera.proLocked.title'),
+      t('camera.proLocked.message', {
+        feature: t('camera.proLocked.optimization'),
+      }),
+      [
+        {text: t('common.cancel'), style: 'cancel'},
+        {
+          text: t('camera.proLocked.unlock'),
+          onPress: () => {
+            purchasePro().then(purchased => {
+              showAlert(
+                purchased
+                  ? t('camera.pro.purchaseSuccessTitle')
+                  : t('camera.pro.purchasePendingTitle'),
+                purchased
+                  ? t('camera.pro.purchaseSuccessMessage')
+                  : billingError ?? t('camera.pro.purchasePendingMessage'),
+                [{text: t('common.ok')}],
+              );
+            });
+          },
+        },
+      ],
+    );
+  }, [billingError, purchasePro, showAlert, t]);
+
   const optimizeSelectedVideo = useCallback(
     async (item, optimizationMode) => {
+      if (!isPro) {
+        showProLockedAlert();
+        return;
+      }
+
       if (!item || isOptimizing) {
         return;
       }
@@ -486,10 +521,12 @@ export default function LibraryScreen({navigation}) {
       }
     },
     [
+      isPro,
       isOptimizing,
       load,
       settings.audioLimiterPreset,
       settings.normalizeAudioLoudness,
+      showProLockedAlert,
       showAlert,
       t,
     ],

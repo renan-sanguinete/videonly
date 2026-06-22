@@ -78,13 +78,26 @@ export default function CameraPreview({
   isOptimizationMenuOpen,
   onSlowMotionDurationChange,
   onZoomCommit,
+  isPro = false,
+  onRequestProFeature,
 }) {
   const {showAlert} = useCustomAlert();
   const {t} = useI18n();
   const device = useCameraDevice(cameraPosition);
+  const effectiveSettings = useMemo(
+    () =>
+      isPro
+        ? settings
+        : {
+            ...settings,
+            optimizationMode: 'none',
+            recordingMode: 'normal',
+          },
+    [isPro, settings],
+  );
   const captureSettings = useMemo(
-    () => getCaptureSettingsForRecordingMode(settings),
-    [settings],
+    () => getCaptureSettingsForRecordingMode(effectiveSettings),
+    [effectiveSettings],
   );
   const [isAudioMenuOpen, setIsAudioMenuOpen] = useState(false);
   const [isCustomProfileMenuOpen, setIsCustomProfileMenuOpen] = useState(false);
@@ -422,7 +435,16 @@ export default function CameraPreview({
     setProfileNameTargetId(null);
   };
 
+  const requestProFeature = featureKey => {
+    onRequestProFeature?.(featureKey);
+  };
+
   const openSaveProfileModal = () => {
+    if (!isPro) {
+      requestProFeature('camera.proLocked.audioProfiles');
+      return;
+    }
+
     setProfileNameMode('save');
     setProfileNameInput('');
     setProfileNameError('');
@@ -431,6 +453,11 @@ export default function CameraPreview({
   };
 
   const openRenameProfileModal = profile => {
+    if (!isPro) {
+      requestProFeature('camera.proLocked.audioProfiles');
+      return;
+    }
+
     setProfileNameMode('rename');
     setProfileNameInput(profile.name);
     setProfileNameError('');
@@ -439,6 +466,11 @@ export default function CameraPreview({
   };
 
   const submitProfileName = () => {
+    if (!isPro) {
+      requestProFeature('camera.proLocked.audioProfiles');
+      return;
+    }
+
     const nextName = profileNameInput.trim();
 
     if (!nextName) {
@@ -457,6 +489,11 @@ export default function CameraPreview({
   };
 
   const confirmReplaceSavedAudioProfile = profile => {
+    if (!isPro) {
+      requestProFeature('camera.proLocked.audioProfiles');
+      return;
+    }
+
     showAlert(
       t('camera.replaceProfile.title'),
       t('camera.replaceProfile.message', {name: profile.name}),
@@ -475,6 +512,11 @@ export default function CameraPreview({
   };
 
   const confirmDeleteSavedAudioProfile = profile => {
+    if (!isPro) {
+      requestProFeature('camera.proLocked.audioProfiles');
+      return;
+    }
+
     showAlert(
       t('camera.deleteProfile.title'),
       t('camera.deleteProfile.message', {name: profile.name}),
@@ -544,6 +586,11 @@ export default function CameraPreview({
             >
               <Pressable
                 onPress={() => {
+                  if (!isPro) {
+                    requestProFeature('camera.proLocked.audioProfiles');
+                    return;
+                  }
+
                   onApplySavedAudioProfile?.(profile.id);
                   setIsAudioMenuOpen(false);
                 }}
@@ -652,7 +699,20 @@ export default function CameraPreview({
           key={option.value}
           onPress={() => {
             if (option.value === 'custom') {
+              if (!isPro) {
+                requestProFeature('camera.proLocked.audioProfiles');
+                return;
+              }
+
               setIsCustomProfileMenuOpen(true);
+              return;
+            }
+
+            if (
+              option.value !== 'standard' &&
+              !isPro
+            ) {
+              requestProFeature('camera.proLocked.audioProfiles');
               return;
             }
 

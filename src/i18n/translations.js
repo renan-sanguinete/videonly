@@ -79,6 +79,7 @@ export const translations = {
     'common.manual': 'Manual',
     'common.normal': 'normal',
     'common.none': 'Nenhum',
+    'common.pro': 'PRO',
 
     'language.ptBR': 'Português (Brasil)',
     'language.en': 'English',
@@ -232,6 +233,25 @@ export const translations = {
     'settings.exporting': 'Exportando...',
     'settings.deleteMetadata': 'Apagar metadados',
     'settings.restoreDefaults': 'Restaurar padrões',
+    'settings.pro.section': 'Videonly PRO',
+    'settings.pro.statusPro': 'PRO ativo',
+    'settings.pro.statusFree': 'Versão grátis',
+    'settings.pro.statusDebug': 'PRO ativo por teste',
+    'settings.pro.unlock': 'Desbloquear PRO',
+    'settings.pro.processing': 'Processando...',
+    'settings.pro.restoring': 'Restaurando...',
+    'settings.pro.restore': 'Restaurar compra',
+    'settings.pro.debugToggle.label': 'Teste PRO no debug',
+    'settings.pro.debugToggle.description':
+      'Liga e desliga o modo PRO localmente para validar os bloqueios antes da publicação.',
+    'settings.pro.buildInfo': 'Build: {{channel}}',
+    'settings.pro.description':
+      'Pagamento único para liberar recursos avançados de gravação, áudio e otimização.',
+    'settings.pro.included':
+      'Inclui otimização de vídeo, análise de som ambiente, perfis de áudio personalizados, presets avançados e configurações avançadas.',
+    'settings.pro.priceFallback': 'R$ 5,99 no Brasil ou US$ 1,99 fora do Brasil, conforme configuração da Play Store.',
+    'settings.pro.unavailable':
+      'A compra será ativada quando o produto videonly_pro_unlock estiver configurado no Google Play Console.',
     'settings.noMetadata.title': 'Sem metadados',
     'settings.noMetadata.message':
       'Ainda não há arquivos de metadados salvos para exportar.',
@@ -345,6 +365,28 @@ export const translations = {
     'camera.keepAudioOff': 'Manter desativado',
     'camera.keepAudioOffDescription':
       'Continua gravando sem captação de áudio.',
+    'camera.proLocked.title': 'Recurso PRO',
+    'camera.proLocked.message':
+      'Desbloqueie o Videonly PRO para usar {{feature}}. Pagamento único, sem assinatura.',
+    'camera.proLocked.unlock': 'Ver PRO',
+    'camera.proLocked.optimization': 'otimização de mídia',
+    'camera.proLocked.ambient': 'análise de som ambiente',
+    'camera.proLocked.audioProfiles': 'perfis de áudio personalizados',
+    'camera.proLocked.advancedSettings': 'configurações avançadas',
+    'camera.proLocked.advancedPreset': 'presets avançados',
+    'camera.proLocked.highResolution': 'resoluções avançadas',
+    'camera.pro.purchaseSuccessTitle': 'PRO ativo',
+    'camera.pro.purchaseSuccessMessage':
+      'Os recursos avançados foram desbloqueados neste aparelho.',
+    'camera.pro.purchasePendingTitle': 'Compra não concluída',
+    'camera.pro.purchasePendingMessage':
+      'Não foi possível confirmar o desbloqueio agora. Tente novamente em instantes.',
+    'camera.pro.restoreSuccessTitle': 'Compra restaurada',
+    'camera.pro.restoreSuccessMessage':
+      'O Videonly PRO foi restaurado para esta conta.',
+    'camera.pro.restoreEmptyTitle': 'Nenhuma compra encontrada',
+    'camera.pro.restoreEmptyMessage':
+      'Não encontramos o desbloqueio PRO nesta conta Google Play.',
 
     'camera.loading.slowMotion': 'Criando câmera lenta',
     'camera.loading.timelapse': 'Criando time-lapse',
@@ -518,6 +560,7 @@ export const translations = {
     'common.manual': 'Manual',
     'common.normal': 'normal',
     'common.none': 'None',
+    'common.pro': 'PRO',
 
     'language.ptBR': 'Português (Brasil)',
     'language.en': 'English',
@@ -672,6 +715,25 @@ export const translations = {
     'settings.exporting': 'Exporting...',
     'settings.deleteMetadata': 'Delete metadata',
     'settings.restoreDefaults': 'Restore defaults',
+    'settings.pro.section': 'Videonly PRO',
+    'settings.pro.statusPro': 'PRO active',
+    'settings.pro.statusFree': 'Free version',
+    'settings.pro.statusDebug': 'PRO active for testing',
+    'settings.pro.unlock': 'Unlock PRO',
+    'settings.pro.processing': 'Processing...',
+    'settings.pro.restoring': 'Restoring...',
+    'settings.pro.restore': 'Restore purchase',
+    'settings.pro.debugToggle.label': 'Debug PRO test',
+    'settings.pro.debugToggle.description':
+      'Turns local PRO mode on and off to validate locked flows before publishing.',
+    'settings.pro.buildInfo': 'Build: {{channel}}',
+    'settings.pro.description':
+      'One-time payment to unlock advanced recording, audio, and optimization features.',
+    'settings.pro.included':
+      'Includes video optimization, ambient sound analysis, custom audio profiles, advanced presets, and advanced settings.',
+    'settings.pro.priceFallback': 'R$5.99 in Brazil or US$1.99 outside Brazil, based on Play Store configuration.',
+    'settings.pro.unavailable':
+      'Purchasing will be enabled when the videonly_pro_unlock product is configured in Google Play Console.',
     'settings.noMetadata.title': 'No metadata',
     'settings.noMetadata.message':
       'There are no saved metadata files to export yet.',
@@ -783,6 +845,28 @@ export const translations = {
     'camera.keepAudioOff': 'Keep disabled',
     'camera.keepAudioOffDescription':
       'Keeps recording without audio capture.',
+    'camera.proLocked.title': 'PRO feature',
+    'camera.proLocked.message':
+      'Unlock Videonly PRO to use {{feature}}. One-time payment, no subscription.',
+    'camera.proLocked.unlock': 'See PRO',
+    'camera.proLocked.optimization': 'media optimization',
+    'camera.proLocked.ambient': 'ambient sound analysis',
+    'camera.proLocked.audioProfiles': 'custom audio profiles',
+    'camera.proLocked.advancedSettings': 'advanced settings',
+    'camera.proLocked.advancedPreset': 'advanced presets',
+    'camera.proLocked.highResolution': 'advanced resolutions',
+    'camera.pro.purchaseSuccessTitle': 'PRO active',
+    'camera.pro.purchaseSuccessMessage':
+      'Advanced features were unlocked on this device.',
+    'camera.pro.purchasePendingTitle': 'Purchase not completed',
+    'camera.pro.purchasePendingMessage':
+      'Could not confirm the unlock right now. Try again in a moment.',
+    'camera.pro.restoreSuccessTitle': 'Purchase restored',
+    'camera.pro.restoreSuccessMessage':
+      'Videonly PRO was restored for this account.',
+    'camera.pro.restoreEmptyTitle': 'No purchase found',
+    'camera.pro.restoreEmptyMessage':
+      'We could not find the PRO unlock on this Google Play account.',
 
     'camera.loading.slowMotion': 'Creating slow motion',
     'camera.loading.timelapse': 'Creating time-lapse',

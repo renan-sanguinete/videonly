@@ -38,6 +38,8 @@ export default function CameraHeaderActions({
   setIsAmbientAnalysisMenuOpen,
   isAmbientAnalysisRunning,
   isAmbientAnalysisDisabled,
+  isPro = false,
+  onRequestProFeature,
 }) {
   const {t} = useI18n();
   const currentOptimizationMode = useMemo(
@@ -53,6 +55,9 @@ export default function CameraHeaderActions({
   const isOptimizationControlDisabled = isRecording;
   const isAmbientAnalysisControlDisabled =
     isAmbientAnalysisDisabled || isRecording || isAmbientAnalysisRunning;
+  const requestProFeature = featureKey => {
+    onRequestProFeature?.(featureKey);
+  };
 
   useEffect(() => {
     if (isOptimizationControlDisabled && isOptimizationMenuOpen) {
@@ -121,11 +126,17 @@ export default function CameraHeaderActions({
             {mediaOptimizationModes.map(option => {
               const isSelected =
                 currentOptimizationMode.value === option.value;
+              const isLocked = !isPro && option.value !== 'none';
 
               return (
                 <Pressable
                   key={option.value}
                   onPress={() => {
+                    if (isLocked) {
+                      requestProFeature('camera.proLocked.optimization');
+                      return;
+                    }
+
                     onOptimizationModeChange(option.value);
                     setIsOptimizationMenuOpen(false);
                   }}
@@ -138,7 +149,7 @@ export default function CameraHeaderActions({
                     ]}
                   >
                     <Icon
-                      name={option.icon}
+                      name={isLocked ? 'lock-closed-outline' : option.icon}
                       size={22}
                       color={isSelected ? option.iconColor : colors.foreground}
                     />
@@ -162,11 +173,17 @@ export default function CameraHeaderActions({
             <View style={styles.recordingModeOptions}>
               {recordingModeOptions.map(option => {
                 const isSelected = currentRecordingMode.value === option.value;
+                const isLocked = !isPro && option.value !== 'normal';
 
                 return (
                   <Pressable
                     key={option.value}
                     onPress={() => {
+                      if (isLocked) {
+                        requestProFeature('camera.proLocked.advancedPreset');
+                        return;
+                      }
+
                       onRecordingModeChange(option.value);
                       setIsOptimizationMenuOpen(false);
                     }}
@@ -176,7 +193,7 @@ export default function CameraHeaderActions({
                     ]}
                   >
                     <Icon
-                      name={option.icon}
+                      name={isLocked ? 'lock-closed-outline' : option.icon}
                       size={17}
                       color={isSelected ? colors.accent : colors.foreground}
                     />
@@ -202,11 +219,18 @@ export default function CameraHeaderActions({
                 ? resolutionOptions
                 : buildVideoResolutionOptions(t)).map(option => {
                 const isSelected = resolutionPreset === option.value;
+                const isLocked =
+                  !isPro && (option.value === '2k' || option.value === '4k');
 
                 return (
                   <Pressable
                     key={option.value}
                     onPress={() => {
+                      if (isLocked) {
+                        requestProFeature('camera.proLocked.highResolution');
+                        return;
+                      }
+
                       onResolutionChange(option.value);
                       setIsOptimizationMenuOpen(false);
                     }}
@@ -222,6 +246,7 @@ export default function CameraHeaderActions({
                       ]}
                     >
                       {option.label}
+                      {isLocked ? ` ${t('common.pro')}` : ''}
                     </Text>
                   </Pressable>
                 );
@@ -261,6 +286,11 @@ export default function CameraHeaderActions({
             </Text>
             <Pressable
               onPress={() => {
+                if (!isPro) {
+                  requestProFeature('camera.proLocked.ambient');
+                  return;
+                }
+
                 setIsAmbientAnalysisMenuOpen(false);
                 onStartAmbientAnalysis();
               }}
@@ -280,6 +310,11 @@ export default function CameraHeaderActions({
               hitSlop={10}
               disabled={isAmbientAnalysisControlDisabled}
               onPress={() => {
+                if (!isPro) {
+                  requestProFeature('camera.proLocked.ambient');
+                  return;
+                }
+
                 setIsOptimizationMenuOpen(false);
                 setIsAmbientAnalysisMenuOpen(currentValue => !currentValue);
               }}

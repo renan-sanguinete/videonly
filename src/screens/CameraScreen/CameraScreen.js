@@ -31,6 +31,7 @@ import LoadingModal from '../../components/LoadingModal/LoadingModal';
 import VideoCard from '../../components/VideoCard/VideoCard';
 import { useCameraSettings } from '../../context/CameraSettingsContext';
 import { useCustomAlert } from '../../context/CustomAlertContext';
+import {useProAccess} from '../../context/ProAccessContext';
 import {
   canManageAndroidMedia,
   ensureCameraPermission,
@@ -128,6 +129,7 @@ function getVideoExtensionFromItem(item) {
 
 export default function CameraScreen({ navigation }) {
   const {t} = useI18n();
+  const {billingError, isPro, purchasePro} = useProAccess();
   const camera = useRef(null);
   const recordingStartedAtRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
@@ -513,49 +515,114 @@ export default function CameraScreen({ navigation }) {
     return () => clearInterval(intervalId);
   }, [isRecording]);
 
+  const showProLockedAlert = useCallback(
+    featureKey => {
+      showAlert(
+        t('camera.proLocked.title'),
+        t('camera.proLocked.message', {feature: t(featureKey)}),
+        [
+          {text: t('common.cancel'), style: 'cancel'},
+          {
+            text: t('camera.proLocked.unlock'),
+            onPress: () => {
+              purchasePro().then(purchased => {
+                showAlert(
+                  purchased
+                    ? t('camera.pro.purchaseSuccessTitle')
+                    : t('camera.pro.purchasePendingTitle'),
+                  purchased
+                    ? t('camera.pro.purchaseSuccessMessage')
+                    : billingError ??
+                        t('camera.pro.purchasePendingMessage'),
+                  [{text: t('common.ok')}],
+                );
+              });
+            },
+          },
+        ],
+      );
+    },
+    [billingError, purchasePro, showAlert, t],
+  );
+
+  const ensurePro = useCallback(
+    featureKey => {
+      if (isPro) {
+        return true;
+      }
+
+      showProLockedAlert(featureKey);
+      return false;
+    },
+    [isPro, showProLockedAlert],
+  );
+
   const onOptimizationModeChange = useCallback(
     value => {
+      if (value !== 'none' && !ensurePro('camera.proLocked.optimization')) {
+        return;
+      }
+
       setSettings(prev => applyMediaOptimizationMode(prev, value));
     },
-    [setSettings],
+    [ensurePro, setSettings],
   );
 
   const onRecordingModeChange = useCallback(
     value => {
+      if (value !== 'normal' && !ensurePro('camera.proLocked.advancedPreset')) {
+        return;
+      }
+
       setSettings(prev => ({
         ...prev,
         recordingMode: value,
       }));
     },
-    [setSettings],
+    [ensurePro, setSettings],
   );
 
   const onResolutionChange = useCallback(
     value => {
+      if (
+        (value === '2k' || value === '4k') &&
+        !ensurePro('camera.proLocked.highResolution')
+      ) {
+        return;
+      }
+
       setSettings(prev => ({
         ...prev,
         videoResolutionPreset: value,
         formatIndex: '',
       }));
     },
-    [setSettings],
+    [ensurePro, setSettings],
   );
 
   const onSlowMotionDurationChange = useCallback(
     value => {
+      if (!ensurePro('camera.proLocked.advancedPreset')) {
+        return;
+      }
+
       setSettings(prev => ({
         ...prev,
         slowMotionMaxDurationMs: value,
       }));
     },
-    [setSettings],
+    [ensurePro, setSettings],
   );
 
   const onApplyAudioProfile = useCallback(
     value => {
+      if (value !== 'standard' && !ensurePro('camera.proLocked.audioProfiles')) {
+        return;
+      }
+
       setSettings(prev => applyAudioProfile(prev, value));
     },
-    [setSettings],
+    [ensurePro, setSettings],
   );
 
   const onSetAudioEnabled = useCallback(
@@ -592,6 +659,10 @@ export default function CameraScreen({ navigation }) {
   }, [appState, cancelAmbientAnalysis, isFocused, isProcessingVideo]);
 
   const onStartAmbientAnalysis = useCallback(() => {
+    if (!ensurePro('camera.proLocked.ambient')) {
+      return;
+    }
+
     if (!settings.audio || isAmbientAnalysisRunning) {
       return;
     }
@@ -604,7 +675,14 @@ export default function CameraScreen({ navigation }) {
         [{ text: t('common.ok') }],
       );
     }
-  }, [isAmbientAnalysisRunning, settings.audio, showAlert, startAmbientAnalysis, t]);
+  }, [
+    ensurePro,
+    isAmbientAnalysisRunning,
+    settings.audio,
+    showAlert,
+    startAmbientAnalysis,
+    t,
+  ]);
 
   const renderHeader = useCallback(
     () => (
@@ -627,6 +705,8 @@ export default function CameraScreen({ navigation }) {
         onStartAmbientAnalysis={onStartAmbientAnalysis}
         isAmbientAnalysisRunning={isAmbientAnalysisRunning}
         isAmbientAnalysisDisabled={!settings.audio}
+        isPro={isPro}
+        onRequestProFeature={showProLockedAlert}
         onOpenLibrary={() => navigation.navigate('Library')}
         onOpenSettings={() => navigation.navigate('Settings')}
       />
@@ -639,6 +719,7 @@ export default function CameraScreen({ navigation }) {
         isAmbientAnalysisRunning,
         isRecording,
         isOptimizationMenuOpen,
+        isPro,
         onOptimizationModeChange,
         onRecordingModeChange,
         onResolutionChange,
@@ -648,6 +729,7 @@ export default function CameraScreen({ navigation }) {
         settings.recordingMode,
         settings.optimizationMode,
         settings.audio,
+        showProLockedAlert,
       ],
   );
 
@@ -858,13 +940,20 @@ export default function CameraScreen({ navigation }) {
   const handleRecordingFinished = useCallback(
     async video => {
       const originalPath = video.path;
-      const captureSettings = getCaptureSettingsForRecordingMode(settings);
+      const effectiveSettings = isPro
+        ? settings
+        : {
+            ...settings,
+            optimizationMode: 'none',
+            recordingMode: 'normal',
+          };
+      const captureSettings = getCaptureSettingsForRecordingMode(effectiveSettings);
       const extension = captureSettings.recordFileType === 'mp4' ? 'mp4' : 'mov';
       const newFileName = generateVideoFileName(extension);
       const newPath = `${RNFS.CachesDirectoryPath}/${newFileName}`;
       let sourcePath = originalPath;
       const optimizationMode = getMediaOptimizationModeOption(
-        settings.optimizationMode,
+        effectiveSettings.optimizationMode,
       ).value;
       const shouldOptimize = optimizationMode !== 'none';
 
@@ -886,8 +975,8 @@ export default function CameraScreen({ navigation }) {
       let effectPath = null;
       let shouldDeleteOriginal = false;
       const shouldApplyEffect =
-        settings.recordingMode === 'slowMotion' ||
-        settings.recordingMode === 'timelapse';
+        effectiveSettings.recordingMode === 'slowMotion' ||
+        effectiveSettings.recordingMode === 'timelapse';
       const shouldProcessMedia =
         shouldOptimize && (optimizationMode !== 'audio' || settings.audio);
       const saveRecordingMetadata = async finalPath => {
@@ -897,13 +986,13 @@ export default function CameraScreen({ navigation }) {
           sourcePath,
           savedPath: finalPath,
           compressedPath,
-          requestedOptimizationMode: settings.optimizationMode,
+          requestedOptimizationMode: effectiveSettings.optimizationMode,
           appliedOptimizationMode:
             shouldProcessMedia && finalPath !== sourcePath
               ? optimizationMode
               : 'none',
           usedFallbackToOriginal: shouldProcessMedia && finalPath === sourcePath,
-          settings,
+          settings: effectiveSettings,
         });
 
         await saveVideoRecordingMetadata(newFileName, metadata);
@@ -922,7 +1011,7 @@ export default function CameraScreen({ navigation }) {
           pathToSave = compressedPath;
         }
 
-        if (settings.recordingMode === 'slowMotion') {
+        if (effectiveSettings.recordingMode === 'slowMotion') {
           setProcessingOptimizationMode('slowMotion');
           setIsProcessingVideo(true);
           effectPath = await applySlowMotionEffect(
@@ -932,7 +1021,7 @@ export default function CameraScreen({ navigation }) {
             captureSettings.slowMotionPlaybackFps,
           );
           pathToSave = effectPath;
-        } else if (settings.recordingMode === 'timelapse') {
+        } else if (effectiveSettings.recordingMode === 'timelapse') {
           setProcessingOptimizationMode('timelapse');
           setIsProcessingVideo(true);
           effectPath = await applyTimelapseEffect(
@@ -1008,6 +1097,7 @@ export default function CameraScreen({ navigation }) {
     },
     [
       loadVideosFromGallery,
+      isPro,
       settings,
       showAlert,
       t,
@@ -1264,6 +1354,10 @@ export default function CameraScreen({ navigation }) {
 
   const optimizeSelectedVideo = useCallback(
     async (item, optimizationMode) => {
+      if (!ensurePro('camera.proLocked.optimization')) {
+        return;
+      }
+
       const mode = getMediaOptimizationModeOption(optimizationMode).value;
 
       if (!item || mode === 'none') {
@@ -1315,6 +1409,7 @@ export default function CameraScreen({ navigation }) {
     },
     [
       loadVideosFromGallery,
+      ensurePro,
       settings.audioLimiterPreset,
       settings.normalizeAudioLoudness,
       showAlert,
@@ -1455,6 +1550,8 @@ export default function CameraScreen({ navigation }) {
             onRenameSavedAudioProfile={renameSavedAudioProfile}
             onDeleteSavedAudioProfile={deleteSavedAudioProfile}
             onSetAudioEnabled={onSetAudioEnabled}
+            isPro={isPro}
+            onRequestProFeature={showProLockedAlert}
             isOptimizationMenuOpen={isOptimizationMenuOpen}
             onSlowMotionDurationChange={onSlowMotionDurationChange}
             onZoomCommit={nextZoom => {

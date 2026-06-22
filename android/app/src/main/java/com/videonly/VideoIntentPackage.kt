@@ -13,6 +13,8 @@ class VideoIntentPackage : ReactPackage {
       MediaProcessingModule(reactContext),
       AudioLevelMonitorModule(reactContext),
       MediaManagementModule(reactContext),
+      PlayBillingModule(reactContext),
+      VideonlyBuildConfigModule(reactContext),
     )
   }
 

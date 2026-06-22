@@ -27,7 +27,7 @@ react {
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. Default is "debug", "debugOptimized".
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    // debuggableVariants = ["liteDebug", "liteDebugOptimized", "prodDebug", "prodDebugOptimized"]
+    debuggableVariants = ["devDebug", "devDebugOptimized", "proDebug", "proDebugOptimized"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -90,6 +90,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        buildConfigField "String", "VIDEONLY_PRO_PRODUCT_ID", "\"videonly_pro_unlock\""
     }
     signingConfigs {
         debug {
@@ -111,12 +112,38 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    flavorDimensions "distribution"
+    productFlavors {
+        dev {
+            dimension "distribution"
+            applicationIdSuffix ".dev"
+            versionNameSuffix "-dev"
+            buildConfigField "String", "VIDEONLY_BUILD_CHANNEL", "\"dev\""
+            buildConfigField "boolean", "VIDEONLY_PRO_BUILD", "false"
+            buildConfigField "boolean", "VIDEONLY_ALLOW_PRO_TESTING", "true"
+        }
+        prod {
+            dimension "distribution"
+            buildConfigField "String", "VIDEONLY_BUILD_CHANNEL", "\"prod\""
+            buildConfigField "boolean", "VIDEONLY_PRO_BUILD", "false"
+            buildConfigField "boolean", "VIDEONLY_ALLOW_PRO_TESTING", "false"
+        }
+        pro {
+            dimension "distribution"
+            applicationIdSuffix ".pro"
+            versionNameSuffix "-pro"
+            buildConfigField "String", "VIDEONLY_BUILD_CHANNEL", "\"pro\""
+            buildConfigField "boolean", "VIDEONLY_PRO_BUILD", "true"
+            buildConfigField "boolean", "VIDEONLY_ALLOW_PRO_TESTING", "true"
+        }
+    }
 }
 
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation("androidx.media3:media3-transformer:1.9.2")
+    implementation("com.android.billingclient:billing:9.1.0")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
