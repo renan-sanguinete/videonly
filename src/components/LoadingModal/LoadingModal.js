@@ -12,7 +12,7 @@ export default function LoadingModal({message, title, visible}) {
       <View style={styles.overlay}>
         <View style={styles.card}>
           <ActivityIndicator color={colors.accent} size="large" />
-          <Text style={styles.title}>{title || 'Processando video'}</Text>
+          <Text style={styles.title}>{title || 'Processando vídeo'}</Text>
           <Text style={styles.message}>
             {message || 'Aguarde enquanto finalizamos o arquivo.'}
           </Text>

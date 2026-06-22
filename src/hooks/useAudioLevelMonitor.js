@@ -49,7 +49,7 @@ export function useAudioLevelMonitor({enabled}) {
     });
 
     startPromise?.catch(error => {
-      console.warn('Nao foi possivel iniciar o medidor de áudio.', error);
+      console.warn('Não foi possível iniciar o medidor de áudio.', error);
       setAudioLevel(DEFAULT_AUDIO_LEVEL);
     });
 

@@ -174,8 +174,8 @@ export default function LibraryScreen({navigation}) {
       setPageInfo(nextPage.pageInfo);
     } catch (error) {
       showAlert(
-        'Erro ao carregar videos',
-        error?.message || 'Nao foi possivel carregar os videos da galeria.',
+        'Erro ao carregar vídeos',
+        error?.message || 'Não foi possível carregar os vídeos da galeria.',
       );
     } finally {
       setIsLoading(false);
@@ -209,7 +209,7 @@ export default function LibraryScreen({navigation}) {
 
     showAlert(
       'Permissão extra para excluir',
-      'Sem o acesso especial "Gerenciar midia", o Android pode continuar mostrando uma confirmacao adicional ao excluir videos.',
+      'Sem o acesso especial "Gerenciar mídia", o Android pode continuar mostrando uma confirmação adicional ao excluir vídeos.',
       [
         {text: 'Fechar', style: 'cancel'},
         {
@@ -217,7 +217,7 @@ export default function LibraryScreen({navigation}) {
           onPress: () => {
             openAndroidManageMediaSettings().catch(openError => {
               console.warn(
-                'Falha ao abrir configurações de gerenciamento de midia.',
+                'Falha ao abrir configurações de gerenciamento de mídia.',
                 openError,
               );
             });
@@ -256,7 +256,7 @@ export default function LibraryScreen({navigation}) {
     } catch (error) {
       showAlert(
         'Erro',
-        error?.message || 'Nao foi possivel excluir os videos selecionados.',
+        error?.message || 'Não foi possível excluir os vídeos selecionados.',
       );
     } finally {
       setIsDeleting(false);
@@ -389,7 +389,7 @@ export default function LibraryScreen({navigation}) {
       } catch (error) {
         showAlert(
           'Erro',
-          error?.message || 'Nao foi possivel excluir este video.',
+          error?.message || 'Não foi possível excluir este vídeo.',
         );
       } finally {
         setIsDeleting(false);
@@ -448,14 +448,14 @@ export default function LibraryScreen({navigation}) {
         showAlert(
           'Otimização concluída',
           'Uma nova cópia otimizada foi salva. O vídeo original foi mantido.',
-          [{text: 'Ok'}],
+          [{text: 'OK'}],
         );
       } catch (error) {
         showAlert(
           'Otimização indisponível',
           error?.message ||
             'Não foi possível otimizar este vídeo. O original foi mantido.',
-          [{text: 'Ok'}],
+          [{text: 'OK'}],
         );
       } finally {
         setIsOptimizing(false);
@@ -468,7 +468,7 @@ export default function LibraryScreen({navigation}) {
         ) {
           await RNFS.unlink(optimizedPath).catch(cleanupError => {
             console.warn(
-              'Nao foi possivel remover arquivo otimizado temporario.',
+              'Não foi possível remover o arquivo otimizado temporário.',
               cleanupError,
             );
           });
@@ -543,7 +543,7 @@ export default function LibraryScreen({navigation}) {
               label: 'Áudio',
               onPress: () => {
                 optimizeSelectedVideo(item, 'audio').catch(error => {
-                  console.warn('Falha ao otimizar audio na biblioteca.', error);
+                  console.warn('Falha ao otimizar áudio na biblioteca.', error);
                 });
               },
             })}
@@ -553,7 +553,7 @@ export default function LibraryScreen({navigation}) {
               label: 'Vídeo',
               onPress: () => {
                 optimizeSelectedVideo(item, 'video').catch(error => {
-                  console.warn('Falha ao otimizar video na biblioteca.', error);
+                  console.warn('Falha ao otimizar vídeo na biblioteca.', error);
                 });
               },
             })}
@@ -563,7 +563,7 @@ export default function LibraryScreen({navigation}) {
               label: 'V+A',
               onPress: () => {
                 optimizeSelectedVideo(item, 'both').catch(error => {
-                  console.warn('Falha ao otimizar midia na biblioteca.', error);
+                  console.warn('Falha ao otimizar mídia na biblioteca.', error);
                 });
               },
             })}
@@ -586,7 +586,7 @@ export default function LibraryScreen({navigation}) {
             onPress: () => {
               setActionVideoUri(null);
               onOpen(item).catch(error => {
-                console.warn('Falha ao abrir video na biblioteca.', error);
+                console.warn('Falha ao abrir vídeo na biblioteca.', error);
               });
             },
           })}
@@ -603,7 +603,7 @@ export default function LibraryScreen({navigation}) {
             onPress: () => {
               setActionVideoUri(null);
               onShare(item).catch(error => {
-                console.warn('Falha ao compartilhar video na biblioteca.', error);
+                console.warn('Falha ao compartilhar vídeo na biblioteca.', error);
               });
             },
           })}

@@ -7,14 +7,14 @@ export const RECORDING_MODE_OPTIONS = [
   },
   {
     value: 'slowMotion',
-    label: 'Slow Motion',
-    indicatorLabel: 'Slow Motion',
+    label: 'Câmera lenta',
+    indicatorLabel: 'Câmera lenta',
     icon: 'play-skip-back-outline',
   },
   {
     value: 'timelapse',
-    label: 'Timelapse',
-    indicatorLabel: 'Timelapse',
+    label: 'Time-lapse',
+    indicatorLabel: 'Time-lapse',
     icon: 'timer-outline',
   },
 ];

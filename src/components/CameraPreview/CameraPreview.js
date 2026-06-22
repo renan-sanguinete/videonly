@@ -778,7 +778,7 @@ export default function CameraPreview({
             ]}
           >
             <Text style={styles.audioStatusPillTitle}>
-              Audio: {currentAudioSource.shortLabel} · {audioRisk.title}
+              Áudio: {currentAudioSource.shortLabel} · {audioRisk.title}
             </Text>
             <Text style={styles.audioStatusPillText}>
               {audioRisk.description}
@@ -848,7 +848,7 @@ export default function CameraPreview({
               <View style={styles.controlsSideSlotPlaceholder} />
             ) : (
               <Pressable
-                accessibilityLabel="Abrir configuracoes de captacao"
+                accessibilityLabel="Abrir configurações de captação"
                 disabled={isAudioControlDisabled}
                 onPress={() =>
                   setIsAudioMenuOpen(currentValue => !currentValue)

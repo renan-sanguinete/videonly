@@ -49,26 +49,26 @@ import {shareFile} from '../../utils/videoActions';
 import {styles} from './styles';
 
 const VIDEO_BIT_RATE_OPTIONS = [
-  { label: 'extra-low', value: 'extra-low' },
-  { label: 'low', value: 'low' },
+  { label: 'extra baixo', value: 'extra-low' },
+  { label: 'baixo', value: 'low' },
   { label: 'normal', value: 'normal' },
-  { label: 'high', value: 'high' },
-  { label: 'extra-high', value: 'extra-high' },
+  { label: 'alto', value: 'high' },
+  { label: 'extra alto', value: 'extra-high' },
 ];
 
 const RESIZE_MODE_OPTIONS = [
-  { label: 'cover', value: 'cover' },
-  { label: 'contain', value: 'contain' },
+  { label: 'Preencher', value: 'cover' },
+  { label: 'Ajustar', value: 'contain' },
 ];
 
 const AUDIO_CHANNEL_OPTIONS = [
-  { label: 'Stereo (2 canais)', value: 'stereo' },
+  { label: 'Estéreo (2 canais)', value: 'stereo' },
   { label: 'Mono (1 canal)', value: 'mono' },
 ];
 
 const AUDIO_CODEC_OPTIONS = [
   { label: 'AAC', value: 'aac' },
-  { label: 'MP3 (fallback AAC no Android)', value: 'mp3' },
+  { label: 'MP3 (usa AAC como alternativa no Android)', value: 'mp3' },
 ];
 
 const AUDIO_SAMPLE_RATE_OPTIONS = [
@@ -78,10 +78,10 @@ const AUDIO_SAMPLE_RATE_OPTIONS = [
 ];
 
 const AUDIO_GAIN_OPTIONS = [
-  { label: 'Padrao (0 dB)', value: 0 },
+  { label: 'Padrão (0 dB)', value: 0 },
   { label: 'Reduzido (-6 dB)', value: -6 },
   { label: 'Show ao vivo (-9 dB)', value: -9 },
-  { label: 'Maximo reduzido (-12 dB)', value: -12 },
+  { label: 'Máximo reduzido (-12 dB)', value: -12 },
 ];
 
 const RECORD_FILE_TYPE_OPTIONS = [
@@ -297,7 +297,7 @@ export default function SettingsScreen({navigation}) {
     } catch (error) {
       showAlert(
         'Erro ao exportar metadados',
-        error?.message ?? 'Nao foi possivel gerar o arquivo de exportacao.',
+        error?.message ?? 'Não foi possível gerar o arquivo de exportação.',
       );
     } finally {
       setIsExportingMetadata(false);
@@ -326,7 +326,7 @@ export default function SettingsScreen({navigation}) {
               .catch(error => {
                 showAlert(
                   'Erro ao apagar metadados',
-                  error?.message ?? 'Nao foi possivel excluir os metadados.',
+                  error?.message ?? 'Não foi possível excluir os metadados.',
                 );
               });
           },
@@ -375,12 +375,12 @@ export default function SettingsScreen({navigation}) {
       <Card>
         <ToggleRow
           label="Zoom por gesto"
-          description="Ativa o pinch-to-zoom."
+          description="Ativa o gesto de pinça para controlar o zoom."
           value={settings.enableZoomGesture}
           onValueChange={value => update({ enableZoomGesture: value })}
         />
         <ToggleRow
-          label="Low light boost"
+          label="Reforço em pouca luz"
           description="Pode ajudar em ambientes escuros."
           value={settings.lowLightBoost}
           onValueChange={value => update({ lowLightBoost: value })}
@@ -389,7 +389,7 @@ export default function SettingsScreen({navigation}) {
 
       <SectionTitle>Formato e imagem</SectionTitle>
       <Card>
-        <Text style={styles.label}>Resize mode</Text>
+        <Text style={styles.label}>Modo de enquadramento</Text>
         <OptionChips
           value={settings.resizeMode}
           options={RESIZE_MODE_OPTIONS}
@@ -398,7 +398,7 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Vídeo bit rate</Text>
+        <Text style={styles.label}>Taxa de bits do vídeo</Text>
         <OptionChips
           value={settings.videoBitRate}
           options={VIDEO_BIT_RATE_OPTIONS}
@@ -412,7 +412,7 @@ export default function SettingsScreen({navigation}) {
         <OptionChips
           value={fpsMode}
           options={[
-            {label: 'Auto', value: 'auto'},
+            {label: 'Automático', value: 'auto'},
             {label: 'Manual', value: 'manual'},
           ]}
           onChange={onFpsModeChange}
@@ -451,7 +451,7 @@ export default function SettingsScreen({navigation}) {
         />
 
         <SliderField
-          label="Exposure"
+          label="Exposição"
           description="Padrão: 0 EV"
           value={exposureSliderValue}
           onValueChange={value => update({exposure: value})}
@@ -467,7 +467,7 @@ export default function SettingsScreen({navigation}) {
           style={styles.inlineSecondaryButton}
           onPress={onResetVisualControls}
         >
-          <Text style={styles.inlineSecondaryText}>Controles padrões</Text>
+          <Text style={styles.inlineSecondaryText}>Padrões dos controles</Text>
         </Pressable>
       </Card>
 
@@ -484,7 +484,7 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Configurações de Captação</Text>
+        <Text style={styles.label}>Configurações de captação</Text>
         <OptionChips
           value={settings.audioProfile}
           options={AUDIO_PROFILE_OPTIONS}
@@ -525,7 +525,7 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Sample rate</Text>
+        <Text style={styles.label}>Taxa de amostragem</Text>
         <OptionChips
           value={settings.audioSampleRate}
           options={AUDIO_SAMPLE_RATE_OPTIONS}
@@ -544,7 +544,7 @@ export default function SettingsScreen({navigation}) {
         <View style={styles.sectionSpacer} />
 
         <NumberField
-          label="Bitrate de audio (kbps)"
+          label="Taxa de bits do áudio (kbps)"
           value={settings.audioBitRateKbps}
           onChangeText={text => updateAudioSetting({ audioBitRateKbps: text })}
           placeholder="ex.: 128"
@@ -575,7 +575,7 @@ export default function SettingsScreen({navigation}) {
         <View style={styles.sectionSpacer} />
 
         <ToggleRow
-          label="Normalizar loudness"
+          label="Normalizar volume"
           description="Ajusta o volume ao salvar com base na análise do áudio gravado."
           value={settings.normalizeAudioLoudness}
           onValueChange={value =>
@@ -585,7 +585,7 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Limiter</Text>
+        <Text style={styles.label}>Limitador</Text>
         <OptionChips
           value={limiterPreset.value}
           options={AUDIO_LIMITER_PRESET_OPTIONS}

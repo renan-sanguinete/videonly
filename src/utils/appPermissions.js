@@ -213,7 +213,7 @@ export async function canManageAndroidMedia() {
   try {
     return (await MediaManagementModule.canManageMedia()) === true;
   } catch (error) {
-    console.warn('Nao foi possivel verificar acesso de gerenciamento de midia.', error);
+    console.warn('Não foi possível verificar o acesso de gerenciamento de mídia.', error);
     return false;
   }
 }
@@ -230,7 +230,7 @@ export async function openAndroidManageMediaSettings() {
   try {
     return (await MediaManagementModule.openManageMediaSettings()) === true;
   } catch (error) {
-    console.warn('Nao foi possivel abrir configurações de gerenciamento de midia.', error);
+    console.warn('Não foi possível abrir as configurações de gerenciamento de mídia.', error);
     return false;
   }
 }

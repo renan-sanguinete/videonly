@@ -237,7 +237,7 @@ export function CameraSettingsProvider({children}) {
             : null,
         }));
       } catch (error) {
-        console.warn('Nao foi possivel carregar as configurações salvas.', error);
+        console.warn('Não foi possível carregar as configurações salvas.', error);
       } finally {
         if (isMounted) {
           setIsHydrated(true);
@@ -258,7 +258,7 @@ export function CameraSettingsProvider({children}) {
     }
 
     AsyncStorage.setItem(CAMERA_SETTINGS_STORAGE_KEY, JSON.stringify(settings)).catch(error => {
-      console.warn('Nao foi possivel salvar as configurações.', error);
+      console.warn('Não foi possível salvar as configurações.', error);
     });
   }, [isHydrated, settings]);
 
@@ -271,7 +271,7 @@ export function CameraSettingsProvider({children}) {
       SAVED_AUDIO_PROFILES_STORAGE_KEY,
       JSON.stringify(savedAudioProfiles),
     ).catch(error => {
-      console.warn('Nao foi possivel salvar os perfis de captacao.', error);
+      console.warn('Não foi possível salvar os perfis de captação.', error);
     });
   }, [isHydrated, savedAudioProfiles]);
 

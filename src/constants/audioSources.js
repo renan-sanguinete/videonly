@@ -20,8 +20,8 @@ export const AUDIO_SOURCE_OPTIONS = [
   {
     value: 5,
     key: 'CAMCORDER',
-    label: 'Camera',
-    shortLabel: 'Camera',
+    label: 'Câmera',
+    shortLabel: 'Câmera',
     description: 'Modo otimizado para gravação casual de vídeo.',
     helper: 'Costuma ser bom em cenários comuns, mas pode achatar dinâmica em ambientes muito altos.',
     isRecommended: false,

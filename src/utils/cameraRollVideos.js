@@ -40,7 +40,7 @@ export async function loadVideosPageFromCameraRoll({
 } = {}) {
   const granted = await ensureCameraRollVideoPermission();
   if (!granted) {
-    throw new Error('Permissao para ler videos da galeria nao foi concedida.');
+    throw new Error('Permissão para ler vídeos da galeria não foi concedida.');
   }
 
   const params = {
@@ -99,7 +99,7 @@ export async function loadSavedVideosFromCameraRoll(options = {}) {
 export async function saveVideoToCameraRoll(path) {
   const granted = await ensureCameraRollVideoPermission();
   if (!granted) {
-    throw new Error('Permissao para salvar videos na galeria nao foi concedida.');
+    throw new Error('Permissão para salvar vídeos na galeria não foi concedida.');
   }
 
   return CameraRoll.saveAsset(path, {
@@ -111,7 +111,7 @@ export async function saveVideoToCameraRoll(path) {
 export async function deleteVideoFromCameraRoll(uri) {
   const granted = await ensureCameraRollVideoPermission();
   if (!granted) {
-    throw new Error('Permissao para excluir videos da galeria nao foi concedida.');
+    throw new Error('Permissão para excluir vídeos da galeria não foi concedida.');
   }
 
   const canManageMedia = await canManageAndroidMedia();

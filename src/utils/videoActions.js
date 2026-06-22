@@ -10,7 +10,7 @@ export async function openVideoUri(uri) {
 
   const supported = await Linking.canOpenURL(uri);
   if (!supported) {
-    throw new Error('Nao foi possivel abrir este video no aparelho.');
+    throw new Error('Não foi possível abrir este vídeo no aparelho.');
   }
 
   await Linking.openURL(uri);
@@ -18,12 +18,12 @@ export async function openVideoUri(uri) {
 
 export async function shareVideo(video) {
   if (Platform.OS === 'android' && VideoIntentModule?.shareVideo) {
-    await VideoIntentModule.shareVideo(video.uri, video.filename || 'Video');
+    await VideoIntentModule.shareVideo(video.uri, video.filename || 'Vídeo');
     return;
   }
 
   await Share.share({
-    title: video.filename || 'Video',
+    title: video.filename || 'Vídeo',
     message: video.uri,
     url: video.uri,
   });

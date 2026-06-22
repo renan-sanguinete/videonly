@@ -93,17 +93,17 @@ async function deleteIfExists(pathLike) {
       await RNFS.unlink(normalizedPath);
     }
   } catch (error) {
-    console.warn('Nao foi possivel remover arquivo temporario.', error);
+    console.warn('Não foi possível remover o arquivo temporário.', error);
   }
 }
 
 function getOptimizationLoadingTitle(mode) {
   if (mode === 'slowMotion') {
-    return 'Criando Slow Motion';
+    return 'Criando câmera lenta';
   }
 
   if (mode === 'timelapse') {
-    return 'Criando Timelapse';
+    return 'Criando time-lapse';
   }
 
   if (mode === 'audio') {
@@ -204,7 +204,7 @@ export default function CameraScreen({ navigation }) {
         showAlert(
           'Análise concluída',
           'Não foi possível gerar uma sugestão. Tente novamente com o ambiente estável.',
-          [{ text: 'Ok' }],
+          [{ text: 'OK' }],
         );
         return;
       }
@@ -224,10 +224,10 @@ export default function CameraScreen({ navigation }) {
           `Pico máximo: ${suggestion.maxPeakLabel}`,
           `Clipping: ${suggestion.clipRatioLabel}`,
           '',
-          `Limiter: ${limiterOption.label}`,
+          `Limitador: ${limiterOption.label}`,
           suggestion.normalizeAudioLoudness
-            ? 'Normalização de loudness: ativa'
-            : 'Normalização de loudness: desativada',
+            ? 'Normalização de volume: ativa'
+            : 'Normalização de volume: desativada',
         ].join('\n'),
         [
           { text: 'Manter atual', style: 'cancel' },
@@ -272,7 +272,7 @@ export default function CameraScreen({ navigation }) {
             : null,
         );
       } catch (error) {
-        console.error('Erro ao carregar videos:', error);
+        console.error('Erro ao carregar vídeos:', error);
       } finally {
         if (!isUnmountedRef.current) {
           setIsLoadingSavedVideos(false);
@@ -313,7 +313,7 @@ export default function CameraScreen({ navigation }) {
       }
 
       loadVideosFromGallery({ showLoader: true }).catch(error => {
-        console.warn('Falha ao atualizar videos ao focar a camera.', error);
+        console.warn('Falha ao atualizar vídeos ao focar a câmera.', error);
       });
 
       return undefined;
@@ -374,7 +374,7 @@ export default function CameraScreen({ navigation }) {
         await camera.current.stopRecording();
       } catch (error) {
         console.warn(
-          'Falha ao parar gravacao durante liberacao da camera.',
+          'Falha ao parar gravação durante liberação da câmera.',
           error,
         );
       }
@@ -397,7 +397,7 @@ export default function CameraScreen({ navigation }) {
       if (nextState !== 'active') {
         forceReleaseCameraSession().catch(error => {
           console.warn(
-            'Falha ao liberar sessao da camera ao sair do app.',
+            'Falha ao liberar sessão da câmera ao sair do app.',
             error,
           );
         });
@@ -414,7 +414,7 @@ export default function CameraScreen({ navigation }) {
             setHasGalleryPermission(status.granted);
           })
           .catch(error => {
-            console.warn('Falha ao sincronizar permissao da galeria.', error);
+            console.warn('Falha ao sincronizar permissão da galeria.', error);
           });
 
         scheduleCameraRecovery({ delayMs: 900 });
@@ -476,7 +476,7 @@ export default function CameraScreen({ navigation }) {
     if (!isFocused) {
       forceReleaseCameraSession().catch(error => {
         console.warn(
-          'Falha ao liberar sessao da camera ao perder foco.',
+          'Falha ao liberar sessão da câmera ao perder foco.',
           error,
         );
       });
@@ -597,7 +597,7 @@ export default function CameraScreen({ navigation }) {
       showAlert(
         'Análise indisponível',
         'Não foi possível iniciar a análise agora. Tente novamente em instantes.',
-        [{ text: 'Ok' }],
+        [{ text: 'OK' }],
       );
     }
   }, [isAmbientAnalysisRunning, settings.audio, showAlert, startAmbientAnalysis]);
@@ -678,17 +678,17 @@ export default function CameraScreen({ navigation }) {
             includeMicrophone: settings.audio,
             request: true,
           });
-        console.log('Permissoes iniciais:', {
+        console.log('Permissões iniciais:', {
           cameraOk,
           galleryOk,
           microphoneOk,
         });
         if ((!cameraOk || !microphoneOk || !galleryOk) && showMissingAlert) {
           showAlert(
-            'Permissoes necessarias',
+            'Permissões necessárias',
             settings.audio
-              ? 'Voce precisa permitir camera, microfone e acesso a galeria para gravar e salvar videos com audio.'
-              : 'Voce precisa permitir camera e acesso a galeria para gravar e salvar videos.',
+              ? 'Você precisa permitir câmera, microfone e acesso à galeria para gravar e salvar vídeos com áudio.'
+              : 'Você precisa permitir câmera e acesso à galeria para gravar e salvar vídeos.',
           );
         }
 
@@ -764,7 +764,7 @@ export default function CameraScreen({ navigation }) {
         },
         error => {
           console.warn(
-            'Falha ao solicitar permissao inicial de camera.',
+            'Falha ao solicitar permissão inicial de câmera.',
             error,
           );
         },
@@ -779,7 +779,7 @@ export default function CameraScreen({ navigation }) {
         },
         error => {
           console.warn(
-            'Falha ao solicitar permissao inicial de microfone.',
+            'Falha ao solicitar permissão inicial de microfone.',
             error,
           );
         },
@@ -795,7 +795,7 @@ export default function CameraScreen({ navigation }) {
         setHasGalleryPermission(galleryPermissionGranted);
       },
       error => {
-        console.warn('Falha ao solicitar permissao inicial da galeria.', error);
+        console.warn('Falha ao solicitar permissão inicial da galeria.', error);
       },
     );
 
@@ -812,7 +812,7 @@ export default function CameraScreen({ navigation }) {
       },
       error => {
         console.warn(
-          'Nao foi possivel carregar videos na inicializacao.',
+          'Não foi possível carregar vídeos na inicialização.',
           error,
         );
       },
@@ -829,7 +829,7 @@ export default function CameraScreen({ navigation }) {
       },
       error => {
         console.warn(
-          'Falha ao sugerir acesso especial de gerenciamento de midia.',
+          'Falha ao sugerir acesso especial de gerenciamento de mídia.',
           error,
         );
       },
@@ -944,7 +944,7 @@ export default function CameraScreen({ navigation }) {
           await saveRecordingMetadata(pathToSave);
         } catch (metadataError) {
           console.warn(
-            'Nao foi possivel salvar os metadados da gravacao.',
+            'Não foi possível salvar os metadados da gravação.',
             metadataError,
           );
         }
@@ -958,7 +958,7 @@ export default function CameraScreen({ navigation }) {
               await saveRecordingMetadata(sourcePath);
             } catch (metadataError) {
               console.warn(
-                'Nao foi possivel salvar os metadados da gravacao.',
+                'Não foi possível salvar os metadados da gravação.',
                 metadataError,
               );
             }
@@ -969,20 +969,20 @@ export default function CameraScreen({ navigation }) {
                 ? 'Efeito indisponível'
                 : 'Otimização indisponível',
               shouldApplyEffect
-                ? 'Nao foi possivel aplicar o efeito neste video. A versao original foi salva normalmente.'
-                : 'Nao foi possivel otimizar este video. A versao original foi salva normalmente.',
+                ? 'Não foi possível aplicar o efeito neste vídeo. A versão original foi salva normalmente.'
+                : 'Não foi possível otimizar este vídeo. A versão original foi salva normalmente.',
             );
           } catch (fallbackError) {
             showAlert(
-              'Erro ao processar video',
+              'Erro ao processar vídeo',
               fallbackError?.message ??
-                'Nao foi possivel otimizar nem salvar o video original.',
+                'Não foi possível otimizar nem salvar o vídeo original.',
             );
           }
         } else {
           showAlert(
-            'Erro ao salvar video',
-            error?.message ?? 'Nao foi possivel salvar o video na galeria.',
+            'Erro ao salvar vídeo',
+            error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
           );
         }
       } finally {
@@ -1014,8 +1014,8 @@ export default function CameraScreen({ navigation }) {
       handleRecordingFinished(video).catch(error => {
         setIsProcessingVideo(false);
         showAlert(
-          'Erro ao processar video',
-          error?.message ?? 'Nao foi possivel finalizar o video gravado.',
+          'Erro ao processar vídeo',
+          error?.message ?? 'Não foi possível finalizar o vídeo gravado.',
         );
       });
     },
@@ -1045,8 +1045,8 @@ export default function CameraScreen({ navigation }) {
       }
 
       showAlert(
-        'Erro de gravacao',
-        error?.message ?? 'Nao foi possivel gravar o video.',
+        'Erro de gravação',
+        error?.message ?? 'Não foi possível gravar o vídeo.',
       );
     },
     [scheduleCameraRecovery, showAlert],
@@ -1097,7 +1097,7 @@ export default function CameraScreen({ navigation }) {
           }
 
           camera.current.stopRecording().catch(error => {
-            console.warn('Falha ao parar Slow Motion automaticamente.', error);
+            console.warn('Falha ao parar câmera lenta automaticamente.', error);
           });
         }, Number.isFinite(maxDurationMs) ? maxDurationMs : 5000);
       }
@@ -1109,7 +1109,7 @@ export default function CameraScreen({ navigation }) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      showAlert('Erro', error?.message ?? 'Falha ao iniciar a gravacao.');
+      showAlert('Erro', error?.message ?? 'Falha ao iniciar a gravação.');
     }
   }, [
     ensurePermissions,
@@ -1138,7 +1138,7 @@ export default function CameraScreen({ navigation }) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      showAlert('Erro', error?.message ?? 'Falha ao parar a gravacao.');
+      showAlert('Erro', error?.message ?? 'Falha ao parar a gravação.');
     }
   }, [isRecording, showAlert]);
 
@@ -1146,9 +1146,9 @@ export default function CameraScreen({ navigation }) {
     try {
       await Linking.openSettings();
     } catch (error) {
-      console.warn('Falha ao abrir as configuracoes do app.', error);
+      console.warn('Falha ao abrir as configurações do app.', error);
       showAlert(
-        'Nao foi possivel abrir as configurações',
+        'Não foi possível abrir as configurações',
         'Abra as configurações do app manualmente e permita câmera, microfone e galeria para continuar.',
         [{ text: 'OK' }],
       );
@@ -1172,8 +1172,8 @@ export default function CameraScreen({ navigation }) {
         await openVideoUri(item.uri);
       } catch (error) {
         showAlert(
-          'Erro ao abrir video',
-          error?.message ?? 'Nao foi possivel abrir este video.',
+          'Erro ao abrir vídeo',
+          error?.message ?? 'Não foi possível abrir este vídeo.',
         );
       }
     },
@@ -1187,7 +1187,7 @@ export default function CameraScreen({ navigation }) {
       } catch (error) {
         showAlert(
           'Erro ao compartilhar',
-          error?.message ?? 'Nao foi possivel compartilhar este video.',
+          error?.message ?? 'Não foi possível compartilhar este vídeo.',
         );
       }
     },
@@ -1247,7 +1247,7 @@ export default function CameraScreen({ navigation }) {
       } catch (error) {
         showAlert(
           'Erro',
-          error?.message ?? 'Nao foi possivel excluir este video.',
+          error?.message ?? 'Não foi possível excluir este vídeo.',
         );
       } finally {
         setIsDeletingSelectedVideo(false);
@@ -1285,14 +1285,14 @@ export default function CameraScreen({ navigation }) {
         showAlert(
           'Otimização concluída',
           'Uma nova cópia otimizada foi salva. O vídeo original foi mantido.',
-          [{ text: 'Ok' }],
+          [{ text: 'OK' }],
         );
       } catch (error) {
         showAlert(
           'Otimização indisponível',
           error?.message ??
             'Não foi possível otimizar este vídeo. O original foi mantido.',
-          [{ text: 'Ok' }],
+          [{ text: 'OK' }],
         );
       } finally {
         setIsProcessingVideo(false);
@@ -1375,7 +1375,7 @@ export default function CameraScreen({ navigation }) {
           color={cinematicTheme.colors.mutedForeground}
         />
         <Text style={styles.subtitle}>
-          Inicializando camera e permissoes...
+          Inicializando câmera e permissões...
         </Text>
       </View>
     );
@@ -1479,7 +1479,7 @@ export default function CameraScreen({ navigation }) {
               size="small"
               color={cinematicTheme.colors.mutedForeground}
             />
-            <Text style={styles.subtitle}>Preparando camera...</Text>
+            <Text style={styles.subtitle}>Preparando câmera...</Text>
           </View>
         )}
 
@@ -1518,7 +1518,7 @@ export default function CameraScreen({ navigation }) {
                         optimizeSelectedVideo(selectedVideo, 'audio').catch(
                           error => {
                             console.warn(
-                              'Falha ao otimizar audio pela barra de ações.',
+                              'Falha ao otimizar áudio pela barra de ações.',
                               error,
                             );
                           },
@@ -1542,7 +1542,7 @@ export default function CameraScreen({ navigation }) {
                         optimizeSelectedVideo(selectedVideo, 'video').catch(
                           error => {
                             console.warn(
-                              'Falha ao otimizar video pela barra de ações.',
+                              'Falha ao otimizar vídeo pela barra de ações.',
                               error,
                             );
                           },
@@ -1566,7 +1566,7 @@ export default function CameraScreen({ navigation }) {
                         optimizeSelectedVideo(selectedVideo, 'both').catch(
                           error => {
                             console.warn(
-                              'Falha ao otimizar midia pela barra de ações.',
+                              'Falha ao otimizar mídia pela barra de ações.',
                               error,
                             );
                           },
@@ -1607,7 +1607,7 @@ export default function CameraScreen({ navigation }) {
                         clearSelectedVideo();
                         onOpenVideo(selectedVideo).catch(error => {
                           console.warn(
-                            'Falha ao abrir video pela barra de ações.',
+                            'Falha ao abrir vídeo pela barra de ações.',
                             error,
                           );
                         });
@@ -1645,7 +1645,7 @@ export default function CameraScreen({ navigation }) {
                         clearSelectedVideo();
                         onShareVideo(selectedVideo).catch(error => {
                           console.warn(
-                            'Falha ao compartilhar video pela barra de ações.',
+                            'Falha ao compartilhar vídeo pela barra de ações.',
                             error,
                           );
                         });
@@ -1705,7 +1705,7 @@ export default function CameraScreen({ navigation }) {
               {settings.showAudioLevelMeter && settings.audio ? (
                 <View style={styles.recordingMeterPanel}>
                   <View style={styles.recordingMeterHeader}>
-                    <Text style={styles.recordingMeterLabel}>VU preview</Text>
+                    <Text style={styles.recordingMeterLabel}>Prévia VU</Text>
                     <Text
                       style={[
                         styles.recordingMeterValue,

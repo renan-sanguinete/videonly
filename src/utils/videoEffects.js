@@ -13,7 +13,7 @@ export async function applySlowMotionEffect(
   }
 
   if (!MediaProcessingModule?.retimeVideo) {
-    throw new Error('Processamento de Slow Motion não está disponível.');
+    throw new Error('Processamento de câmera lenta não está disponível.');
   }
 
   const capture = Number(captureFps);
@@ -41,7 +41,7 @@ export async function applyTimelapseEffect(
   }
 
   if (!MediaProcessingModule?.retimeVideo) {
-    throw new Error('Processamento de Timelapse não está disponível.');
+    throw new Error('Processamento de time-lapse não está disponível.');
   }
 
   const speed = Number(speedFactor);

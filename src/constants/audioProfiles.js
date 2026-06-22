@@ -125,8 +125,8 @@ export function getAudioRiskLevel(settings) {
   if (!settings.audio) {
     return {
       level: 'off',
-      title: 'Audio desativado',
-      description: 'A gravacao esta configurada sem captacao de audio.',
+      title: 'Áudio desativado',
+      description: 'A gravação está configurada sem captação de áudio.',
     };
   }
 
@@ -165,7 +165,7 @@ export function getAudioRiskLevel(settings) {
     title: 'Risco alto',
     description:
       applyingCleanup
-        ? 'A fonte atual pode aplicar AGC, compressao ou reducao de ruido. A correção no salvamento ajuda, mas ainda há risco de clipping e graves embolados.'
-        : 'A fonte atual pode aplicar AGC, compressao ou reducao de ruido. Isso aumenta o risco de clipping e graves embolados.',
+        ? 'A fonte atual pode aplicar AGC, compressão ou redução de ruído. A correção no salvamento ajuda, mas ainda há risco de clipping e graves embolados.'
+        : 'A fonte atual pode aplicar AGC, compressão ou redução de ruído. Isso aumenta o risco de clipping e graves embolados.',
   };
 }

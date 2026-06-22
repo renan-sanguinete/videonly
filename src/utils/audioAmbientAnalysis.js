@@ -150,7 +150,7 @@ export function analyzeAmbientAudioSamples(samples) {
       normalizeAudioLoudness: false,
       title: 'Ambiente levemente variável',
       description:
-        'O ambiente tem alguma variação, mas não justifica trocar canal, sample rate ou fonte. A sugestão automática é apenas reduzir levemente o ganho.',
+        'O ambiente tem alguma variação, mas não justifica trocar canal, taxa de amostragem ou fonte. A sugestão automática é apenas reduzir levemente o ganho.',
       confidence: 'média',
     }),
   };

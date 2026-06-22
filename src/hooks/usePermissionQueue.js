@@ -75,7 +75,7 @@ export function usePermissionQueue() {
 
   useEffect(() => {
     processQueue().catch(error => {
-      console.error('Erro ao iniciar a fila de permissoes.', error);
+      console.error('Erro ao iniciar a fila de permissões.', error);
     });
   }, [isReady, processQueue]);
 

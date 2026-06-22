@@ -2,7 +2,7 @@ export const AUDIO_LIMITER_PRESET_OPTIONS = [
   {
     value: 'standard',
     label: 'Padrão',
-    description: 'Equilibra redução leve de ruído, suavização de clipping e limiter.',
+    description: 'Equilibra redução leve de ruído, suavização de clipping e limitador.',
   },
   {
     value: 'gentle',
