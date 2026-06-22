@@ -3,6 +3,9 @@ import {PanResponder, Pressable, Switch, Text, TextInput, View} from 'react-nati
 
 import {styles} from './styles';
 
+const SLIDER_THUMB_SIZE = 22;
+const SLIDER_HORIZONTAL_PADDING = 18;
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -96,12 +99,18 @@ export function SliderField({
   disabled = false,
   progressFromValue,
   valueFromProgress,
+  horizontalPadding = SLIDER_HORIZONTAL_PADDING,
 }) {
   const trackWidthRef = useRef(1);
   const [trackWidth, setTrackWidth] = useState(1);
 
   const safeMin = Number.isFinite(min) ? min : 0;
   const safeMax = Number.isFinite(max) ? max : safeMin;
+  const safeHorizontalPadding = Math.max(horizontalPadding, 0);
+  const activeTrackWidth = Math.max(
+    trackWidth - safeHorizontalPadding * 2,
+    1,
+  );
   const numericValue = Number(value);
   const displayValue = Number.isFinite(numericValue)
     ? clamp(numericValue, safeMin, safeMax)
@@ -153,10 +162,13 @@ export function SliderField({
 
   const handleMove = useCallback(
     locationX => {
-      const width = Math.max(trackWidthRef.current, 1);
-      commitFromProgress(locationX / width);
+      const width = Math.max(
+        trackWidthRef.current - safeHorizontalPadding * 2,
+        1,
+      );
+      commitFromProgress((locationX - safeHorizontalPadding) / width);
     },
-    [commitFromProgress],
+    [commitFromProgress, safeHorizontalPadding],
   );
 
   const panResponder = useMemo(
@@ -193,20 +205,47 @@ export function SliderField({
         }}
         style={[styles.sliderTrackWrap, disabled && styles.sliderTrackWrapDisabled]}
       >
-        <View style={styles.sliderTrack} pointerEvents="none" />
+        <View
+          style={[
+            styles.sliderTrack,
+            {left: safeHorizontalPadding, right: safeHorizontalPadding},
+          ]}
+          pointerEvents="none"
+        />
         <View
           pointerEvents="none"
-          style={[styles.sliderFill, {width: Math.max(trackWidth * progress, 0)}]}
+          style={[
+            styles.sliderFill,
+            {
+              left: safeHorizontalPadding,
+              width: Math.max(activeTrackWidth * progress, 0),
+            },
+          ]}
         />
         <View
           pointerEvents="none"
           style={[
             styles.sliderThumb,
-            {left: Math.max(trackWidth * progress - 11, 0)},
+            {
+              left: Math.max(
+                Math.min(
+                  safeHorizontalPadding +
+                    activeTrackWidth * progress -
+                    SLIDER_THUMB_SIZE / 2,
+                  trackWidth - SLIDER_THUMB_SIZE,
+                ),
+                0,
+              ),
+            },
           ]}
         />
       </View>
-      <View style={styles.sliderRangeRow}>
+      <View
+        style={[
+          styles.sliderRangeRow,
+          {paddingHorizontal: safeHorizontalPadding},
+        ]}
+      >
         <Text style={styles.sliderRangeLabel}>
           {minimumLabel ?? formatValue(safeMin)}
         </Text>

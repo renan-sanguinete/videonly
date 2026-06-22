@@ -13,9 +13,6 @@ export default function AudioSourcePicker({selectedSource, onSourceChange}) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Fonte de áudio</Text>
-      <Text style={styles.subtitle}>
-        Para shows, baladas e ambientes muito altos, prefira a opção Sem processamento.
-      </Text>
 
       {AUDIO_SOURCE_OPTIONS.map(option => {
         const selected = selectedSource === option.value;
@@ -28,7 +25,6 @@ export default function AudioSourcePicker({selectedSource, onSourceChange}) {
             style={[
               styles.option,
               selected && styles.optionSelected,
-              highlighted && styles.optionRecommended,
             ]}>
             <View style={styles.radioOuter}>
               {selected ? <View style={styles.radioInner} /> : null}
@@ -39,7 +35,6 @@ export default function AudioSourcePicker({selectedSource, onSourceChange}) {
                 <Text style={[styles.optionTitle, selected && styles.optionTitleSelected]}>
                   {option.label}
                 </Text>
-                {highlighted ? <Text style={styles.badge}>Recomendado</Text> : null}
               </View>
 
               <Text
@@ -95,9 +90,6 @@ const styles = StyleSheet.create({
   optionSelected: {
     borderColor: colors.accent,
     backgroundColor: 'rgba(247, 162, 36, 0.08)',
-  },
-  optionRecommended: {
-    borderColor: colors.accent,
   },
   radioOuter: {
     width: 22,

@@ -127,7 +127,6 @@ export const styles = StyleSheet.create({
     top: 4,
     width: 22,
     height: 22,
-    marginLeft: -11,
     borderRadius: radii.pill,
     backgroundColor: colors.foreground,
     borderWidth: 2,

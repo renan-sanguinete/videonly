@@ -26,6 +26,7 @@ export const AUDIO_PROFILE_OPTIONS = [
       audioBitRateKbps: '128',
       audioGain: 0,
       audioSource: 5,
+      audioLimiterPreset: 'standard',
       applyAudioCleanup: false,
     },
   },

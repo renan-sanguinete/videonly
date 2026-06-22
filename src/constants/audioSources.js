@@ -41,7 +41,7 @@ export const AUDIO_SOURCE_OPTIONS = [
     label: 'Sem processamento',
     shortLabel: 'Sem proc.',
     description: 'Captura o áudio mais puro possível do microfone.',
-    helper: 'Melhor escolha para shows, baladas e lugares com som alto.',
+    helper: 'Recomendado e melhor escolha para shows, baladas e lugares com som alto.',
     isRecommended: true,
   },
 ];

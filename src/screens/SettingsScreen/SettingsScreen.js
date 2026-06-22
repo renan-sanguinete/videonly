@@ -219,6 +219,14 @@ export default function SettingsScreen({navigation}) {
     }
   };
 
+  const onResetVisualControls = () => {
+    update({
+      fps: '',
+      zoom: String(clamp(1, zoomRange.min, zoomRange.max)),
+      exposure: String(clamp(0, exposureRange.min, exposureRange.max)),
+    });
+  };
+
   useEffect(() => {
     if (settings.fps === '') {
       return;
@@ -455,6 +463,12 @@ export default function SettingsScreen({navigation}) {
           minimumLabel={formatSignedExposure(exposureRange.min)}
           maximumLabel={formatSignedExposure(exposureRange.max)}
         />
+        <Pressable
+          style={styles.inlineSecondaryButton}
+          onPress={onResetVisualControls}
+        >
+          <Text style={styles.inlineSecondaryText}>Controles padrões</Text>
+        </Pressable>
       </Card>
 
       <SectionTitle>Áudio</SectionTitle>

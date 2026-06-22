@@ -156,6 +156,20 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: typography.body.fontFamily,
   },
+  inlineSecondaryButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface2,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  inlineSecondaryText: {
+    color: colors.foreground,
+    fontWeight: '700',
+    fontFamily: typography.body.fontFamily,
+  },
   screenDivider: {
     height: 1,
     backgroundColor: colors.border,
