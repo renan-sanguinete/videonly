@@ -22,7 +22,6 @@ import RNFS from 'react-native-fs';
 import {
   useCameraPermission,
   useMicrophonePermission,
-  useCameraDevice,
 } from 'react-native-vision-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -68,6 +67,7 @@ import {buildVideoResolutionOptions} from '../../utils/videoResolutionOptions';
 import {getCaptureSettingsForRecordingMode} from '../../constants/recordingModes';
 import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
 import { useAmbientAudioAnalysis } from '../../hooks/useAmbientAudioAnalysis';
+import {useI18n} from '../../i18n/I18nContext';
 import { cinematicTheme } from '../../theme/cinematicTheme';
 import { styles } from './styles';
 
@@ -97,24 +97,24 @@ async function deleteIfExists(pathLike) {
   }
 }
 
-function getOptimizationLoadingTitle(mode) {
+function getOptimizationLoadingTitle(mode, t) {
   if (mode === 'slowMotion') {
-    return 'Criando câmera lenta';
+    return t('camera.loading.slowMotion');
   }
 
   if (mode === 'timelapse') {
-    return 'Criando time-lapse';
+    return t('camera.loading.timelapse');
   }
 
   if (mode === 'audio') {
-    return 'Otimizando áudio';
+    return t('camera.loading.audio');
   }
 
   if (mode === 'both') {
-    return 'Otimizando vídeo e áudio';
+    return t('camera.loading.both');
   }
 
-  return 'Otimizando vídeo';
+  return t('camera.loading.video');
 }
 
 function getVideoExtensionFromItem(item) {
@@ -127,6 +127,7 @@ function getVideoExtensionFromItem(item) {
 }
 
 export default function CameraScreen({ navigation }) {
+  const {t} = useI18n();
   const camera = useRef(null);
   const recordingStartedAtRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
@@ -156,8 +157,8 @@ export default function CameraScreen({ navigation }) {
   } = useCameraSettings();
   const { showAlert } = useCustomAlert();
   const resolutionOptions = useMemo(
-    () => buildVideoResolutionOptions(currentCameraDevice?.formats ?? []),
-    [currentCameraDevice],
+    () => buildVideoResolutionOptions(t),
+    [t],
   );
 
   const [isRecording, setIsRecording] = useState(false);
@@ -171,8 +172,8 @@ export default function CameraScreen({ navigation }) {
   const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [cameraPosition, setCameraPosition] = useState('back');
-  const currentCameraDevice = useCameraDevice(cameraPosition);
-  const currentCameraLabel = cameraPosition === 'back' ? 'traseira' : 'frontal';
+  const currentCameraLabel =
+    cameraPosition === 'back' ? t('common.backCamera') : t('common.front');
   const [appState, setAppState] = useState(AppState.currentState);
   const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -202,37 +203,40 @@ export default function CameraScreen({ navigation }) {
     onComplete: suggestion => {
       if (!suggestion) {
         showAlert(
-          'Análise concluída',
-          'Não foi possível gerar uma sugestão. Tente novamente com o ambiente estável.',
-          [{ text: 'OK' }],
+          t('camera.analysisComplete.title'),
+          t('camera.analysisComplete.message'),
+          [{ text: t('common.ok') }],
         );
         return;
       }
 
       const limiterOption = getAudioLimiterPresetOption(
         suggestion.audioLimiterPreset,
+        t,
       );
 
       showAlert(
-        'Sugestão pronta',
+        t('camera.suggestion.title'),
         [
           `${suggestion.title} · ${suggestion.confidence}`,
           suggestion.description,
           '',
-          `Média RMS: ${suggestion.averageRmsLabel}`,
-          `Pico médio: ${suggestion.averagePeakLabel}`,
-          `Pico máximo: ${suggestion.maxPeakLabel}`,
-          `Clipping: ${suggestion.clipRatioLabel}`,
+          t('camera.suggestion.rms', {value: suggestion.averageRmsLabel}),
+          t('camera.suggestion.averagePeak', {
+            value: suggestion.averagePeakLabel,
+          }),
+          t('camera.suggestion.maxPeak', {value: suggestion.maxPeakLabel}),
+          t('camera.suggestion.clipping', {value: suggestion.clipRatioLabel}),
           '',
-          `Limitador: ${limiterOption.label}`,
+          t('camera.suggestion.limiter', {value: limiterOption.label}),
           suggestion.normalizeAudioLoudness
-            ? 'Normalização de volume: ativa'
-            : 'Normalização de volume: desativada',
+            ? t('camera.suggestion.volumeOn')
+            : t('camera.suggestion.volumeOff'),
         ].join('\n'),
         [
-          { text: 'Manter atual', style: 'cancel' },
+          { text: t('camera.suggestion.keep'), style: 'cancel' },
           {
-            text: 'Aplicar sugestão',
+            text: t('camera.suggestion.apply'),
             onPress: () => {
               setSettings(prev => ({
                 ...prev,
@@ -595,12 +599,12 @@ export default function CameraScreen({ navigation }) {
     const started = startAmbientAnalysis();
     if (!started) {
       showAlert(
-        'Análise indisponível',
-        'Não foi possível iniciar a análise agora. Tente novamente em instantes.',
-        [{ text: 'OK' }],
+        t('camera.analysisUnavailable.title'),
+        t('camera.analysisUnavailable.message'),
+        [{ text: t('common.ok') }],
       );
     }
-  }, [isAmbientAnalysisRunning, settings.audio, showAlert, startAmbientAnalysis]);
+  }, [isAmbientAnalysisRunning, settings.audio, showAlert, startAmbientAnalysis, t]);
 
   const renderHeader = useCallback(
     () => (
@@ -685,10 +689,10 @@ export default function CameraScreen({ navigation }) {
         });
         if ((!cameraOk || !microphoneOk || !galleryOk) && showMissingAlert) {
           showAlert(
-            'Permissões necessárias',
+            t('camera.permissions.title'),
             settings.audio
-              ? 'Você precisa permitir câmera, microfone e acesso à galeria para gravar e salvar vídeos com áudio.'
-              : 'Você precisa permitir câmera e acesso à galeria para gravar e salvar vídeos.',
+              ? t('camera.permissions.withAudio')
+              : t('camera.permissions.withoutAudio'),
           );
         }
 
@@ -697,7 +701,7 @@ export default function CameraScreen({ navigation }) {
         isRequestingPermissionsRef.current = false;
       }
     },
-    [settings.audio, showAlert],
+    [settings.audio, showAlert, t],
   );
 
   const promptManageMediaAccess = useCallback(async () => {
@@ -717,12 +721,12 @@ export default function CameraScreen({ navigation }) {
     hasPromptedManageMediaRef.current = true;
 
     showAlert(
-      'Permissão de gerenciamento de mídia',
-      'Para obter acesso de exclusão de mídia, habilite o acesso em "Gerenciar mídia".',
+      t('camera.manageMedia.title'),
+      t('camera.manageMedia.message'),
       [
-        { text: 'Agora não', style: 'cancel' },
+        { text: t('camera.notNow'), style: 'cancel' },
         {
-          text: 'Abrir configurações',
+          text: t('camera.openSettings'),
           onPress: () => {
             openAndroidManageMediaSettings().catch(error => {
               console.warn(
@@ -734,7 +738,7 @@ export default function CameraScreen({ navigation }) {
         },
       ],
     );
-  }, [showAlert]);
+  }, [showAlert, t]);
 
   useEffect(() => {
     if (
@@ -966,23 +970,23 @@ export default function CameraScreen({ navigation }) {
             await loadVideosFromGallery();
             showAlert(
               shouldApplyEffect
-                ? 'Efeito indisponível'
-                : 'Otimização indisponível',
+                ? t('camera.effectUnavailable')
+                : t('camera.optimizationUnavailable'),
               shouldApplyEffect
-                ? 'Não foi possível aplicar o efeito neste vídeo. A versão original foi salva normalmente.'
-                : 'Não foi possível otimizar este vídeo. A versão original foi salva normalmente.',
+                ? t('camera.effectFallback')
+                : t('camera.optimizationFallback'),
             );
           } catch (fallbackError) {
             showAlert(
-              'Erro ao processar vídeo',
+              t('camera.processErrorTitle'),
               fallbackError?.message ??
-                'Não foi possível otimizar nem salvar o vídeo original.',
+                t('camera.processErrorMessage'),
             );
           }
         } else {
           showAlert(
-            'Erro ao salvar vídeo',
-            error?.message ?? 'Não foi possível salvar o vídeo na galeria.',
+            t('camera.saveErrorTitle'),
+            error?.message ?? t('camera.saveErrorMessage'),
           );
         }
       } finally {
@@ -1006,6 +1010,7 @@ export default function CameraScreen({ navigation }) {
       loadVideosFromGallery,
       settings,
       showAlert,
+      t,
     ],
   );
 
@@ -1014,12 +1019,12 @@ export default function CameraScreen({ navigation }) {
       handleRecordingFinished(video).catch(error => {
         setIsProcessingVideo(false);
         showAlert(
-          'Erro ao processar vídeo',
-          error?.message ?? 'Não foi possível finalizar o vídeo gravado.',
+          t('camera.processErrorTitle'),
+          error?.message ?? t('camera.finishErrorMessage'),
         );
       });
     },
-    [handleRecordingFinished, showAlert],
+    [handleRecordingFinished, showAlert, t],
   );
 
   const handleRecordingError = useCallback(
@@ -1045,11 +1050,11 @@ export default function CameraScreen({ navigation }) {
       }
 
       showAlert(
-        'Erro de gravação',
-        error?.message ?? 'Não foi possível gravar o vídeo.',
+        t('camera.recordingErrorTitle'),
+        error?.message ?? t('camera.recordingErrorMessage'),
       );
     },
-    [scheduleCameraRecovery, showAlert],
+    [scheduleCameraRecovery, showAlert, t],
   );
 
   const startRecording = useCallback(async () => {
@@ -1109,7 +1114,7 @@ export default function CameraScreen({ navigation }) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      showAlert('Erro', error?.message ?? 'Falha ao iniciar a gravação.');
+      showAlert(t('common.error'), error?.message ?? t('camera.startRecordingError'));
     }
   }, [
     ensurePermissions,
@@ -1121,6 +1126,7 @@ export default function CameraScreen({ navigation }) {
     isRecoveringCamera,
     settings,
     showAlert,
+    t,
   ]);
 
   const stopRecording = useCallback(async () => {
@@ -1138,9 +1144,9 @@ export default function CameraScreen({ navigation }) {
       recordingStartedAtRef.current = null;
       setRecordingElapsedMs(0);
       setIsRecording(false);
-      showAlert('Erro', error?.message ?? 'Falha ao parar a gravação.');
+      showAlert(t('common.error'), error?.message ?? t('camera.stopRecordingError'));
     }
-  }, [isRecording, showAlert]);
+  }, [isRecording, showAlert, t]);
 
   const onPermissionPress = useCallback(async () => {
     try {
@@ -1148,12 +1154,12 @@ export default function CameraScreen({ navigation }) {
     } catch (error) {
       console.warn('Falha ao abrir as configurações do app.', error);
       showAlert(
-        'Não foi possível abrir as configurações',
-        'Abra as configurações do app manualmente e permita câmera, microfone e galeria para continuar.',
-        [{ text: 'OK' }],
+        t('camera.openSettingsErrorTitle'),
+        t('camera.openSettingsErrorMessage'),
+        [{ text: t('common.ok') }],
       );
     }
-  }, [showAlert]);
+  }, [showAlert, t]);
 
   const onToggleCamera = useCallback(() => {
     if (isRecording) {
@@ -1172,12 +1178,12 @@ export default function CameraScreen({ navigation }) {
         await openVideoUri(item.uri);
       } catch (error) {
         showAlert(
-          'Erro ao abrir vídeo',
-          error?.message ?? 'Não foi possível abrir este vídeo.',
+          t('camera.openVideoErrorTitle'),
+          error?.message ?? t('camera.openVideoErrorMessage'),
         );
       }
     },
-    [showAlert],
+    [showAlert, t],
   );
 
   const onShareVideo = useCallback(
@@ -1186,12 +1192,12 @@ export default function CameraScreen({ navigation }) {
         await shareVideo(item);
       } catch (error) {
         showAlert(
-          'Erro ao compartilhar',
-          error?.message ?? 'Não foi possível compartilhar este vídeo.',
+          t('camera.shareVideoErrorTitle'),
+          error?.message ?? t('camera.shareVideoErrorMessage'),
         );
       }
     },
-    [showAlert],
+    [showAlert, t],
   );
 
   const clearSelectedVideo = useCallback(() => {
@@ -1209,12 +1215,12 @@ export default function CameraScreen({ navigation }) {
     }
 
     showAlert(
-      'Permissão extra para excluir',
-      'Sem o acesso especial "Gerenciar mídia", o Android pode continuar mostrando uma confirmação adicional ao excluir vídeos.',
+      t('camera.manageMedia.extraTitle'),
+      t('camera.manageMedia.extraMessage'),
       [
-        { text: 'Fechar', style: 'cancel' },
+        { text: t('common.close'), style: 'cancel' },
         {
-          text: 'Abrir configurações',
+          text: t('camera.openSettings'),
           onPress: () => {
             openAndroidManageMediaSettings().catch(openError => {
               console.warn(
@@ -1226,7 +1232,7 @@ export default function CameraScreen({ navigation }) {
         },
       ],
     );
-  }, [showAlert]);
+  }, [showAlert, t]);
 
   const selectedVideo = useMemo(
     () => savedVideos.find(item => item.uri === selectedVideoUri) ?? null,
@@ -1246,14 +1252,14 @@ export default function CameraScreen({ navigation }) {
         }
       } catch (error) {
         showAlert(
-          'Erro',
-          error?.message ?? 'Não foi possível excluir este vídeo.',
+          t('common.error'),
+          error?.message ?? t('camera.deleteVideoErrorMessage'),
         );
       } finally {
         setIsDeletingSelectedVideo(false);
       }
     },
-    [loadVideosFromGallery, maybeWarnAboutManageMedia, showAlert],
+    [loadVideosFromGallery, maybeWarnAboutManageMedia, showAlert, t],
   );
 
   const optimizeSelectedVideo = useCallback(
@@ -1283,16 +1289,16 @@ export default function CameraScreen({ navigation }) {
         await loadVideosFromGallery({ showLoader: false });
 
         showAlert(
-          'Otimização concluída',
-          'Uma nova cópia otimizada foi salva. O vídeo original foi mantido.',
-          [{ text: 'OK' }],
+          t('camera.optimizationDoneTitle'),
+          t('camera.optimizationDoneMessage'),
+          [{ text: t('common.ok') }],
         );
       } catch (error) {
         showAlert(
-          'Otimização indisponível',
+          t('camera.optimizationUnavailable'),
           error?.message ??
-            'Não foi possível otimizar este vídeo. O original foi mantido.',
-          [{ text: 'OK' }],
+            t('camera.optimizationFallback'),
+          [{ text: t('common.ok') }],
         );
       } finally {
         setIsProcessingVideo(false);
@@ -1312,6 +1318,7 @@ export default function CameraScreen({ navigation }) {
       settings.audioLimiterPreset,
       settings.normalizeAudioLoudness,
       showAlert,
+      t,
     ],
   );
 
@@ -1323,10 +1330,10 @@ export default function CameraScreen({ navigation }) {
     const videoToDelete = selectedVideo;
     clearSelectedVideo();
 
-    showAlert('Excluir vídeo', 'Excluir o vídeo selecionado?', [
-      { text: 'Cancelar', style: 'cancel' },
+    showAlert(t('camera.deleteVideoTitle'), t('camera.deleteVideoMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Excluir',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           deleteSelectedVideo(videoToDelete).catch(error => {
@@ -1341,6 +1348,7 @@ export default function CameraScreen({ navigation }) {
     isDeletingSelectedVideo,
     selectedVideo,
     showAlert,
+    t,
   ]);
 
   const onVideoCardPress = useCallback(
@@ -1362,7 +1370,7 @@ export default function CameraScreen({ navigation }) {
           size="small"
           color={cinematicTheme.colors.mutedForeground}
         />
-        <Text style={styles.subtitle}>Carregando configurações...</Text>
+        <Text style={styles.subtitle}>{t('camera.loadingSettings')}</Text>
       </View>
     );
   }
@@ -1375,7 +1383,7 @@ export default function CameraScreen({ navigation }) {
           color={cinematicTheme.colors.mutedForeground}
         />
         <Text style={styles.subtitle}>
-          Inicializando câmera e permissões...
+          {t('camera.initializing')}
         </Text>
       </View>
     );
@@ -1384,16 +1392,16 @@ export default function CameraScreen({ navigation }) {
   if (!hasCameraPermission) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Videonly</Text>
+        <Text style={styles.title}>{t('camera.permissionTitle')}</Text>
         <Text style={styles.subtitle}>
-          O app precisa de permissão para acessar a câmera, áudio e galeria.
+          {t('camera.permissionMessage')}
         </Text>
         <Text style={styles.subtitle}>
-          Vá para as configurações e habilite as permissões.
+          {t('camera.permissionHint')}
         </Text>
         <Pressable style={styles.primaryButton} onPress={onPermissionPress}>
           <Text style={styles.primaryButtonText}>
-            Abrir configurações
+            {t('camera.openSettings')}
           </Text>
         </Pressable>
       </View>
@@ -1403,21 +1411,21 @@ export default function CameraScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <LoadingModal
-        message="Aguarde..."
-        title={getOptimizationLoadingTitle(processingOptimizationMode)}
+        message={t('camera.processingWait')}
+        title={getOptimizationLoadingTitle(processingOptimizationMode, t)}
         visible={isProcessingVideo}
       />
       <LoadingModal
-        message={`${Math.round(ambientAnalysisProgress * 100)}% concluído · ${Math.max(
-          1,
-          Math.ceil(ambientAnalysisRemainingMs / 1000),
-        )}s restantes`}
-        title="Analisando ambiente"
+        message={t('camera.analysisProgress', {
+          percent: Math.round(ambientAnalysisProgress * 100),
+          seconds: Math.max(1, Math.ceil(ambientAnalysisRemainingMs / 1000)),
+        })}
+        title={t('camera.analyzingAmbient')}
         visible={isAmbientAnalysisRunning}
       />
       <LoadingModal
-        message="Aguarde enquanto removemos o vídeo selecionado."
-        title="Excluindo vídeo"
+        message={t('camera.deletingSelectedMessage')}
+        title={t('camera.deletingSelectedTitle')}
         visible={isDeletingSelectedVideo}
       />
       <View style={styles.previewStage}>
@@ -1479,7 +1487,7 @@ export default function CameraScreen({ navigation }) {
               size="small"
               color={cinematicTheme.colors.mutedForeground}
             />
-            <Text style={styles.subtitle}>Preparando câmera...</Text>
+            <Text style={styles.subtitle}>{t('camera.preparingCamera')}</Text>
           </View>
         )}
 
@@ -1497,9 +1505,13 @@ export default function CameraScreen({ navigation }) {
                   <View style={styles.panelHeader}>
                     <View style={styles.panelHeaderTitleWrap}>
                       <View style={styles.panelHeaderTitleRow}>
-                        <Text style={styles.panelKicker}>Vídeos</Text>
+                        <Text style={styles.panelKicker}>
+                          {t('camera.videos')}
+                        </Text>
                         <Pressable onPress={() => navigation.navigate('Library')}>
-                          <Text style={styles.panelLink}>Ver todos →</Text>
+                          <Text style={styles.panelLink}>
+                            {t('camera.viewAll')}
+                          </Text>
                         </Pressable>
                       </View>
                     </View>
@@ -1533,7 +1545,7 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Áudio</Text>
+                      <Text style={styles.panelActionLabel}>{t('common.audio')}</Text>
                     </Pressable>
 
                     <Pressable
@@ -1557,7 +1569,7 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Vídeo</Text>
+                      <Text style={styles.panelActionLabel}>{t('common.video')}</Text>
                     </Pressable>
 
                     <Pressable
@@ -1581,7 +1593,9 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>V+A</Text>
+                      <Text style={styles.panelActionLabel}>
+                        {t('common.videoAudioShort')}
+                      </Text>
                     </Pressable>
 
                     <Pressable
@@ -1596,7 +1610,7 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Fechar</Text>
+                      <Text style={styles.panelActionLabel}>{t('common.close')}</Text>
                     </Pressable>
                   </View>
                 ) : (
@@ -1621,7 +1635,7 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Abrir</Text>
+                      <Text style={styles.panelActionLabel}>{t('common.open')}</Text>
                     </Pressable>
 
                     <Pressable
@@ -1636,7 +1650,9 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Otimizar</Text>
+                      <Text style={styles.panelActionLabel}>
+                        {t('common.optimize')}
+                      </Text>
                     </Pressable>
 
                     <Pressable
@@ -1659,7 +1675,9 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Compart.</Text>
+                      <Text style={styles.panelActionLabel}>
+                        {t('common.shareShort')}
+                      </Text>
                     </Pressable>
 
                     <Pressable
@@ -1679,7 +1697,7 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.destructiveSoftForeground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Excluir</Text>
+                      <Text style={styles.panelActionLabel}>{t('common.delete')}</Text>
                     </Pressable>
 
                     <Pressable
@@ -1694,7 +1712,7 @@ export default function CameraScreen({ navigation }) {
                           color={cinematicTheme.colors.foreground}
                         />
                       </View>
-                      <Text style={styles.panelActionLabel}>Cancelar</Text>
+                      <Text style={styles.panelActionLabel}>{t('common.cancel')}</Text>
                     </Pressable>
                   </View>
                 )
@@ -1705,7 +1723,9 @@ export default function CameraScreen({ navigation }) {
               {settings.showAudioLevelMeter && settings.audio ? (
                 <View style={styles.recordingMeterPanel}>
                   <View style={styles.recordingMeterHeader}>
-                    <Text style={styles.recordingMeterLabel}>Prévia VU</Text>
+                    <Text style={styles.recordingMeterLabel}>
+                      {t('camera.vuPreview')}
+                    </Text>
                     <Text
                       style={[
                         styles.recordingMeterValue,
@@ -1713,7 +1733,7 @@ export default function CameraScreen({ navigation }) {
                       ]}
                     >
                       {audioMeterIsClipping
-                        ? 'CLIP'
+                        ? t('camera.clip')
                         : `${Math.round(audioMeterPeakDb * 10) / 10} dBFS`}
                     </Text>
                   </View>
@@ -1729,8 +1749,8 @@ export default function CameraScreen({ navigation }) {
                   </View>
                   <Text style={styles.recordingMeterHint}>
                     {audioMeterIsClipping
-                      ? 'Pico alto. Reduza ganho ou use o perfil Show ao vivo.'
-                      : 'Prévia do ambiente antes de gravar. Verde indica zona segura.'}
+                      ? t('camera.vuHighPeak')
+                      : t('camera.vuSafe')}
                   </Text>
                 </View>
               ) : isLoadingSavedVideos ? (
@@ -1740,7 +1760,7 @@ export default function CameraScreen({ navigation }) {
                     color={cinematicTheme.colors.mutedForeground}
                   />
                   <Text style={styles.savedVideosLoadingText}>
-                    Carregando vídeos...
+                    {t('camera.loadingVideos')}
                   </Text>
                 </View>
               ) : (
@@ -1764,7 +1784,7 @@ export default function CameraScreen({ navigation }) {
                     )}
                     ListEmptyComponent={
                       <Text style={styles.emptyText}>
-                        Nenhum vídeo salvo ainda.
+                        {t('camera.noSavedVideos')}
                       </Text>
                     }
                   />

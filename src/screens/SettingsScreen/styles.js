@@ -32,6 +32,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  headerRightPlaceholder: {width: 34},
   headerEyebrow: {
     color: colors.accent,
     fontSize: 11,

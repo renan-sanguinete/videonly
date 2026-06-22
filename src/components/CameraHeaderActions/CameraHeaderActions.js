@@ -3,14 +3,15 @@ import {Pressable, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import {
-  MEDIA_OPTIMIZATION_MODES,
+  getMediaOptimizationModes,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
 import {
-  RECORDING_MODE_OPTIONS,
   getRecordingModeOption,
+  getRecordingModeOptions,
 } from '../../constants/recordingModes';
 import { buildVideoResolutionOptions } from '../../utils/videoResolutionOptions';
+import {useI18n} from '../../i18n/I18nContext';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
 
@@ -38,14 +39,17 @@ export default function CameraHeaderActions({
   isAmbientAnalysisRunning,
   isAmbientAnalysisDisabled,
 }) {
+  const {t} = useI18n();
   const currentOptimizationMode = useMemo(
-    () => getMediaOptimizationModeOption(optimizationMode),
-    [optimizationMode],
+    () => getMediaOptimizationModeOption(optimizationMode, t),
+    [optimizationMode, t],
   );
   const currentRecordingMode = useMemo(
-    () => getRecordingModeOption(recordingMode),
-    [recordingMode],
+    () => getRecordingModeOption(recordingMode, t),
+    [recordingMode, t],
   );
+  const mediaOptimizationModes = useMemo(() => getMediaOptimizationModes(t), [t]);
+  const recordingModeOptions = useMemo(() => getRecordingModeOptions(t), [t]);
   const isOptimizationControlDisabled = isRecording;
   const isAmbientAnalysisControlDisabled =
     isAmbientAnalysisDisabled || isRecording || isAmbientAnalysisRunning;
@@ -103,9 +107,9 @@ export default function CameraHeaderActions({
       {isOptimizationMenuOpen ? (
         <View style={styles.optimizationMenuExpanded}>
           <View style={styles.optimizationMenuHeader}>
-            <Text style={styles.optimizationModeTitle}>Otimizar</Text>
+            <Text style={styles.optimizationModeTitle}>{t('header.optimize')}</Text>
             <Pressable
-              accessibilityLabel="Fechar otimização"
+              accessibilityLabel={t('header.closeOptimization')}
               hitSlop={10}
               onPress={() => setIsOptimizationMenuOpen(false)}
               style={styles.optimizationCloseButton}
@@ -114,7 +118,7 @@ export default function CameraHeaderActions({
             </Pressable>
           </View>
           <View style={styles.optimizationMenuOptions}>
-            {MEDIA_OPTIMIZATION_MODES.map(option => {
+            {mediaOptimizationModes.map(option => {
               const isSelected =
                 currentOptimizationMode.value === option.value;
 
@@ -152,9 +156,11 @@ export default function CameraHeaderActions({
             })}
           </View>
           <View style={styles.recordingModeSection}>
-            <Text style={styles.recordingModeTitle}>Modo de gravação</Text>
+            <Text style={styles.recordingModeTitle}>
+              {t('header.recordingMode')}
+            </Text>
             <View style={styles.recordingModeOptions}>
-              {RECORDING_MODE_OPTIONS.map(option => {
+              {recordingModeOptions.map(option => {
                 const isSelected = currentRecordingMode.value === option.value;
 
                 return (
@@ -188,11 +194,13 @@ export default function CameraHeaderActions({
             </View>
           </View>
           <View style={styles.resolutionSection}>
-            <Text style={styles.resolutionTitle}>Resolução de vídeo</Text>
+            <Text style={styles.resolutionTitle}>
+              {t('header.videoResolution')}
+            </Text>
             <View style={styles.resolutionOptions}>
               {(resolutionOptions?.length
                 ? resolutionOptions
-                : buildVideoResolutionOptions([])).map(option => {
+                : buildVideoResolutionOptions(t)).map(option => {
                 const isSelected = resolutionPreset === option.value;
 
                 return (
@@ -224,9 +232,11 @@ export default function CameraHeaderActions({
       ) : isAmbientAnalysisMenuOpen ? (
         <View style={styles.optimizationMenuExpanded}>
           <View style={styles.optimizationMenuHeader}>
-            <Text style={styles.optimizationMenuTitle}>Analisar som ambiente</Text>
+            <Text style={styles.optimizationMenuTitle}>
+              {t('header.analyzeAmbient')}
+            </Text>
             <Pressable
-              accessibilityLabel="Fechar análise de ambiente"
+              accessibilityLabel={t('header.closeAmbientAnalysis')}
               hitSlop={10}
               onPress={() => setIsAmbientAnalysisMenuOpen(false)}
               style={styles.optimizationCloseButton}
@@ -247,7 +257,7 @@ export default function CameraHeaderActions({
               />
             </View>
             <Text style={styles.ambientAnalysisOptionDescription}>
-              Analisa o ambiente por 10 segundos e sugere a melhor configuração de captação.
+              {t('header.ambientDescription')}
             </Text>
             <Pressable
               onPress={() => {
@@ -256,7 +266,9 @@ export default function CameraHeaderActions({
               }}
               style={styles.ambientAnalysisCta}
             >
-              <Text style={styles.ambientAnalysisCtaText}>Iniciar análise</Text>
+              <Text style={styles.ambientAnalysisCtaText}>
+                {t('header.startAnalysis')}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -264,7 +276,7 @@ export default function CameraHeaderActions({
         <>
           <View style={styles.rightGroup}>
             <Pressable
-              accessibilityLabel="Abrir análise de ambiente"
+              accessibilityLabel={t('header.openAmbientAnalysis')}
               hitSlop={10}
               disabled={isAmbientAnalysisControlDisabled}
               onPress={() => {
@@ -287,7 +299,7 @@ export default function CameraHeaderActions({
             </Pressable>
             {!isFrontCamera && (
               <Pressable
-                accessibilityLabel="Alternar flash"
+                accessibilityLabel={t('header.toggleFlash')}
                 hitSlop={10}
                 onPress={onToggleFlash}
                 style={styles.headerIconButton}>
@@ -299,7 +311,7 @@ export default function CameraHeaderActions({
               </Pressable>
             )}
             <Pressable
-              accessibilityLabel="Abrir otimização"
+              accessibilityLabel={t('header.openOptimization')}
               hitSlop={10}
               disabled={isOptimizationControlDisabled}
               onPress={() => {
@@ -320,7 +332,7 @@ export default function CameraHeaderActions({
               />
             </Pressable>
             <Pressable
-              accessibilityLabel="Abrir galeria"
+              accessibilityLabel={t('header.openGallery')}
               hitSlop={10}
               disabled={isRecording}
               onPress={onOpenLibrary}
@@ -332,7 +344,7 @@ export default function CameraHeaderActions({
               <Icon name="images-outline" size={18} color={colors.foreground} />
             </Pressable>
             <Pressable
-              accessibilityLabel="Abrir configurações"
+              accessibilityLabel={t('header.openSettings')}
               hitSlop={10}
               disabled={isRecording}
               onPress={onOpenSettings}

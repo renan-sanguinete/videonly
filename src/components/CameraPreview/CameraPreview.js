@@ -21,8 +21,8 @@ import {
 } from '../../utils/cameraFormatUtils';
 import { getAudioSourceOption } from '../../constants/audioSources';
 import {
-  AUDIO_PROFILE_OPTIONS,
   MAX_SAVED_AUDIO_PROFILES,
+  getAudioProfileOptions,
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
 import {
@@ -35,6 +35,7 @@ import ZoomRail from './ZoomRail';
 import { formatElapsedTime } from '../../utils/videoFormatters';
 import { clamp, getInitialZoomValue } from '../../utils/cameraZoom';
 import { useCustomAlert } from '../../context/CustomAlertContext';
+import {useI18n} from '../../i18n/I18nContext';
 import { styles } from './styles';
 
 const {colors} = cinematicTheme;
@@ -79,6 +80,7 @@ export default function CameraPreview({
   onZoomCommit,
 }) {
   const {showAlert} = useCustomAlert();
+  const {t} = useI18n();
   const device = useCameraDevice(cameraPosition);
   const captureSettings = useMemo(
     () => getCaptureSettingsForRecordingMode(settings),
@@ -120,8 +122,8 @@ export default function CameraPreview({
       : undefined;
   }, [captureSettings, selectedFormat]);
   const currentRecordingMode = useMemo(
-    () => getRecordingModeOption(settings.recordingMode),
-    [settings.recordingMode],
+    () => getRecordingModeOption(settings.recordingMode, t),
+    [settings.recordingMode, t],
   );
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 0);
@@ -333,11 +335,11 @@ export default function CameraPreview({
   );
 
   const fpsLabel = `FPS ${String(cameraProps?.fps ?? 'AUTO').toUpperCase()}`;
-  const currentAudioSource = getAudioSourceOption(settings.audioSource);
-  const audioRisk = getAudioRiskLevel(settings);
+  const currentAudioSource = getAudioSourceOption(settings.audioSource, t);
+  const audioRisk = getAudioRiskLevel(settings, t);
   const showAudioRiskWarning =
     isRecording && settings.audio && audioRisk.level === 'high';
-  const quickAudioProfiles = useMemo(() => AUDIO_PROFILE_OPTIONS, []);
+  const quickAudioProfiles = useMemo(() => getAudioProfileOptions(t), [t]);
   const activeSavedAudioProfile = useMemo(
     () =>
       savedAudioProfiles.find(
@@ -352,26 +354,26 @@ export default function CameraPreview({
           ? {
               ...option,
               label: activeSavedAudioProfile.name,
-              description: 'Perfil personalizado salvo em uso.',
+              description: t('audioProfile.savedCustom.description'),
             }
           : option,
       ),
-    [activeSavedAudioProfile, quickAudioProfiles],
+    [activeSavedAudioProfile, quickAudioProfiles, t],
   );
   const audioToggleOptions = useMemo(
     () => [
       {
         value: 'enable',
-        label: 'Habilitar áudio',
-        description: 'Volta a gravar com áudio usando a configuração atual.',
+        label: t('camera.enableAudio'),
+        description: t('camera.enableAudioDescription'),
       },
       {
         value: 'keep-off',
-        label: 'Manter desativado',
-        description: 'Continua gravando sem captação de áudio.',
+        label: t('camera.keepAudioOff'),
+        description: t('camera.keepAudioOffDescription'),
       },
     ],
-    [],
+    [t],
   );
   const isAudioControlDisabled = isRecording || isProcessingVideo;
   const isLiveSafeProfile = settings.audioProfile === 'live-safe';
@@ -440,7 +442,7 @@ export default function CameraPreview({
     const nextName = profileNameInput.trim();
 
     if (!nextName) {
-      setProfileNameError('Informe um nome para salvar o perfil.');
+      setProfileNameError(t('camera.profileNameRequired'));
       return;
     }
 
@@ -456,12 +458,12 @@ export default function CameraPreview({
 
   const confirmReplaceSavedAudioProfile = profile => {
     showAlert(
-      'Substituir perfil',
-      `Deseja substituir "${profile.name}" pela configuração personalizada atual?`,
+      t('camera.replaceProfile.title'),
+      t('camera.replaceProfile.message', {name: profile.name}),
       [
-        {text: 'Cancelar', style: 'cancel'},
+        {text: t('common.cancel'), style: 'cancel'},
         {
-          text: 'Substituir',
+          text: t('common.replace'),
           onPress: () => {
             onReplaceSavedAudioProfile?.(profile.id);
             setIsAudioMenuOpen(false);
@@ -474,12 +476,12 @@ export default function CameraPreview({
 
   const confirmDeleteSavedAudioProfile = profile => {
     showAlert(
-      'Apagar perfil',
-      `Deseja apagar "${profile.name}"?`,
+      t('camera.deleteProfile.title'),
+      t('camera.deleteProfile.message', {name: profile.name}),
       [
-        {text: 'Cancelar', style: 'cancel'},
+        {text: t('common.cancel'), style: 'cancel'},
         {
-          text: 'Apagar',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             onDeleteSavedAudioProfile?.(profile.id);
@@ -498,7 +500,9 @@ export default function CameraPreview({
         style={styles.audioQuickBackButton}
       >
         <Icon name="chevron-back" size={14} color={colors.mutedForeground} />
-        <Text style={styles.audioQuickBackButtonText}>Perfis</Text>
+        <Text style={styles.audioQuickBackButtonText}>
+          {t('camera.savedProfiles')}
+        </Text>
       </Pressable>
 
       {shouldShowSaveAudioProfileAction ? (
@@ -507,16 +511,20 @@ export default function CameraPreview({
             onPress={openSaveProfileModal}
             style={styles.audioQuickOption}
           >
-            <Text style={styles.audioQuickOptionLabel}>Salvar configuração</Text>
+            <Text style={styles.audioQuickOptionLabel}>
+              {t('camera.saveCurrentSettings')}
+            </Text>
             <Text style={styles.audioQuickOptionDescription}>
-              Guarda os ajustes atuais como um novo perfil.
+              {t('camera.saveCurrentSettingsDescription')}
             </Text>
           </Pressable>
         ) : (
           <View style={styles.audioQuickOptionDisabled}>
-            <Text style={styles.audioQuickOptionLabel}>Limite atingido</Text>
+            <Text style={styles.audioQuickOptionLabel}>
+              {t('camera.profileLimitReached')}
+            </Text>
             <Text style={styles.audioQuickOptionDescription}>
-              Substitua ou apague um perfil para salvar outro.
+              {t('camera.profileLimitDescription')}
             </Text>
           </View>
         )
@@ -550,7 +558,9 @@ export default function CameraPreview({
                   {profile.name}
                 </Text>
                 <Text style={styles.audioQuickOptionDescription}>
-                  {isSelected ? 'Perfil ativo.' : 'Toque para usar este perfil.'}
+                  {isSelected
+                    ? t('camera.profileActive')
+                    : t('camera.profileTapToUse')}
                 </Text>
               </Pressable>
               <View style={styles.savedAudioProfileActions}>
@@ -560,7 +570,7 @@ export default function CameraPreview({
                     style={styles.savedAudioProfileActionButton}
                   >
                     <Text style={styles.savedAudioProfileActionText}>
-                      Substituir
+                      {t('common.replace')}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -568,14 +578,16 @@ export default function CameraPreview({
                   onPress={() => openRenameProfileModal(profile)}
                   style={styles.savedAudioProfileActionButton}
                 >
-                  <Text style={styles.savedAudioProfileActionText}>Editar</Text>
+                  <Text style={styles.savedAudioProfileActionText}>
+                    {t('common.edit')}
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => confirmDeleteSavedAudioProfile(profile)}
                   style={styles.savedAudioProfileActionButton}
                 >
                   <Text style={styles.savedAudioProfileActionTextDanger}>
-                    Apagar
+                    {t('common.delete')}
                   </Text>
                 </Pressable>
               </View>
@@ -585,7 +597,7 @@ export default function CameraPreview({
       ) : (
         <View style={styles.audioQuickEmptyState}>
           <Text style={styles.audioQuickOptionDescription}>
-            Nenhum perfil salvo ainda.
+            {t('camera.noSavedProfiles')}
           </Text>
         </View>
       )}
@@ -704,10 +716,10 @@ export default function CameraPreview({
     return (
       <View style={styles.center}>
         <Text style={styles.title}>
-          Buscando câmera {currentCameraLabel}...
+          {t('camera.searchingCamera', {camera: currentCameraLabel})}
         </Text>
         <Text style={styles.subtitle}>
-          Se o aparelho não tiver câmera compatível, nada será exibido.
+          {t('camera.noCompatibleCamera')}
         </Text>
       </View>
     );
@@ -778,7 +790,10 @@ export default function CameraPreview({
             ]}
           >
             <Text style={styles.audioStatusPillTitle}>
-              Áudio: {currentAudioSource.shortLabel} · {audioRisk.title}
+              {t('camera.audioStatusTitle', {
+                source: currentAudioSource.shortLabel,
+                risk: audioRisk.title,
+              })}
             </Text>
             <Text style={styles.audioStatusPillText}>
               {audioRisk.description}
@@ -786,7 +801,7 @@ export default function CameraPreview({
             {settings.optimizationMode === 'audio' ||
             settings.optimizationMode === 'both' ? (
               <Text style={styles.audioStatusPillText}>
-                Correção de áudio no salvamento: ativa
+                {t('camera.audioCleanupActive')}
               </Text>
             ) : null}
           </View>
@@ -839,7 +854,9 @@ export default function CameraPreview({
             {!isRecording && isAudioMenuOpen ? (
               <View style={audioQuickMenuStyle}>
                 <Text style={styles.audioQuickMenuTitle}>
-                  {settings.audio ? 'Captação' : 'Áudio'}
+                  {settings.audio
+                    ? t('camera.audioMenu.capture')
+                    : t('common.audio')}
                 </Text>
                 {renderAudioQuickMenuContent()}
               </View>
@@ -848,7 +865,7 @@ export default function CameraPreview({
               <View style={styles.controlsSideSlotPlaceholder} />
             ) : (
               <Pressable
-                accessibilityLabel="Abrir configurações de captação"
+                accessibilityLabel={t('camera.openCaptureSettings')}
                 disabled={isAudioControlDisabled}
                 onPress={() =>
                   setIsAudioMenuOpen(currentValue => !currentValue)
@@ -894,9 +911,12 @@ export default function CameraPreview({
             </Animated.View>
           </Pressable>
           <Pressable
-            accessibilityLabel={`Alternar para câmera ${
-              cameraPosition === 'back' ? 'frontal' : 'traseira'
-            }`}
+            accessibilityLabel={t('camera.toggleCamera', {
+              camera:
+                cameraPosition === 'back'
+                  ? t('common.front')
+                  : t('common.backCamera'),
+            })}
             disabled={isRecording || isProcessingVideo}
             onPress={onToggleCamera}
             style={[
@@ -922,7 +942,9 @@ export default function CameraPreview({
         <View style={styles.profileNameModalBackdrop}>
           <View style={styles.profileNameModalCard}>
             <Text style={styles.profileNameModalTitle}>
-              {profileNameMode === 'rename' ? 'Renomear perfil' : 'Salvar perfil'}
+              {profileNameMode === 'rename'
+                ? t('camera.renameProfile')
+                : t('camera.saveProfile')}
             </Text>
             <TextInput
               autoFocus
@@ -931,7 +953,7 @@ export default function CameraPreview({
                 setProfileNameInput(value);
                 setProfileNameError('');
               }}
-              placeholder="Nome do perfil"
+              placeholder={t('camera.profileNamePlaceholder')}
               placeholderTextColor={colors.mutedForeground}
               style={styles.profileNameInput}
               value={profileNameInput}
@@ -944,14 +966,16 @@ export default function CameraPreview({
                 onPress={closeProfileNameModal}
                 style={styles.profileNameModalButton}
               >
-                <Text style={styles.profileNameModalButtonText}>Cancelar</Text>
+                <Text style={styles.profileNameModalButtonText}>
+                  {t('common.cancel')}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={submitProfileName}
                 style={styles.profileNameModalButtonPrimary}
               >
                 <Text style={styles.profileNameModalButtonPrimaryText}>
-                  Salvar
+                  {t('common.save')}
                 </Text>
               </Pressable>
             </View>

@@ -1,24 +1,43 @@
+import {translate} from '../i18n/translations';
+
 export const AUDIO_LIMITER_PRESET_OPTIONS = [
   {
     value: 'standard',
-    label: 'Padrão',
-    description: 'Equilibra redução leve de ruído, suavização de clipping e limitador.',
+    labelKey: 'limiter.standard.label',
+    descriptionKey: 'limiter.standard.description',
   },
   {
     value: 'gentle',
-    label: 'Suave',
-    description: 'Aplica correções discretas, preservando mais dinâmica.',
+    labelKey: 'limiter.gentle.label',
+    descriptionKey: 'limiter.gentle.description',
   },
   {
     value: 'strong',
-    label: 'Forte',
-    description: 'Reforça redução de ruído baixo e suavização de picos clipados.',
+    labelKey: 'limiter.strong.label',
+    descriptionKey: 'limiter.strong.description',
   },
 ];
 
-export function getAudioLimiterPresetOption(value) {
-  return (
-    AUDIO_LIMITER_PRESET_OPTIONS.find(option => option.value === value) ??
-    AUDIO_LIMITER_PRESET_OPTIONS[0]
+function localizeLimiterOption(option, t) {
+  const tx = typeof t === 'function' ? t : translate;
+
+  return {
+    ...option,
+    label: tx(option.labelKey),
+    description: tx(option.descriptionKey),
+  };
+}
+
+export function getAudioLimiterPresetOptions(t) {
+  return AUDIO_LIMITER_PRESET_OPTIONS.map(option =>
+    localizeLimiterOption(option, t),
   );
+}
+
+export function getAudioLimiterPresetOption(value, t) {
+  const option =
+    AUDIO_LIMITER_PRESET_OPTIONS.find(item => item.value === value) ??
+    AUDIO_LIMITER_PRESET_OPTIONS[0];
+
+  return localizeLimiterOption(option, t);
 }

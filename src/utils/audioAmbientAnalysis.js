@@ -1,4 +1,5 @@
 import {UNPROCESSED_AUDIO_SOURCE} from '../constants/audioSources';
+import {translate} from '../i18n/translations';
 
 const SAFE_CAPTURE_SETTINGS = {
   audioChannels: 'mono',
@@ -87,10 +88,10 @@ export function analyzeAmbientAudioSamples(samples) {
         },
         audioLimiterPreset: 'strong',
         normalizeAudioLoudness: true,
-        title: 'Áudio protegido',
+        title: translate('ambient.protected.title'),
         description:
-          'O ambiente está alto e com picos. A sugestão automática é reduzir o ganho e usar captação sem processamento para preservar melhor o áudio.',
-        confidence: 'alta',
+          translate('ambient.protectedHigh.description'),
+        confidence: translate('ambient.confidenceHigh'),
       }),
     };
   }
@@ -105,10 +106,10 @@ export function analyzeAmbientAudioSamples(samples) {
         },
         audioLimiterPreset: 'standard',
         normalizeAudioLoudness: true,
-        title: 'Áudio protegido',
+        title: translate('ambient.protected.title'),
         description:
-          'O ambiente está alto, mas sem clipping constante. A sugestão automática é usar captação sem processamento e reduzir o ganho sem chegar ao ajuste mais agressivo.',
-        confidence: 'alta',
+          translate('ambient.protected.description'),
+        confidence: translate('ambient.confidenceHigh'),
       }),
     };
   }
@@ -120,10 +121,10 @@ export function analyzeAmbientAudioSamples(samples) {
         captureSettingsPatch: REDUCED_GAIN_SETTINGS,
         audioLimiterPreset: 'standard',
         normalizeAudioLoudness: true,
-        title: 'Ambiente moderado',
+        title: translate('ambient.moderate.title'),
         description:
-          'O ambiente tem volume moderado. A sugestão automática é só reduzir um pouco o ganho e manter a captação atual.',
-        confidence: 'média',
+          translate('ambient.moderate.description'),
+        confidence: translate('ambient.confidenceMedium'),
       }),
     };
   }
@@ -134,10 +135,10 @@ export function analyzeAmbientAudioSamples(samples) {
       ...buildSuggestion({
         audioLimiterPreset: 'gentle',
         normalizeAudioLoudness: false,
-        title: 'Ambiente suave',
+        title: translate('ambient.soft.title'),
         description:
-          'O ambiente está limpo ou com pouco ruído. A sugestão automática é preservar a captação atual e evitar ajustes agressivos.',
-        confidence: 'alta',
+          translate('ambient.soft.description'),
+        confidence: translate('ambient.confidenceHigh'),
       }),
     };
   }
@@ -148,10 +149,10 @@ export function analyzeAmbientAudioSamples(samples) {
       captureSettingsPatch: REDUCED_GAIN_SETTINGS,
       audioLimiterPreset: 'gentle',
       normalizeAudioLoudness: false,
-      title: 'Ambiente levemente variável',
+      title: translate('ambient.variable.title'),
       description:
-        'O ambiente tem alguma variação, mas não justifica trocar canal, taxa de amostragem ou fonte. A sugestão automática é apenas reduzir levemente o ganho.',
-      confidence: 'média',
+        translate('ambient.variable.description'),
+      confidence: translate('ambient.confidenceMedium'),
     }),
   };
 }

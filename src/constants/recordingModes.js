@@ -1,20 +1,22 @@
+import {translate} from '../i18n/translations';
+
 export const RECORDING_MODE_OPTIONS = [
   {
     value: 'normal',
-    label: 'Normal',
-    indicatorLabel: '',
+    labelKey: 'recording.normal.label',
+    indicatorLabelKey: '',
     icon: 'radio-button-on-outline',
   },
   {
     value: 'slowMotion',
-    label: 'Câmera lenta',
-    indicatorLabel: 'Câmera lenta',
+    labelKey: 'recording.slowMotion.label',
+    indicatorLabelKey: 'recording.slowMotion.label',
     icon: 'play-skip-back-outline',
   },
   {
     value: 'timelapse',
-    label: 'Time-lapse',
-    indicatorLabel: 'Time-lapse',
+    labelKey: 'recording.timelapse.label',
+    indicatorLabelKey: 'recording.timelapse.label',
     icon: 'timer-outline',
   },
 ];
@@ -51,11 +53,30 @@ export const SPECIAL_RECORDING_PRESETS = {
   },
 };
 
-export function getRecordingModeOption(value) {
-  return (
-    RECORDING_MODE_OPTIONS.find(option => option.value === value) ??
-    RECORDING_MODE_OPTIONS[0]
+function localizeRecordingModeOption(option, t) {
+  const tx = typeof t === 'function' ? t : translate;
+
+  return {
+    ...option,
+    label: tx(option.labelKey),
+    indicatorLabel: option.indicatorLabelKey
+      ? tx(option.indicatorLabelKey)
+      : '',
+  };
+}
+
+export function getRecordingModeOptions(t) {
+  return RECORDING_MODE_OPTIONS.map(option =>
+    localizeRecordingModeOption(option, t),
   );
+}
+
+export function getRecordingModeOption(value, t) {
+  const option =
+    RECORDING_MODE_OPTIONS.find(item => item.value === value) ??
+    RECORDING_MODE_OPTIONS[0];
+
+  return localizeRecordingModeOption(option, t);
 }
 
 export function getCaptureSettingsForRecordingMode(settings) {

@@ -1,3 +1,9 @@
+import {getCurrentLanguage} from '../i18n/translations';
+
+function getDateLocale() {
+  return getCurrentLanguage() === 'pt-BR' ? 'pt-BR' : 'en-US';
+}
+
 export function formatSize(bytes) {
   if (bytes === 0) return '0 B';
   if (!bytes) return '—';
@@ -13,7 +19,7 @@ export function formatDate(dateLike) {
   if (!dateLike) return '—';
 
   const date = new Date(dateLike);
-  return new Intl.DateTimeFormat('pt-BR', {
+  return new Intl.DateTimeFormat(getDateLocale(), {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date);
@@ -23,7 +29,7 @@ export function formatFriendlyDate(dateLike) {
   if (!dateLike) return '—';
 
   const date = new Date(dateLike);
-  return new Intl.DateTimeFormat('pt-BR', {
+  return new Intl.DateTimeFormat(getDateLocale(), {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',

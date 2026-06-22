@@ -1,57 +1,76 @@
+import {translate} from '../i18n/translations';
+
 export const AUDIO_SOURCE_OPTIONS = [
   {
     value: 0,
     key: 'DEFAULT',
-    label: 'Padrão',
-    shortLabel: 'Padrão',
-    description: 'Processamento automático.',
-    helper: 'Bom para uso geral quando você não precisa de muito controle do áudio.',
+    labelKey: 'audioSource.default.label',
+    shortLabelKey: 'audioSource.default.shortLabel',
+    descriptionKey: 'audioSource.default.description',
+    helperKey: 'audioSource.default.helper',
     isRecommended: false,
   },
   {
     value: 1,
     key: 'MIC',
-    label: 'Microfone',
-    shortLabel: 'Mic',
-    description: 'Captura do microfone com ajustes do sistema.',
-    helper: 'Pode aplicar ganho automático, cancelamento de eco e supressão de ruído.',
+    labelKey: 'audioSource.mic.label',
+    shortLabelKey: 'audioSource.mic.shortLabel',
+    descriptionKey: 'audioSource.mic.description',
+    helperKey: 'audioSource.mic.helper',
     isRecommended: false,
   },
   {
     value: 5,
     key: 'CAMCORDER',
-    label: 'Câmera',
-    shortLabel: 'Câmera',
-    description: 'Modo otimizado para gravação casual de vídeo.',
-    helper: 'Costuma ser bom em cenários comuns, mas pode achatar dinâmica em ambientes muito altos.',
+    labelKey: 'audioSource.camera.label',
+    shortLabelKey: 'audioSource.camera.shortLabel',
+    descriptionKey: 'audioSource.camera.description',
+    helperKey: 'audioSource.camera.helper',
     isRecommended: false,
   },
   {
     value: 6,
     key: 'VOICE_RECOGNITION',
-    label: 'Reconhecimento de voz',
-    shortLabel: 'Voz',
-    description: 'Favorece fala e inteligibilidade.',
-    helper: 'Não é indicado para música alta ou ambientes com muito grave.',
+    labelKey: 'audioSource.voice.label',
+    shortLabelKey: 'audioSource.voice.shortLabel',
+    descriptionKey: 'audioSource.voice.description',
+    helperKey: 'audioSource.voice.helper',
     isRecommended: false,
   },
   {
     value: 9,
     key: 'UNPROCESSED',
-    label: 'Sem processamento',
-    shortLabel: 'Sem proc.',
-    description: 'Captura o áudio mais puro possível do microfone.',
-    helper: 'Recomendado e melhor escolha para shows, baladas e lugares com som alto.',
+    labelKey: 'audioSource.unprocessed.label',
+    shortLabelKey: 'audioSource.unprocessed.shortLabel',
+    descriptionKey: 'audioSource.unprocessed.description',
+    helperKey: 'audioSource.unprocessed.helper',
     isRecommended: true,
   },
 ];
 
 export const UNPROCESSED_AUDIO_SOURCE = 9;
 
-export function getAudioSourceOption(value) {
-  return (
-    AUDIO_SOURCE_OPTIONS.find(option => option.value === value) ??
-    AUDIO_SOURCE_OPTIONS.find(option => option.value === UNPROCESSED_AUDIO_SOURCE) ??
-    AUDIO_SOURCE_OPTIONS[0]
-  );
+function localizeAudioSourceOption(option, t) {
+  const tx = typeof t === 'function' ? t : translate;
+
+  return {
+    ...option,
+    label: tx(option.labelKey),
+    shortLabel: tx(option.shortLabelKey),
+    description: tx(option.descriptionKey),
+    helper: tx(option.helperKey),
+  };
+}
+
+export function getAudioSourceOptions(t) {
+  return AUDIO_SOURCE_OPTIONS.map(option => localizeAudioSourceOption(option, t));
+}
+
+export function getAudioSourceOption(value, t) {
+  const option =
+    AUDIO_SOURCE_OPTIONS.find(item => item.value === value) ??
+    AUDIO_SOURCE_OPTIONS.find(item => item.value === UNPROCESSED_AUDIO_SOURCE) ??
+    AUDIO_SOURCE_OPTIONS[0];
+
+  return localizeAudioSourceOption(option, t);
 }

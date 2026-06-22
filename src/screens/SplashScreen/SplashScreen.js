@@ -3,11 +3,13 @@ import {Image, Linking, View} from 'react-native';
 
 import {useCameraSettings} from '../../context/CameraSettingsContext';
 import {useCustomAlert} from '../../context/CustomAlertContext';
+import {useI18n} from '../../i18n/I18nContext';
 import {ensureStartupPermissions} from '../../utils/appPermissions';
 import {styles} from './styles';
 
 export default function SplashScreen({navigation}) {
   const {showAlert} = useCustomAlert();
+  const {t} = useI18n();
   const {isHydrated, settings} = useCameraSettings();
   const hasRunRef = useRef(false);
 
@@ -33,18 +35,18 @@ export default function SplashScreen({navigation}) {
 
         if (!cameraOk) {
           showAlert(
-            'Permissão de câmera necessária',
-            'A câmera é essencial para o funcionamento do app. Toque em "Abrir configurações" e permita o acesso à câmera para continuar usando o Videonly.',
+            t('splash.cameraPermissionTitle'),
+            t('splash.cameraPermissionMessage'),
             [
               {
-                text: 'Agora não',
+                text: t('camera.notNow'),
                 style: 'cancel',
                 onPress: () => {
                   navigation.replace('Camera');
                 },
               },
               {
-                text: 'Abrir configurações',
+                text: t('camera.openSettings'),
                 onPress: () => {
                   Linking.openSettings().catch(error => {
                     console.warn(
@@ -74,7 +76,7 @@ export default function SplashScreen({navigation}) {
     return () => {
       isCancelled = true;
     };
-  }, [isHydrated, navigation, settings.audio, showAlert]);
+  }, [isHydrated, navigation, settings.audio, showAlert, t]);
 
   return (
     <View style={styles.container}>

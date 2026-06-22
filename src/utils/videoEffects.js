@@ -1,4 +1,5 @@
 import {NativeModules, Platform} from 'react-native';
+import {translate} from '../i18n/translations';
 
 const {MediaProcessingModule} = NativeModules;
 
@@ -13,7 +14,7 @@ export async function applySlowMotionEffect(
   }
 
   if (!MediaProcessingModule?.retimeVideo) {
-    throw new Error('Processamento de câmera lenta não está disponível.');
+    throw new Error(translate('errors.slowMotionUnavailable'));
   }
 
   const capture = Number(captureFps);
@@ -41,7 +42,7 @@ export async function applyTimelapseEffect(
   }
 
   if (!MediaProcessingModule?.retimeVideo) {
-    throw new Error('Processamento de time-lapse não está disponível.');
+    throw new Error(translate('errors.timelapseUnavailable'));
   }
 
   const speed = Number(speedFactor);

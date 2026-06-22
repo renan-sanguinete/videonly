@@ -1,22 +1,22 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 
-import {
-  AUDIO_SOURCE_OPTIONS,
-  UNPROCESSED_AUDIO_SOURCE,
-} from '../../constants/audioSources';
+import {getAudioSourceOptions} from '../../constants/audioSources';
+import {useI18n} from '../../i18n/I18nContext';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 
 const {colors, radii, typography} = cinematicTheme;
 
 export default function AudioSourcePicker({selectedSource, onSourceChange}) {
+  const {t} = useI18n();
+  const audioSourceOptions = getAudioSourceOptions(t);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Fonte de áudio</Text>
+      <Text style={styles.title}>{t('audioSourcePicker.title')}</Text>
 
-      {AUDIO_SOURCE_OPTIONS.map(option => {
+      {audioSourceOptions.map(option => {
         const selected = selectedSource === option.value;
-        const highlighted = option.value === UNPROCESSED_AUDIO_SOURCE;
 
         return (
           <Pressable
@@ -51,10 +51,11 @@ export default function AudioSourcePicker({selectedSource, onSourceChange}) {
       })}
 
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>Proteção contra clipping</Text>
+        <Text style={styles.infoTitle}>
+          {t('audioSourcePicker.infoTitle')}
+        </Text>
         <Text style={styles.infoText}>
-          Nesta fase, a melhor prevenção é combinar Sem processamento com captação em mono.
-          Isso reduz o risco de áudio abafado, graves cortados e distorção em ambientes de alto volume.
+          {t('audioSourcePicker.infoText')}
         </Text>
       </View>
     </View>

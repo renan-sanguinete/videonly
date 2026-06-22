@@ -2,6 +2,7 @@ import {Platform} from 'react-native';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 
 import {canManageAndroidMedia, ensureCameraRollVideoPermission} from './appPermissions';
+import {translate} from '../i18n/translations';
 
 export const VIDEONLY_ALBUM = 'Videonly';
 const DEFAULT_PAGE_SIZE = 20;
@@ -40,7 +41,7 @@ export async function loadVideosPageFromCameraRoll({
 } = {}) {
   const granted = await ensureCameraRollVideoPermission();
   if (!granted) {
-    throw new Error('Permissão para ler vídeos da galeria não foi concedida.');
+    throw new Error(translate('errors.galleryReadPermission'));
   }
 
   const params = {
@@ -99,7 +100,7 @@ export async function loadSavedVideosFromCameraRoll(options = {}) {
 export async function saveVideoToCameraRoll(path) {
   const granted = await ensureCameraRollVideoPermission();
   if (!granted) {
-    throw new Error('Permissão para salvar vídeos na galeria não foi concedida.');
+    throw new Error(translate('errors.gallerySavePermission'));
   }
 
   return CameraRoll.saveAsset(path, {
@@ -111,7 +112,7 @@ export async function saveVideoToCameraRoll(path) {
 export async function deleteVideoFromCameraRoll(uri) {
   const granted = await ensureCameraRollVideoPermission();
   if (!granted) {
-    throw new Error('Permissão para excluir vídeos da galeria não foi concedida.');
+    throw new Error(translate('errors.galleryDeletePermission'));
   }
 
   const canManageMedia = await canManageAndroidMedia();

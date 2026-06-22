@@ -16,6 +16,7 @@ import LoadingModal from '../../components/LoadingModal/LoadingModal';
 import VideoCard from '../../components/VideoCard/VideoCard';
 import {useCameraSettings} from '../../context/CameraSettingsContext';
 import {useCustomAlert} from '../../context/CustomAlertContext';
+import {useI18n} from '../../i18n/I18nContext';
 import {
   canManageAndroidMedia,
   openAndroidManageMediaSettings,
@@ -32,10 +33,10 @@ import {styles} from './styles';
 
 const {colors} = cinematicTheme;
 const FILTER_OPTIONS = [
-  {label: 'Todos', value: 'all'},
-  {label: 'Hoje', value: 'today'},
-  {label: 'Esta semana', value: 'week'},
-  {label: 'Galeria', value: 'gallery'},
+  {labelKey: 'library.filter.all', value: 'all'},
+  {labelKey: 'library.filter.today', value: 'today'},
+  {labelKey: 'library.filter.week', value: 'week'},
+  {labelKey: 'library.filter.gallery', value: 'gallery'},
 ];
 const PAGE_SIZE = 20;
 
@@ -47,16 +48,16 @@ function isSameDay(left, right) {
   );
 }
 
-function getOptimizationLoadingTitle(mode) {
+function getOptimizationLoadingTitle(mode, t) {
   if (mode === 'audio') {
-    return 'Otimizando áudio';
+    return t('camera.loading.audio');
   }
 
   if (mode === 'both') {
-    return 'Otimizando vídeo e áudio';
+    return t('camera.loading.both');
   }
 
-  return 'Otimizando vídeo';
+  return t('camera.loading.video');
 }
 
 function getVideoExtensionFromItem(item) {
@@ -82,6 +83,7 @@ function mergeVideos(currentVideos, nextVideos) {
 }
 
 export default function LibraryScreen({navigation}) {
+  const {t} = useI18n();
   const [videos, setVideos] = useState([]);
   const [selectedUris, setSelectedUris] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -104,6 +106,14 @@ export default function LibraryScreen({navigation}) {
   const {showAlert} = useCustomAlert();
   const insets = useSafeAreaInsets();
   const activeSource = activeFilter === 'gallery' ? 'gallery' : 'videonly';
+  const filterOptions = useMemo(
+    () =>
+      FILTER_OPTIONS.map(option => ({
+        ...option,
+        label: t(option.labelKey),
+      })),
+    [t],
+  );
 
   const selectedCount = selectedUris.length;
   const totalSizeMb = useMemo(
@@ -174,13 +184,13 @@ export default function LibraryScreen({navigation}) {
       setPageInfo(nextPage.pageInfo);
     } catch (error) {
       showAlert(
-        'Erro ao carregar vídeos',
-        error?.message || 'Não foi possível carregar os vídeos da galeria.',
+        t('library.loadErrorTitle'),
+        error?.message || t('library.loadErrorMessage'),
       );
     } finally {
       setIsLoading(false);
     }
-  }, [activeSource, showAlert]);
+  }, [activeSource, showAlert, t]);
 
   const clearSelection = useCallback(() => {
     setSelectedUris([]);
@@ -208,12 +218,12 @@ export default function LibraryScreen({navigation}) {
     }
 
     showAlert(
-      'Permissão extra para excluir',
-      'Sem o acesso especial "Gerenciar mídia", o Android pode continuar mostrando uma confirmação adicional ao excluir vídeos.',
+      t('camera.manageMedia.extraTitle'),
+      t('camera.manageMedia.extraMessage'),
       [
-        {text: 'Fechar', style: 'cancel'},
+        {text: t('common.close'), style: 'cancel'},
         {
-          text: 'Abrir configurações',
+          text: t('camera.openSettings'),
           onPress: () => {
             openAndroidManageMediaSettings().catch(openError => {
               console.warn(
@@ -225,7 +235,7 @@ export default function LibraryScreen({navigation}) {
         },
       ],
     );
-  }, [showAlert]);
+  }, [showAlert, t]);
 
   const deleteVideos = useCallback(async () => {
     const urisToDelete = [...selectedUris];
@@ -255,14 +265,14 @@ export default function LibraryScreen({navigation}) {
       }
     } catch (error) {
       showAlert(
-        'Erro',
-        error?.message || 'Não foi possível excluir os vídeos selecionados.',
+        t('common.error'),
+        error?.message || t('library.deleteSelectedError'),
       );
     } finally {
       setIsDeleting(false);
       setDeleteProgress({current: 0, total: 0});
     }
-  }, [clearSelection, load, maybeWarnAboutManageMedia, selectedUris, showAlert]);
+  }, [clearSelection, load, maybeWarnAboutManageMedia, selectedUris, showAlert, t]);
 
   const confirmDeleteSelected = useCallback(() => {
     if (selectedCount === 0 || isDeleting) {
@@ -270,14 +280,14 @@ export default function LibraryScreen({navigation}) {
     }
 
     showAlert(
-      'Excluir vídeos',
+      t('library.deleteSelectedTitle'),
       selectedCount === 1
-        ? 'Excluir o vídeo selecionado?'
-        : `Excluir os ${selectedCount} vídeos selecionados?`,
+        ? t('library.deleteOneMessage')
+        : t('library.deleteManyMessage', {count: selectedCount}),
       [
-        {text: 'Cancelar', style: 'cancel'},
+        {text: t('common.cancel'), style: 'cancel'},
         {
-          text: 'Excluir',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             deleteVideos().catch(error => {
@@ -287,7 +297,7 @@ export default function LibraryScreen({navigation}) {
         },
       ],
     );
-  }, [deleteVideos, isDeleting, selectedCount, showAlert]);
+  }, [deleteVideos, isDeleting, selectedCount, showAlert, t]);
 
   useEffect(() => {
     setVideos([]);
@@ -346,12 +356,12 @@ export default function LibraryScreen({navigation}) {
         await openVideoUri(item.uri);
       } catch (error) {
         showAlert(
-          'Erro ao abrir vídeo',
-          error?.message || 'Não foi possível abrir este vídeo.',
+          t('library.openErrorTitle'),
+          error?.message || t('library.openErrorMessage'),
         );
       }
     },
-    [showAlert],
+    [showAlert, t],
   );
 
   const onShare = useCallback(
@@ -360,12 +370,12 @@ export default function LibraryScreen({navigation}) {
         await shareVideo(item);
       } catch (error) {
         showAlert(
-          'Erro ao compartilhar',
-          error?.message || 'Não foi possível compartilhar este vídeo.',
+          t('library.shareErrorTitle'),
+          error?.message || t('library.shareErrorMessage'),
         );
       }
     },
-    [showAlert],
+    [showAlert, t],
   );
 
   const deleteSingleVideo = useCallback(
@@ -388,15 +398,15 @@ export default function LibraryScreen({navigation}) {
         }
       } catch (error) {
         showAlert(
-          'Erro',
-          error?.message || 'Não foi possível excluir este vídeo.',
+          t('common.error'),
+          error?.message || t('library.deleteOneError'),
         );
       } finally {
         setIsDeleting(false);
         setDeleteProgress({current: 0, total: 0});
       }
     },
-    [isDeleting, load, maybeWarnAboutManageMedia, showAlert],
+    [isDeleting, load, maybeWarnAboutManageMedia, showAlert, t],
   );
 
   const confirmDeleteVideo = useCallback(
@@ -405,10 +415,10 @@ export default function LibraryScreen({navigation}) {
         return;
       }
 
-      showAlert('Excluir vídeo', 'Excluir o vídeo selecionado?', [
-        {text: 'Cancelar', style: 'cancel'},
+      showAlert(t('camera.deleteVideoTitle'), t('library.deleteOneMessage'), [
+        {text: t('common.cancel'), style: 'cancel'},
         {
-          text: 'Excluir',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             deleteSingleVideo(item).catch(error => {
@@ -418,7 +428,7 @@ export default function LibraryScreen({navigation}) {
         },
       ]);
     },
-    [deleteSingleVideo, isDeleting, showAlert],
+    [deleteSingleVideo, isDeleting, showAlert, t],
   );
 
   const optimizeSelectedVideo = useCallback(
@@ -446,16 +456,16 @@ export default function LibraryScreen({navigation}) {
         await load({showLoader: false});
 
         showAlert(
-          'Otimização concluída',
-          'Uma nova cópia otimizada foi salva. O vídeo original foi mantido.',
-          [{text: 'OK'}],
+          t('camera.optimizationDoneTitle'),
+          t('camera.optimizationDoneMessage'),
+          [{text: t('common.ok')}],
         );
       } catch (error) {
         showAlert(
-          'Otimização indisponível',
+          t('camera.optimizationUnavailable'),
           error?.message ||
-            'Não foi possível otimizar este vídeo. O original foi mantido.',
-          [{text: 'OK'}],
+            t('camera.optimizationFallback'),
+          [{text: t('common.ok')}],
         );
       } finally {
         setIsOptimizing(false);
@@ -481,6 +491,7 @@ export default function LibraryScreen({navigation}) {
       settings.audioLimiterPreset,
       settings.normalizeAudioLoudness,
       showAlert,
+      t,
     ],
   );
 
@@ -540,7 +551,7 @@ export default function LibraryScreen({navigation}) {
             {renderPanelAction({
               disabled,
               icon: 'musical-notes-outline',
-              label: 'Áudio',
+              label: t('common.audio'),
               onPress: () => {
                 optimizeSelectedVideo(item, 'audio').catch(error => {
                   console.warn('Falha ao otimizar áudio na biblioteca.', error);
@@ -550,7 +561,7 @@ export default function LibraryScreen({navigation}) {
             {renderPanelAction({
               disabled,
               icon: 'videocam-outline',
-              label: 'Vídeo',
+              label: t('common.video'),
               onPress: () => {
                 optimizeSelectedVideo(item, 'video').catch(error => {
                   console.warn('Falha ao otimizar vídeo na biblioteca.', error);
@@ -560,7 +571,7 @@ export default function LibraryScreen({navigation}) {
             {renderPanelAction({
               disabled,
               icon: 'layers-outline',
-              label: 'V+A',
+              label: t('common.videoAudioShort'),
               onPress: () => {
                 optimizeSelectedVideo(item, 'both').catch(error => {
                   console.warn('Falha ao otimizar mídia na biblioteca.', error);
@@ -570,7 +581,7 @@ export default function LibraryScreen({navigation}) {
             {renderPanelAction({
               disabled,
               icon: 'close-outline',
-              label: 'Fechar',
+              label: t('common.close'),
               onPress: () => setIsActionOptimizationOpen(false),
             })}
           </View>
@@ -582,7 +593,7 @@ export default function LibraryScreen({navigation}) {
           {renderPanelAction({
             disabled,
             icon: 'folder-open-outline',
-            label: 'Abrir',
+            label: t('common.open'),
             onPress: () => {
               setActionVideoUri(null);
               onOpen(item).catch(error => {
@@ -593,13 +604,13 @@ export default function LibraryScreen({navigation}) {
           {renderPanelAction({
             disabled,
             icon: 'color-wand-outline',
-            label: 'Otimizar',
+            label: t('common.optimize'),
             onPress: () => setIsActionOptimizationOpen(true),
           })}
           {renderPanelAction({
             disabled,
             icon: 'share-social-outline',
-            label: 'Compart.',
+            label: t('common.shareShort'),
             onPress: () => {
               setActionVideoUri(null);
               onShare(item).catch(error => {
@@ -611,13 +622,13 @@ export default function LibraryScreen({navigation}) {
             danger: true,
             disabled,
             icon: 'trash-outline',
-            label: 'Excluir',
+            label: t('common.delete'),
             onPress: () => confirmDeleteVideo(item),
           })}
           {renderPanelAction({
             disabled,
             icon: 'close-outline',
-            label: 'Cancelar',
+            label: t('common.cancel'),
             onPress: () => {
               setActionVideoUri(null);
               setIsActionOptimizationOpen(false);
@@ -635,6 +646,7 @@ export default function LibraryScreen({navigation}) {
       onShare,
       optimizeSelectedVideo,
       renderPanelAction,
+      t,
     ],
   );
 
@@ -663,11 +675,14 @@ export default function LibraryScreen({navigation}) {
 
   const deletingMessage = useMemo(() => {
     if (deleteProgress.total === 0) {
-      return 'Aguarde enquanto removemos os vídeos selecionados.';
+      return t('library.loadingDeleteDefault');
     }
 
-    return `Removendo ${deleteProgress.current} de ${deleteProgress.total} vídeos selecionados.`;
-  }, [deleteProgress]);
+    return t('library.loadingDeleteProgress', {
+      current: deleteProgress.current,
+      total: deleteProgress.total,
+    });
+  }, [deleteProgress, t]);
 
   return (
     <View style={styles.container}>
@@ -679,19 +694,19 @@ export default function LibraryScreen({navigation}) {
       >
         <View style={styles.headerTopRow}>
           <Pressable
-            accessibilityLabel="Voltar"
+            accessibilityLabel={t('common.back')}
             hitSlop={10}
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
             <Icon name="chevron-back" size={20} color="#FAF8F5" />
           </Pressable>
-          <Text style={styles.eyebrow}>Biblioteca</Text>
+          <Text style={styles.eyebrow}>{t('library.title')}</Text>
           <View style={styles.headerRightGroup}>
             <Text style={styles.headerMeta}>{headerMetaText}</Text>
             {selectedCount > 0 ? (
               <Pressable
-                accessibilityLabel="Excluir vídeos selecionados"
+                accessibilityLabel={t('library.deleteSelected')}
                 disabled={isDeleting}
                 hitSlop={10}
                 onPress={confirmDeleteSelected}
@@ -713,7 +728,7 @@ export default function LibraryScreen({navigation}) {
             ) : null}
           </View>
         </View>
-        <Text style={styles.headerTitle}>Vídeos salvos</Text>
+        <Text style={styles.headerTitle}>{t('library.savedVideos')}</Text>
         <View style={styles.storageTrack}>
           <View
             style={[
@@ -723,7 +738,7 @@ export default function LibraryScreen({navigation}) {
           />
         </View>
         <View style={styles.filterChips}>
-          {FILTER_OPTIONS.map(option => {
+          {filterOptions.map(option => {
             const isSelected = activeFilter === option.value;
 
             return (
@@ -750,12 +765,12 @@ export default function LibraryScreen({navigation}) {
       </View>
       <LoadingModal
         message={deletingMessage}
-        title="Excluindo vídeos"
+        title={t('library.loadingDeleteTitle')}
         visible={isDeleting}
       />
       <LoadingModal
-        message="Uma nova cópia será salva. O vídeo original será mantido."
-        title={getOptimizationLoadingTitle(processingOptimizationMode)}
+        message={t('library.optimizingCopy')}
+        title={getOptimizationLoadingTitle(processingOptimizationMode, t)}
         visible={isOptimizing}
       />
 
@@ -811,12 +826,14 @@ export default function LibraryScreen({navigation}) {
                 <Icon name="radio-button-on-outline" size={28} color={colors.accent} />
               </View>
               <Text style={styles.emptyTitle}>
-                {videos.length === 0 ? 'Nenhum vídeo ainda' : 'Nada neste filtro'}
+                {videos.length === 0
+                  ? t('library.emptyTitle.none')
+                  : t('library.emptyTitle.filter')}
               </Text>
               <Text style={styles.emptyText}>
                 {videos.length === 0
-                  ? 'Toque no botão de gravação para criar o primeiro vídeo.'
-                  : 'Tente trocar o filtro para ver outros vídeos salvos.'}
+                  ? t('library.emptyText.none')
+                  : t('library.emptyText.filter')}
               </Text>
             </View>
           }

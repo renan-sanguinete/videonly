@@ -21,12 +21,14 @@ import {
   getMediaOptimizationPatch,
 } from '../constants/mediaOptimization';
 import {getRecordingModeOption} from '../constants/recordingModes';
+import {detectDeviceLanguage, normalizeLanguage} from '../i18n/translations';
 
 const CameraSettingsContext = createContext(null);
 const CAMERA_SETTINGS_STORAGE_KEY = '@videonly/camera-settings';
 const SAVED_AUDIO_PROFILES_STORAGE_KEY = '@videonly/saved-audio-profiles';
 
 const DEFAULT_SETTINGS = {
+  language: detectDeviceLanguage(),
   audio: true,
   audioProfile: 'live-safe',
   audioCustomProfileId: null,
@@ -106,6 +108,7 @@ function normalizePersistedSettings(parsedSettings) {
   }
 
   const normalized = {...parsedSettings};
+  normalized.language = normalizeLanguage(normalized.language);
   normalized.video = true;
   normalized.preview = true;
   normalized.recordingMode = getRecordingModeOption(
@@ -276,7 +279,15 @@ export function CameraSettingsProvider({children}) {
   }, [isHydrated, savedAudioProfiles]);
 
   const resetSettings = useCallback(() => {
-    setSettings(applyAudioProfile(DEFAULT_SETTINGS, 'standard'));
+    setSettings(prev =>
+      applyAudioProfile(
+        {
+          ...DEFAULT_SETTINGS,
+          language: prev.language,
+        },
+        'standard',
+      ),
+    );
   }, []);
 
   const saveAudioProfile = useCallback(name => {

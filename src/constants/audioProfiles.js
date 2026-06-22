@@ -1,4 +1,5 @@
 import { UNPROCESSED_AUDIO_SOURCE } from './audioSources';
+import {translate} from '../i18n/translations';
 
 export const MAX_SAVED_AUDIO_PROFILES = 3;
 
@@ -18,8 +19,8 @@ export const AUDIO_PROFILE_SETTING_KEYS = [
 export const AUDIO_PROFILE_OPTIONS = [
   {
     value: 'standard',
-    label: 'Padrão',
-    description: 'Mais neutro para uso geral e ambientes normais.',
+    labelKey: 'audioProfile.standard.label',
+    descriptionKey: 'audioProfile.standard.description',
     settings: {
       audioChannels: 'stereo',
       audioSampleRate: '44100',
@@ -32,9 +33,8 @@ export const AUDIO_PROFILE_OPTIONS = [
   },
   {
     value: 'live-safe',
-    label: 'Show ao vivo',
-    description:
-      'Prioriza menos processamento e prepara o áudio para correção ao salvar.',
+    labelKey: 'audioProfile.liveSafe.label',
+    descriptionKey: 'audioProfile.liveSafe.description',
     settings: {
       audioChannels: 'mono',
       audioSampleRate: '48000',
@@ -46,17 +46,34 @@ export const AUDIO_PROFILE_OPTIONS = [
   },
   {
     value: 'custom',
-    label: 'Personalizado',
-    description: 'Mantém os ajustes manuais escolhidos por você.',
+    labelKey: 'audioProfile.custom.label',
+    descriptionKey: 'audioProfile.custom.description',
     settings: {},
   },
 ];
 
-export function getAudioProfileOption(value) {
-  return (
-    AUDIO_PROFILE_OPTIONS.find(option => option.value === value) ??
-    AUDIO_PROFILE_OPTIONS[1]
+function localizeAudioProfileOption(option, t) {
+  const tx = typeof t === 'function' ? t : translate;
+
+  return {
+    ...option,
+    label: tx(option.labelKey),
+    description: tx(option.descriptionKey),
+  };
+}
+
+export function getAudioProfileOptions(t) {
+  return AUDIO_PROFILE_OPTIONS.map(option =>
+    localizeAudioProfileOption(option, t),
   );
+}
+
+export function getAudioProfileOption(value, t) {
+  const option =
+    AUDIO_PROFILE_OPTIONS.find(item => item.value === value) ??
+    AUDIO_PROFILE_OPTIONS[1];
+
+  return localizeAudioProfileOption(option, t);
 }
 
 export function getAudioProfileSettings(value) {
@@ -121,12 +138,14 @@ export function getDerivedAudioProfile(settings) {
   return 'custom';
 }
 
-export function getAudioRiskLevel(settings) {
+export function getAudioRiskLevel(settings, t) {
+  const tx = typeof t === 'function' ? t : translate;
+
   if (!settings.audio) {
     return {
       level: 'off',
-      title: 'Áudio desativado',
-      description: 'A gravação está configurada sem captação de áudio.',
+      title: tx('audioRisk.off.title'),
+      description: tx('audioRisk.off.description'),
     };
   }
 
@@ -141,31 +160,31 @@ export function getAudioRiskLevel(settings) {
   if (usingUnprocessed && usingMono) {
     return {
       level: 'low',
-      title: 'Risco reduzido',
+      title: tx('audioRisk.low.title'),
       description:
         applyingCleanup
-          ? 'Sem processamento, em mono e com correção no salvamento: a configuração mais segura do app para preservar dinâmica e segurar graves fortes.'
-          : 'Sem processamento e em mono: melhor combinação atual do app para preservar dinâmica e segurar graves fortes.',
+          ? tx('audioRisk.low.cleanupDescription')
+          : tx('audioRisk.low.description'),
     };
   }
 
   if (usingUnprocessed) {
     return {
       level: 'medium',
-      title: 'Risco moderado',
+      title: tx('audioRisk.medium.title'),
       description:
         applyingCleanup
-          ? 'A fonte sem processamento ajuda bastante e a correção no salvamento reduz o risco de clipping, mas mono ainda costuma ser mais seguro em ambientes extremos.'
-          : 'A fonte sem processamento ajuda bastante, mas mono ainda costuma ser mais seguro em ambientes extremos.',
+          ? tx('audioRisk.medium.cleanupDescription')
+          : tx('audioRisk.medium.description'),
     };
   }
 
   return {
     level: 'high',
-    title: 'Risco alto',
+    title: tx('audioRisk.high.title'),
     description:
       applyingCleanup
-        ? 'A fonte atual pode aplicar AGC, compressão ou redução de ruído. A correção no salvamento ajuda, mas ainda há risco de clipping e graves embolados.'
-        : 'A fonte atual pode aplicar AGC, compressão ou redução de ruído. Isso aumenta o risco de clipping e graves embolados.',
+        ? tx('audioRisk.high.cleanupDescription')
+        : tx('audioRisk.high.description'),
   };
 }

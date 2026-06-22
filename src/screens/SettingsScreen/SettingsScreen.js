@@ -14,21 +14,23 @@ import {
 } from '../../components/SettingRow/SettingRow';
 import AudioSourcePicker from '../../components/AudioSourcePicker/AudioSourcePicker';
 import {
-  AUDIO_PROFILE_OPTIONS,
   applyAudioProfile,
+  getAudioProfileOptions,
   getAudioRiskLevel,
 } from '../../constants/audioProfiles';
 import {
-  AUDIO_LIMITER_PRESET_OPTIONS,
   getAudioLimiterPresetOption,
+  getAudioLimiterPresetOptions,
 } from '../../constants/audioProcessing';
 import {
-  MEDIA_OPTIMIZATION_MODES,
+  getMediaOptimizationModes,
   getMediaOptimizationPatch,
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
 import { useCameraSettings } from '../../context/CameraSettingsContext';
 import { useCustomAlert } from '../../context/CustomAlertContext';
+import {useI18n} from '../../i18n/I18nContext';
+import {SUPPORTED_LANGUAGES} from '../../i18n/translations';
 import {
   getAudioSourceOption,
   UNPROCESSED_AUDIO_SOURCE,
@@ -49,26 +51,26 @@ import {shareFile} from '../../utils/videoActions';
 import {styles} from './styles';
 
 const VIDEO_BIT_RATE_OPTIONS = [
-  { label: 'extra baixo', value: 'extra-low' },
-  { label: 'baixo', value: 'low' },
-  { label: 'normal', value: 'normal' },
-  { label: 'alto', value: 'high' },
-  { label: 'extra alto', value: 'extra-high' },
+  { labelKey: 'settings.bitRate.extraLow', value: 'extra-low' },
+  { labelKey: 'settings.bitRate.low', value: 'low' },
+  { labelKey: 'settings.bitRate.normal', value: 'normal' },
+  { labelKey: 'settings.bitRate.high', value: 'high' },
+  { labelKey: 'settings.bitRate.extraHigh', value: 'extra-high' },
 ];
 
 const RESIZE_MODE_OPTIONS = [
-  { label: 'Preencher', value: 'cover' },
-  { label: 'Ajustar', value: 'contain' },
+  { labelKey: 'settings.resize.cover', value: 'cover' },
+  { labelKey: 'settings.resize.contain', value: 'contain' },
 ];
 
 const AUDIO_CHANNEL_OPTIONS = [
-  { label: 'Estéreo (2 canais)', value: 'stereo' },
-  { label: 'Mono (1 canal)', value: 'mono' },
+  { labelKey: 'settings.channel.stereo', value: 'stereo' },
+  { labelKey: 'settings.channel.mono', value: 'mono' },
 ];
 
 const AUDIO_CODEC_OPTIONS = [
   { label: 'AAC', value: 'aac' },
-  { label: 'MP3 (usa AAC como alternativa no Android)', value: 'mp3' },
+  { labelKey: 'settings.codec.mp3', value: 'mp3' },
 ];
 
 const AUDIO_SAMPLE_RATE_OPTIONS = [
@@ -78,10 +80,10 @@ const AUDIO_SAMPLE_RATE_OPTIONS = [
 ];
 
 const AUDIO_GAIN_OPTIONS = [
-  { label: 'Padrão (0 dB)', value: 0 },
-  { label: 'Reduzido (-6 dB)', value: -6 },
-  { label: 'Show ao vivo (-9 dB)', value: -9 },
-  { label: 'Máximo reduzido (-12 dB)', value: -12 },
+  { labelKey: 'settings.gain.default', value: 0 },
+  { labelKey: 'settings.gain.reduced', value: -6 },
+  { labelKey: 'settings.gain.live', value: -9 },
+  { labelKey: 'settings.gain.maxReduced', value: -12 },
 ];
 
 const RECORD_FILE_TYPE_OPTIONS = [
@@ -151,16 +153,24 @@ function getExposureRange(device) {
   };
 }
 
+function localizeOptionLabels(options, t) {
+  return options.map(option => ({
+    ...option,
+    label: option.labelKey ? t(option.labelKey) : option.label,
+  }));
+}
+
 export default function SettingsScreen({navigation}) {
   const device = useCameraDevice('back');
   const { settings, setSettings, resetSettings } = useCameraSettings();
   const {showAlert} = useCustomAlert();
+  const {language, t} = useI18n();
   const [isExportingMetadata, setIsExportingMetadata] = useState(false);
   const insets = useSafeAreaInsets();
   const formats = useMemo(() => device?.formats ?? [], [device]);
   const resolutionOptions = useMemo(
-    () => buildVideoResolutionOptions(formats),
-    [formats],
+    () => buildVideoResolutionOptions(t),
+    [t],
   );
   const fpsRange = useMemo(
     () => getFpsRange(formats, settings),
@@ -174,12 +184,50 @@ export default function SettingsScreen({navigation}) {
     patch => setSettings(prev => ({ ...prev, ...patch })),
     [setSettings],
   );
-  const currentAudioSource = getAudioSourceOption(settings.audioSource);
-  const audioRisk = getAudioRiskLevel(settings);
+  const languageOptions = useMemo(
+    () =>
+      SUPPORTED_LANGUAGES.map(optionLanguage => ({
+        value: optionLanguage,
+        label: t(`language.${optionLanguage === 'pt-BR' ? 'ptBR' : 'en'}`),
+      })),
+    [t],
+  );
+  const videoBitRateOptions = useMemo(
+    () => localizeOptionLabels(VIDEO_BIT_RATE_OPTIONS, t),
+    [t],
+  );
+  const resizeModeOptions = useMemo(
+    () => localizeOptionLabels(RESIZE_MODE_OPTIONS, t),
+    [t],
+  );
+  const audioChannelOptions = useMemo(
+    () => localizeOptionLabels(AUDIO_CHANNEL_OPTIONS, t),
+    [t],
+  );
+  const audioCodecOptions = useMemo(
+    () => localizeOptionLabels(AUDIO_CODEC_OPTIONS, t),
+    [t],
+  );
+  const audioGainOptions = useMemo(
+    () => localizeOptionLabels(AUDIO_GAIN_OPTIONS, t),
+    [t],
+  );
+  const audioProfileOptions = useMemo(() => getAudioProfileOptions(t), [t]);
+  const audioLimiterPresetOptions = useMemo(
+    () => getAudioLimiterPresetOptions(t),
+    [t],
+  );
+  const mediaOptimizationModes = useMemo(
+    () => getMediaOptimizationModes(t),
+    [t],
+  );
+  const currentAudioSource = getAudioSourceOption(settings.audioSource, t);
+  const audioRisk = getAudioRiskLevel(settings, t);
   const optimizationMode = getMediaOptimizationModeOption(
     settings.optimizationMode,
+    t,
   );
-  const limiterPreset = getAudioLimiterPresetOption(settings.audioLimiterPreset);
+  const limiterPreset = getAudioLimiterPresetOption(settings.audioLimiterPreset, t);
   const fpsSliderValue = settings.fps === '' ? '' : settings.fps;
   const zoomSliderValue =
     settings.zoom === ''
@@ -283,57 +331,68 @@ export default function SettingsScreen({navigation}) {
 
       if (result.totalFiles === 0) {
         showAlert(
-          'Sem metadados',
-          'Ainda não há arquivos de metadados salvos para exportar.',
+          t('settings.noMetadata.title'),
+          t('settings.noMetadata.message'),
         );
         return;
       }
 
       await shareFile(
         result.exportPath,
-        'Exportar metadados',
+        t('settings.exportMetadata'),
         'application/json',
       );
     } catch (error) {
       showAlert(
-        'Erro ao exportar metadados',
-        error?.message ?? 'Não foi possível gerar o arquivo de exportação.',
+        t('settings.exportMetadata.errorTitle'),
+        error?.message ?? t('settings.exportMetadata.errorMessage'),
       );
     } finally {
       setIsExportingMetadata(false);
     }
-  }, [isExportingMetadata, showAlert]);
+  }, [isExportingMetadata, showAlert, t]);
 
   const onDeleteMetadata = useCallback(() => {
     showAlert(
-      'Apagar metadados',
-      'Isso vai excluir todos os arquivos de metadados salvos no aparelho. Deseja continuar?',
+      t('settings.deleteMetadata.title'),
+      t('settings.deleteMetadata.message'),
       [
-        {text: 'Cancelar', style: 'cancel'},
+        {text: t('common.cancel'), style: 'cancel'},
         {
-          text: 'Excluir',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             deleteVideoRecordingMetadata()
               .then(result => {
                 showAlert(
-                  'Metadados apagados',
+                  t('settings.deleteMetadata.successTitle'),
                   result.deletedFiles > 0
-                    ? `${result.deletedFiles} arquivo${result.deletedFiles > 1 ? 's' : ''} de metadados foram excluído${result.deletedFiles > 1 ? 's' : ''}.`
-                    : 'Não havia arquivos de metadados para excluir.',
+                    ? t('settings.deleteMetadata.deleted', {
+                        count: result.deletedFiles,
+                        plural: result.deletedFiles > 1 ? 's' : '',
+                        verb:
+                          language === 'en'
+                            ? result.deletedFiles > 1
+                              ? 'were'
+                              : 'was'
+                            : result.deletedFiles > 1
+                              ? 'foram'
+                              : 'foi',
+                      })
+                    : t('settings.deleteMetadata.empty'),
                 );
               })
               .catch(error => {
                 showAlert(
-                  'Erro ao apagar metadados',
-                  error?.message ?? 'Não foi possível excluir os metadados.',
+                  t('settings.deleteMetadata.errorTitle'),
+                  error?.message ?? t('settings.deleteMetadata.errorMessage'),
                 );
               });
           },
         },
       ],
     );
-  }, [showAlert]);
+  }, [language, showAlert, t]);
 
   return (
     <View style={styles.container}>
@@ -345,75 +404,84 @@ export default function SettingsScreen({navigation}) {
       >
         <View style={styles.headerTopRow}>
           <Pressable
-            accessibilityLabel="Voltar"
+            accessibilityLabel={t('common.back')}
             hitSlop={10}
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
             <Icon name="chevron-back" size={20} color="#FAF8F5" />
           </Pressable>
-          <Text style={styles.headerEyebrow}>Configurações</Text>
-          <View style={{width: 34}} />
+          <Text style={styles.headerEyebrow}>{t('settings.title')}</Text>
+          <View style={styles.headerRightPlaceholder} />
         </View>
         <Text style={styles.subtitle}>
-          Ajuste o comportamento de captura, os perfis de áudio e os formatos de gravação.
+          {t('settings.subtitle')}
         </Text>
       </View>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.screenDivider} />
-      <SectionTitle>Captura</SectionTitle>
+      <SectionTitle>{t('settings.section.capture')}</SectionTitle>
       <Card>
+        <Text style={styles.label}>{t('settings.language.label')}</Text>
+        <OptionChips
+          value={settings.language}
+          options={languageOptions}
+          onChange={value => update({language: value})}
+        />
+
+        <View style={styles.sectionSpacer} />
+
         <ToggleRow
-          label="Áudio"
-          description="Habilita gravação com áudio. Exige permissão de microfone."
+          label={t('settings.audio.enabled.label')}
+          description={t('settings.audio.enabled.description')}
           value={settings.audio}
           onValueChange={value => update({ audio: value })}
         />
       </Card>
 
-      <SectionTitle>Interação e comportamento</SectionTitle>
+      <SectionTitle>{t('settings.section.behavior')}</SectionTitle>
       <Card>
         <ToggleRow
-          label="Zoom por gesto"
-          description="Ativa o gesto de pinça para controlar o zoom."
+          label={t('settings.zoomGesture.label')}
+          description={t('settings.zoomGesture.description')}
           value={settings.enableZoomGesture}
           onValueChange={value => update({ enableZoomGesture: value })}
         />
         <ToggleRow
-          label="Reforço em pouca luz"
-          description="Pode ajudar em ambientes escuros."
+          label={t('settings.lowLightBoost.label')}
+          description={t('settings.lowLightBoost.description')}
           value={settings.lowLightBoost}
           onValueChange={value => update({ lowLightBoost: value })}
         />
       </Card>
 
-      <SectionTitle>Formato e imagem</SectionTitle>
+      <SectionTitle>{t('settings.section.format')}</SectionTitle>
       <Card>
-        <Text style={styles.label}>Modo de enquadramento</Text>
+        <Text style={styles.label}>{t('settings.resizeMode.label')}</Text>
         <OptionChips
           value={settings.resizeMode}
-          options={RESIZE_MODE_OPTIONS}
+          options={resizeModeOptions}
           onChange={value => update({ resizeMode: value })}
         />
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Taxa de bits do vídeo</Text>
+        <Text style={styles.label}>{t('settings.videoBitRate.label')}</Text>
         <OptionChips
           value={settings.videoBitRate}
-          options={VIDEO_BIT_RATE_OPTIONS}
+          options={videoBitRateOptions}
           onChange={value => update({ videoBitRate: value })}
         />
       </Card>
 
-      <SectionTitle>Controles visuais</SectionTitle>
+      <SectionTitle>{t('settings.section.visualControls')}</SectionTitle>
       <Card>
-        <Text style={styles.label}>FPS</Text>
+        <Text style={styles.label}>{t('settings.fps.label')}</Text>
         <OptionChips
           value={fpsMode}
           options={[
-            {label: 'Automático', value: 'auto'},
-            {label: 'Manual', value: 'manual'},
+            {label: t('common.automatic'), value: 'auto'},
+            {label: t('common.manual'), value: 'manual'},
           ]}
           onChange={onFpsModeChange}
         />
@@ -422,7 +490,7 @@ export default function SettingsScreen({navigation}) {
 
         {fpsMode === 'manual' ? (
           <SliderField
-            label="FPS"
+            label={t('settings.fps.label')}
             value={fpsSliderValue}
             onValueChange={value => update({fps: value})}
             min={fpsRange.min}
@@ -436,7 +504,7 @@ export default function SettingsScreen({navigation}) {
         ) : null}
 
         <SliderField
-          label="Zoom"
+          label={t('settings.zoom.label')}
           value={zoomSliderValue}
           onValueChange={value => update({zoom: value})}
           min={zoomRange.min}
@@ -451,8 +519,8 @@ export default function SettingsScreen({navigation}) {
         />
 
         <SliderField
-          label="Exposição"
-          description="Padrão: 0 EV"
+          label={t('settings.exposure.label')}
+          description={t('settings.exposure.description')}
           value={exposureSliderValue}
           onValueChange={value => update({exposure: value})}
           min={exposureRange.min}
@@ -467,27 +535,29 @@ export default function SettingsScreen({navigation}) {
           style={styles.inlineSecondaryButton}
           onPress={onResetVisualControls}
         >
-          <Text style={styles.inlineSecondaryText}>Padrões dos controles</Text>
+          <Text style={styles.inlineSecondaryText}>
+            {t('settings.visualDefaults')}
+          </Text>
         </Pressable>
       </Card>
 
-      <SectionTitle>Áudio</SectionTitle>
+      <SectionTitle>{t('settings.section.audio')}</SectionTitle>
       <Card>
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Otimizar</Text>
+        <Text style={styles.label}>{t('settings.optimize.label')}</Text>
         <OptionChips
           value={optimizationMode.value}
-          options={MEDIA_OPTIMIZATION_MODES}
+          options={mediaOptimizationModes}
           onChange={onOptimizationModeChange}
         />
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Configurações de captação</Text>
+        <Text style={styles.label}>{t('settings.captureSettings.label')}</Text>
         <OptionChips
           value={settings.audioProfile}
-          options={AUDIO_PROFILE_OPTIONS}
+          options={audioProfileOptions}
           onChange={onAudioProfileChange}
         />
 
@@ -507,25 +577,25 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Codec de áudio</Text>
+        <Text style={styles.label}>{t('settings.audioCodec.label')}</Text>
         <OptionChips
           value={settings.audioCodec}
-          options={AUDIO_CODEC_OPTIONS}
+          options={audioCodecOptions}
           onChange={value => updateAudioSetting({ audioCodec: value })}
         />
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Canais</Text>
+        <Text style={styles.label}>{t('settings.channels.label')}</Text>
         <OptionChips
           value={settings.audioChannels}
-          options={AUDIO_CHANNEL_OPTIONS}
+          options={audioChannelOptions}
           onChange={value => updateAudioSetting({ audioChannels: value })}
         />
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Taxa de amostragem</Text>
+        <Text style={styles.label}>{t('settings.sampleRate.label')}</Text>
         <OptionChips
           value={settings.audioSampleRate}
           options={AUDIO_SAMPLE_RATE_OPTIONS}
@@ -534,27 +604,27 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Ganho de áudio</Text>
+        <Text style={styles.label}>{t('settings.audioGain.label')}</Text>
         <OptionChips
           value={settings.audioGain}
-          options={AUDIO_GAIN_OPTIONS}
+          options={audioGainOptions}
           onChange={value => updateAudioSetting({ audioGain: value })}
         />
 
         <View style={styles.sectionSpacer} />
 
         <NumberField
-          label="Taxa de bits do áudio (kbps)"
+          label={t('settings.audioBitRate.label')}
           value={settings.audioBitRateKbps}
           onChangeText={text => updateAudioSetting({ audioBitRateKbps: text })}
-          placeholder="ex.: 128"
+          placeholder={t('settings.audioBitRate.placeholder')}
         />
 
         <View style={styles.sectionSpacer} />
 
         <ToggleRow
-          label="Mostrar status de áudio"
-          description="Exibe durante a gravação o banner com a fonte de áudio e risco de processamento."
+          label={t('settings.showAudioStatus.label')}
+          description={t('settings.showAudioStatus.description')}
           value={settings.showAudioStatus}
           onValueChange={value =>
             updateAudioSetting({ showAudioStatus: value })
@@ -564,8 +634,8 @@ export default function SettingsScreen({navigation}) {
         <View style={styles.sectionSpacer} />
 
         <ToggleRow
-          label="Mostrar barra VU"
-          description="Exibe, antes e durante a gravação, uma barra de nível de áudio na parte inferior da tela."
+          label={t('settings.showVu.label')}
+          description={t('settings.showVu.description')}
           value={settings.showAudioLevelMeter}
           onValueChange={value =>
             updateAudioSetting({ showAudioLevelMeter: value })
@@ -575,8 +645,8 @@ export default function SettingsScreen({navigation}) {
         <View style={styles.sectionSpacer} />
 
         <ToggleRow
-          label="Normalizar volume"
-          description="Ajusta o volume ao salvar com base na análise do áudio gravado."
+          label={t('settings.normalizeVolume.label')}
+          description={t('settings.normalizeVolume.description')}
           value={settings.normalizeAudioLoudness}
           onValueChange={value =>
             updateAudioSetting({ normalizeAudioLoudness: value })
@@ -585,10 +655,10 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Limitador</Text>
+        <Text style={styles.label}>{t('settings.limiter.label')}</Text>
         <OptionChips
           value={limiterPreset.value}
-          options={AUDIO_LIMITER_PRESET_OPTIONS}
+          options={audioLimiterPresetOptions}
           onChange={onAudioLimiterPresetChange}
         />
 
@@ -610,12 +680,14 @@ export default function SettingsScreen({navigation}) {
           ]}
         >
           <Text style={styles.audioStatusTitle}>
-            Fonte ativa: {currentAudioSource.label}
+            {t('settings.activeSource.title', {
+              source: currentAudioSource.label,
+            })}
           </Text>
           <Text style={styles.audioStatusText}>
             {settings.audioSource === UNPROCESSED_AUDIO_SOURCE
-              ? 'Modo recomendado para reduzir distorções e preservar dinâmica em ambientes com muito volume.'
-              : 'Esta fonte pode aplicar processamento automático. Em shows e baladas, isso aumenta o risco de distorção e som abafado.'}
+              ? t('settings.activeSource.safe')
+              : t('settings.activeSource.warning')}
           </Text>
         </View>
         <View style={styles.sectionSpacer} />
@@ -629,7 +701,9 @@ export default function SettingsScreen({navigation}) {
           ]}
         >
           <Text style={styles.audioStatusTitle}>
-            Otimização: {optimizationMode.label}
+            {t('settings.optimization.title', {
+              mode: optimizationMode.label,
+            })}
           </Text>
           <Text style={styles.audioStatusText}>
             {optimizationMode.description}
@@ -637,11 +711,11 @@ export default function SettingsScreen({navigation}) {
         </View>
       </Card>
 
-      <SectionTitle>Gravação</SectionTitle>
+      <SectionTitle>{t('settings.section.recording')}</SectionTitle>
       <Card>
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Resolução de vídeo</Text>
+        <Text style={styles.label}>{t('settings.videoResolution.label')}</Text>
         <OptionChips
           value={settings.videoResolutionPreset}
           options={resolutionOptions}
@@ -652,7 +726,7 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Formato do arquivo</Text>
+        <Text style={styles.label}>{t('settings.fileFormat.label')}</Text>
         <OptionChips
           value={settings.recordFileType}
           options={RECORD_FILE_TYPE_OPTIONS}
@@ -661,7 +735,7 @@ export default function SettingsScreen({navigation}) {
 
         <View style={styles.sectionSpacer} />
 
-        <Text style={styles.label}>Codec de vídeo</Text>
+        <Text style={styles.label}>{t('settings.videoCodec.label')}</Text>
         <OptionChips
           value={settings.recordVideoCodec}
           options={RECORD_VIDEO_CODEC_OPTIONS}
@@ -669,7 +743,7 @@ export default function SettingsScreen({navigation}) {
         />
       </Card>
 
-      <SectionTitle>Opções adicionais</SectionTitle>
+      <SectionTitle>{t('settings.section.additional')}</SectionTitle>
       <Card>
         <View style={styles.actionRow}>
           <Pressable
@@ -679,22 +753,26 @@ export default function SettingsScreen({navigation}) {
           >
             <Text style={styles.exportText}>
               {isExportingMetadata
-                ? 'Exportando...'
-                : 'Exportar metadados'}
+                ? t('settings.exporting')
+                : t('settings.exportMetadata')}
             </Text>
           </Pressable>
           <Pressable
             style={styles.destructiveButton}
             onPress={onDeleteMetadata}
           >
-            <Text style={styles.destructiveText}>Apagar metadados</Text>
+            <Text style={styles.destructiveText}>
+              {t('settings.deleteMetadata')}
+            </Text>
           </Pressable>
         </View>
         <Pressable
           style={styles.secondaryActionButton}
           onPress={resetSettings}
         >
-          <Text style={styles.secondaryActionText}>Restaurar padrões</Text>
+          <Text style={styles.secondaryActionText}>
+            {t('settings.restoreDefaults')}
+          </Text>
         </Pressable>
       </Card>
 

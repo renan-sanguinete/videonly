@@ -1,4 +1,5 @@
 import {NativeModules, Platform} from 'react-native';
+import {translate} from '../i18n/translations';
 
 const {VideoCompressionModule} = NativeModules;
 
@@ -8,7 +9,7 @@ export async function optimizeVideo(path, extension = 'mp4', options = {}) {
   }
 
   if (!VideoCompressionModule?.optimizeVideo) {
-    throw new Error('Compressão de vídeo não está disponível neste aparelho.');
+    throw new Error(translate('errors.videoCompressionUnavailable'));
   }
 
   return VideoCompressionModule.optimizeVideo(path, extension, options);

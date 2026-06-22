@@ -1,47 +1,68 @@
+import {translate} from '../i18n/translations';
+
 export const MEDIA_OPTIMIZATION_MODES = [
   {
     value: 'none',
-    label: 'Desativado',
-    shortLabel: 'Desativado',
-    description: 'Mantém o arquivo como foi gravado.',
-    helper: 'Sem compressão e sem correção de áudio.',
+    labelKey: 'media.none.label',
+    shortLabelKey: 'media.none.shortLabel',
+    descriptionKey: 'media.none.description',
+    helperKey: 'media.none.helper',
     iconColor: '#ffffff',
     icon: 'power-outline',
   },
   {
     value: 'video',
-    label: 'Vídeo',
-    shortLabel: 'Vídeo',
-    description: 'Comprime o vídeo antes de salvar.',
-    helper: 'Bom para reduzir tamanho sem mexer no áudio.',
+    labelKey: 'media.video.label',
+    shortLabelKey: 'media.video.shortLabel',
+    descriptionKey: 'media.video.description',
+    helperKey: 'media.video.helper',
     iconColor: '#60a5fa',
     icon: 'videocam-outline',
   },
   {
     value: 'audio',
-    label: 'Áudio',
-    shortLabel: 'Áudio',
-    description: 'Corrige o áudio sem comprimir o vídeo.',
-    helper: 'Mais leve e rápido que a compressão completa.',
+    labelKey: 'media.audio.label',
+    shortLabelKey: 'media.audio.shortLabel',
+    descriptionKey: 'media.audio.description',
+    helperKey: 'media.audio.helper',
     iconColor: '#4ade80',
     icon: 'mic-outline',
   },
   {
     value: 'both',
-    label: 'Vídeo + Áudio',
-    shortLabel: 'V+Á',
-    description: 'Comprime o vídeo e corrige o áudio juntos.',
-    helper: 'Maior proteção, porém mais demorado.',
+    labelKey: 'media.both.label',
+    shortLabelKey: 'media.both.shortLabel',
+    descriptionKey: 'media.both.description',
+    helperKey: 'media.both.helper',
     iconColor: '#f87171',
     icon: 'layers-outline',
   },
 ];
 
-export function getMediaOptimizationModeOption(value) {
-  return (
-    MEDIA_OPTIMIZATION_MODES.find(option => option.value === value) ??
-    MEDIA_OPTIMIZATION_MODES[0]
+function localizeMediaOptimizationMode(option, t) {
+  const tx = typeof t === 'function' ? t : translate;
+
+  return {
+    ...option,
+    label: tx(option.labelKey),
+    shortLabel: tx(option.shortLabelKey),
+    description: tx(option.descriptionKey),
+    helper: tx(option.helperKey),
+  };
+}
+
+export function getMediaOptimizationModes(t) {
+  return MEDIA_OPTIMIZATION_MODES.map(option =>
+    localizeMediaOptimizationMode(option, t),
   );
+}
+
+export function getMediaOptimizationModeOption(value, t) {
+  const option =
+    MEDIA_OPTIMIZATION_MODES.find(item => item.value === value) ??
+    MEDIA_OPTIMIZATION_MODES[0];
+
+  return localizeMediaOptimizationMode(option, t);
 }
 
 export function getMediaOptimizationPatch(value) {
