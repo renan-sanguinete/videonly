@@ -276,6 +276,13 @@ export const styles = StyleSheet.create({
     lineHeight: 18,
     fontFamily: typography.body.fontFamily,
   },
+  timelapseModalWarningText: {
+    color: colors.accent,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '700',
+    fontFamily: typography.body.fontFamily,
+  },
   timelapseModalCloseButton: {
     width: 34,
     height: 34,

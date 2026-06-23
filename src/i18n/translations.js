@@ -180,6 +180,8 @@ export const translations = {
     'timelapse.modal.title': 'Configurar time-lapse',
     'timelapse.modal.description':
       'Escolha o comportamento antes de iniciar a gravação.',
+    'timelapse.compatWarning':
+      'Alguns players podem não reproduzir o time-lapse corretamente. Se isso acontecer, teste em outro player ou na galeria do aparelho.',
     'timelapse.mode.label': 'Modo',
     'timelapse.mode.normal.label': 'Modo normal',
     'timelapse.mode.normal.description':
@@ -698,6 +700,8 @@ export const translations = {
     'timelapse.modal.title': 'Configure time-lapse',
     'timelapse.modal.description':
       'Choose the behavior before starting the recording.',
+    'timelapse.compatWarning':
+      'Some players may not play the time-lapse correctly. If that happens, try another player or the device gallery.',
     'timelapse.mode.label': 'Mode',
     'timelapse.mode.normal.label': 'Normal mode',
     'timelapse.mode.normal.description':

@@ -3,6 +3,7 @@ import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 
 import {canManageAndroidMedia, ensureCameraRollVideoPermission} from './appPermissions';
 import {translate} from '../i18n/translations';
+import {readVideoRecordingMetadata} from './videoRecordingMetadata';
 
 export const VIDEONLY_ALBUM = 'Videonly';
 const DEFAULT_PAGE_SIZE = 20;
@@ -34,6 +35,28 @@ function sortVideosByTimestamp(videos) {
   return videos.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
 
+async function applyMetadataFallbacks(video) {
+  if (video.duration > 0 || !video.filename) {
+    return video;
+  }
+
+  try {
+    const metadata = await readVideoRecordingMetadata(video.filename);
+    const metadataDuration = Number(metadata?.savedDurationSeconds);
+
+    if (Number.isFinite(metadataDuration) && metadataDuration > 0) {
+      return {
+        ...video,
+        duration: metadataDuration,
+      };
+    }
+  } catch (error) {
+    console.warn('Não foi possível carregar metadados do vídeo.', error);
+  }
+
+  return video;
+}
+
 export async function loadVideosPageFromCameraRoll({
   after = null,
   first = DEFAULT_PAGE_SIZE,
@@ -59,7 +82,7 @@ export async function loadVideosPageFromCameraRoll({
   }
 
   const result = await CameraRoll.getPhotos(params);
-  let videos = result.edges.map(mapEdgeToVideo);
+  let videos = await Promise.all(result.edges.map(mapEdgeToVideo).map(applyMetadataFallbacks));
 
   if (source === 'videonly' && videos.length === 0 && !after) {
     const fallbackResult = await CameraRoll.getPhotos({
@@ -68,7 +91,12 @@ export async function loadVideosPageFromCameraRoll({
       include: ['filename', 'fileSize', 'playableDuration', 'imageSize'],
     });
 
-    videos = fallbackResult.edges.map(mapEdgeToVideo).filter(isVideonlyAsset);
+    videos = await Promise.all(
+      fallbackResult.edges
+        .map(mapEdgeToVideo)
+        .filter(isVideonlyAsset)
+        .map(applyMetadataFallbacks),
+    );
 
     return {
       videos: sortVideosByTimestamp(videos),

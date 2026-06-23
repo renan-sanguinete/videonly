@@ -26,6 +26,8 @@ export function buildVideoRecordingMetadata({
   sourcePath,
   savedPath,
   compressedPath = null,
+  recordedDurationSeconds = null,
+  savedDurationSeconds = null,
   requestedOptimizationMode,
   appliedOptimizationMode,
   usedFallbackToOriginal,
@@ -39,6 +41,8 @@ export function buildVideoRecordingMetadata({
     sourcePath,
     savedPath,
     compressedPath,
+    recordedDurationSeconds,
+    savedDurationSeconds,
     requestedOptimizationMode,
     appliedOptimizationMode,
     usedFallbackToOriginal,
@@ -90,6 +94,19 @@ export async function saveVideoRecordingMetadata(videoFileName, metadata) {
 
 export function getVideoRecordingMetadataDirectoryPath() {
   return getMetadataDirectoryPath();
+}
+
+export async function readVideoRecordingMetadata(videoFileName) {
+  const fileName = getVideoMetadataFileName(videoFileName);
+  const filePath = `${getMetadataDirectoryPath()}/${fileName}`;
+  const exists = await RNFS.exists(filePath);
+
+  if (!exists) {
+    return null;
+  }
+
+  const contents = await RNFS.readFile(filePath, 'utf8');
+  return JSON.parse(contents);
 }
 
 function generateExportFileName() {

@@ -93,6 +93,16 @@ function normalizeFilePath(pathLike) {
     : pathLike;
 }
 
+function getFileNameFromPath(pathLike) {
+  const normalizedPath = normalizeFilePath(pathLike);
+
+  if (!normalizedPath) {
+    return null;
+  }
+
+  return normalizedPath.split('/').filter(Boolean).pop() ?? null;
+}
+
 async function deleteIfExists(pathLike) {
   const normalizedPath = normalizeFilePath(pathLike);
   if (!normalizedPath) {
@@ -107,6 +117,47 @@ async function deleteIfExists(pathLike) {
   } catch (error) {
     console.warn('Não foi possível remover o arquivo temporário.', error);
   }
+}
+
+function getEstimatedSavedDurationSeconds({
+  captureSettings,
+  finalPath,
+  recordedDurationSeconds,
+  recordingMode,
+  sourcePath,
+}) {
+  const recorded = Number(recordedDurationSeconds);
+
+  if (!Number.isFinite(recorded) || recorded <= 0) {
+    return null;
+  }
+
+  if (finalPath === sourcePath) {
+    return recorded;
+  }
+
+  if (recordingMode === 'timelapse') {
+    const speedFactor = Number(captureSettings.timelapseSpeedFactor);
+    return Number.isFinite(speedFactor) && speedFactor > 1
+      ? recorded / speedFactor
+      : recorded;
+  }
+
+  if (recordingMode === 'slowMotion') {
+    const captureFps = Number(captureSettings.slowMotionTargetFps);
+    const playbackFps = Number(captureSettings.slowMotionPlaybackFps);
+
+    return (
+      Number.isFinite(captureFps) &&
+        Number.isFinite(playbackFps) &&
+        captureFps > playbackFps &&
+        playbackFps > 0
+    )
+      ? recorded * (captureFps / playbackFps)
+      : recorded;
+  }
+
+  return recorded;
 }
 
 function getOptimizationLoadingTitle(mode, t) {
@@ -985,7 +1036,7 @@ export default function CameraScreen({ navigation }) {
   ]);
 
   const handleRecordingFinished = useCallback(
-    async video => {
+    async (video, recordedDurationSeconds = null) => {
       const originalPath = video.path;
       const effectiveSettings = sanitizeAudioSettingsForProAccess(
         isPro
@@ -1033,12 +1084,22 @@ export default function CameraScreen({ navigation }) {
       const shouldProcessMedia =
         shouldOptimize && (optimizationMode !== 'audio' || settings.audio);
       const saveRecordingMetadata = async finalPath => {
+        const savedFileName = getFileNameFromPath(finalPath) ?? newFileName;
+        const savedDurationSeconds = getEstimatedSavedDurationSeconds({
+          captureSettings,
+          finalPath,
+          recordedDurationSeconds,
+          recordingMode: effectiveSettings.recordingMode,
+          sourcePath,
+        });
         const metadata = buildVideoRecordingMetadata({
-          videoFileName: newFileName,
+          videoFileName: savedFileName,
           originalPath,
           sourcePath,
           savedPath: finalPath,
           compressedPath,
+          recordedDurationSeconds,
+          savedDurationSeconds,
           requestedOptimizationMode: effectiveSettings.optimizationMode,
           appliedOptimizationMode:
             shouldProcessMedia && finalPath !== sourcePath
@@ -1048,7 +1109,7 @@ export default function CameraScreen({ navigation }) {
           settings: effectiveSettings,
         });
 
-        await saveVideoRecordingMetadata(newFileName, metadata);
+        await saveVideoRecordingMetadata(savedFileName, metadata);
       };
 
       try {
@@ -1158,8 +1219,8 @@ export default function CameraScreen({ navigation }) {
   );
 
   const finalizeRecordedVideo = useCallback(
-    video => {
-      handleRecordingFinished(video).catch(error => {
+    (video, recordedDurationSeconds = null) => {
+      handleRecordingFinished(video, recordedDurationSeconds).catch(error => {
         setIsProcessingVideo(false);
         showAlert(
           t('camera.processErrorTitle'),
@@ -1225,6 +1286,10 @@ export default function CameraScreen({ navigation }) {
         fileType: captureSettings.recordFileType,
         videoCodec: captureSettings.recordVideoCodec,
         onRecordingFinished: video => {
+          const recordedDurationSeconds = recordingStartedAtRef.current
+            ? (Date.now() - recordingStartedAtRef.current) / 1000
+            : null;
+
           if (recordingLimitTimeoutRef.current) {
             clearTimeout(recordingLimitTimeoutRef.current);
             recordingLimitTimeoutRef.current = null;
@@ -1232,7 +1297,7 @@ export default function CameraScreen({ navigation }) {
           recordingStartedAtRef.current = null;
           setRecordingElapsedMs(0);
           setIsRecording(false);
-          finalizeRecordedVideo(video);
+          finalizeRecordedVideo(video, recordedDurationSeconds);
         },
         onRecordingError: handleRecordingError,
       });
@@ -1643,6 +1708,9 @@ export default function CameraScreen({ navigation }) {
                 </Text>
                 <Text style={styles.timelapseModalDescription}>
                   {t('timelapse.modal.description')}
+                </Text>
+                <Text style={styles.timelapseModalWarningText}>
+                  {t('timelapse.compatWarning')}
                 </Text>
               </View>
               <Pressable
