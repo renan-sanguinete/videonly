@@ -58,7 +58,10 @@ import {
   buildVideoRecordingMetadata,
   saveVideoRecordingMetadata,
 } from '../../utils/videoRecordingMetadata';
-import { applyAudioProfile } from '../../constants/audioProfiles';
+import {
+  applyAudioProfile,
+  sanitizeAudioSettingsForProAccess,
+} from '../../constants/audioProfiles';
 import { getAudioLimiterPresetOption } from '../../constants/audioProcessing';
 import {
   applyMediaOptimizationMode,
@@ -570,7 +573,7 @@ export default function CameraScreen({ navigation }) {
 
   const onRecordingModeChange = useCallback(
     value => {
-      if (value !== 'normal' && !ensurePro('camera.proLocked.advancedPreset')) {
+      if (value === 'timelapse' && !ensurePro('camera.proLocked.advancedPreset')) {
         return;
       }
 
@@ -584,45 +587,30 @@ export default function CameraScreen({ navigation }) {
 
   const onResolutionChange = useCallback(
     value => {
-      if (
-        (value === '2k' || value === '4k') &&
-        !ensurePro('camera.proLocked.highResolution')
-      ) {
-        return;
-      }
-
       setSettings(prev => ({
         ...prev,
         videoResolutionPreset: value,
         formatIndex: '',
       }));
     },
-    [ensurePro, setSettings],
+    [setSettings],
   );
 
   const onSlowMotionDurationChange = useCallback(
     value => {
-      if (!ensurePro('camera.proLocked.advancedPreset')) {
-        return;
-      }
-
       setSettings(prev => ({
         ...prev,
         slowMotionMaxDurationMs: value,
       }));
     },
-    [ensurePro, setSettings],
+    [setSettings],
   );
 
   const onApplyAudioProfile = useCallback(
     value => {
-      if (value !== 'standard' && !ensurePro('camera.proLocked.audioProfiles')) {
-        return;
-      }
-
       setSettings(prev => applyAudioProfile(prev, value));
     },
-    [ensurePro, setSettings],
+    [setSettings],
   );
 
   const onSetAudioEnabled = useCallback(
@@ -940,13 +928,19 @@ export default function CameraScreen({ navigation }) {
   const handleRecordingFinished = useCallback(
     async video => {
       const originalPath = video.path;
-      const effectiveSettings = isPro
-        ? settings
-        : {
-            ...settings,
-            optimizationMode: 'none',
-            recordingMode: 'normal',
-          };
+      const effectiveSettings = sanitizeAudioSettingsForProAccess(
+        isPro
+          ? settings
+          : {
+              ...settings,
+              optimizationMode: 'none',
+              recordingMode:
+                settings.recordingMode === 'timelapse'
+                  ? 'normal'
+                  : settings.recordingMode,
+            },
+        isPro,
+      );
       const captureSettings = getCaptureSettingsForRecordingMode(effectiveSettings);
       const extension = captureSettings.recordFileType === 'mp4' ? 'mp4' : 'mov';
       const newFileName = generateVideoFileName(extension);

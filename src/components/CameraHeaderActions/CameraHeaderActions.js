@@ -173,7 +173,7 @@ export default function CameraHeaderActions({
             <View style={styles.recordingModeOptions}>
               {recordingModeOptions.map(option => {
                 const isSelected = currentRecordingMode.value === option.value;
-                const isLocked = !isPro && option.value !== 'normal';
+                const isLocked = !isPro && option.value === 'timelapse';
 
                 return (
                   <Pressable
@@ -219,18 +219,11 @@ export default function CameraHeaderActions({
                 ? resolutionOptions
                 : buildVideoResolutionOptions(t)).map(option => {
                 const isSelected = resolutionPreset === option.value;
-                const isLocked =
-                  !isPro && (option.value === '2k' || option.value === '4k');
 
                 return (
                   <Pressable
                     key={option.value}
                     onPress={() => {
-                      if (isLocked) {
-                        requestProFeature('camera.proLocked.highResolution');
-                        return;
-                      }
-
                       onResolutionChange(option.value);
                       setIsOptimizationMenuOpen(false);
                     }}
@@ -246,7 +239,6 @@ export default function CameraHeaderActions({
                       ]}
                     >
                       {option.label}
-                      {isLocked ? ` ${t('common.pro')}` : ''}
                     </Text>
                   </Pressable>
                 );

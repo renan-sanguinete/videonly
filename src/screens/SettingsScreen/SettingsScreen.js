@@ -167,10 +167,8 @@ export default function SettingsScreen({navigation}) {
   const {showAlert} = useCustomAlert();
   const {
     billingError,
-    buildChannel,
     canUseDebugOverride,
     debugProOverride,
-    isBillingAvailable,
     isBillingLoading,
     isPro,
     productDetails,
@@ -223,13 +221,23 @@ export default function SettingsScreen({navigation}) {
     [t],
   );
   const audioGainOptions = useMemo(
-    () => localizeOptionLabels(AUDIO_GAIN_OPTIONS, t),
-    [t],
+    () =>
+      localizeOptionLabels(AUDIO_GAIN_OPTIONS, t).map(option =>
+        !isPro && option.value === -12
+          ? {...option, label: `${option.label} ${t('common.pro')}`}
+          : option,
+      ),
+    [isPro, t],
   );
   const audioProfileOptions = useMemo(() => getAudioProfileOptions(t), [t]);
   const audioLimiterPresetOptions = useMemo(
-    () => getAudioLimiterPresetOptions(t),
-    [t],
+    () =>
+      getAudioLimiterPresetOptions(t).map(option =>
+        !isPro && option.value === 'strong'
+          ? {...option, label: `${option.label} ${t('common.pro')}`}
+          : option,
+      ),
+    [isPro, t],
   );
   const mediaOptimizationModes = useMemo(
     () => getMediaOptimizationModes(t),
@@ -248,6 +256,21 @@ export default function SettingsScreen({navigation}) {
       ? String(device?.neutralZoom ?? zoomRange.min)
       : settings.zoom;
   const exposureSliderValue = settings.exposure === '' ? '0' : settings.exposure;
+  const exportMetadataLabel = `${t('settings.exportMetadata')}${
+    isPro ? '' : ` ${t('common.pro')}`
+  }`;
+  const deleteMetadataLabel = `${t('settings.deleteMetadata')}${
+    isPro ? '' : ` ${t('common.pro')}`
+  }`;
+  const proPriceText = useMemo(() => {
+    const playStorePrice = String(productDetails?.price ?? '').trim();
+
+    if (playStorePrice) {
+      return t('settings.pro.price', {price: playStorePrice});
+    }
+
+    return t('settings.pro.priceFallback');
+  }, [productDetails?.price, t]);
 
   const updateAudioSetting = patch =>
     setSettings(prev => ({
@@ -316,19 +339,7 @@ export default function SettingsScreen({navigation}) {
     [isPro, showProLockedAlert],
   );
 
-  const updateProAudioSetting = patch => {
-    if (!ensurePro('camera.proLocked.advancedSettings')) {
-      return;
-    }
-
-    updateAudioSetting(patch);
-  };
-
   const onAudioProfileChange = value => {
-    if (value !== 'standard' && !ensurePro('camera.proLocked.audioProfiles')) {
-      return;
-    }
-
     setSettings(prev => applyAudioProfile(prev, value));
   };
 
@@ -341,7 +352,19 @@ export default function SettingsScreen({navigation}) {
   };
 
   const onAudioLimiterPresetChange = value => {
+    if (value === 'strong' && !ensurePro('camera.proLocked.strongLimiter')) {
+      return;
+    }
+
     updateAudioSetting({ audioLimiterPreset: value });
+  };
+
+  const onAudioGainChange = value => {
+    if (value === -12 && !ensurePro('camera.proLocked.maxReducedGain')) {
+      return;
+    }
+
+    updateAudioSetting({audioGain: value});
   };
 
   const onFpsModeChange = value => {
@@ -413,6 +436,10 @@ export default function SettingsScreen({navigation}) {
       return;
     }
 
+    if (!ensurePro('camera.proLocked.metadata')) {
+      return;
+    }
+
     setIsExportingMetadata(true);
 
     try {
@@ -439,9 +466,13 @@ export default function SettingsScreen({navigation}) {
     } finally {
       setIsExportingMetadata(false);
     }
-  }, [isExportingMetadata, showAlert, t]);
+  }, [ensurePro, isExportingMetadata, showAlert, t]);
 
   const onDeleteMetadata = useCallback(() => {
+    if (!ensurePro('camera.proLocked.metadata')) {
+      return;
+    }
+
     showAlert(
       t('settings.deleteMetadata.title'),
       t('settings.deleteMetadata.message'),
@@ -481,7 +512,7 @@ export default function SettingsScreen({navigation}) {
         },
       ],
     );
-  }, [language, showAlert, t]);
+  }, [ensurePro, language, showAlert, t]);
 
   return (
     <View style={styles.container}>
@@ -509,33 +540,11 @@ export default function SettingsScreen({navigation}) {
       </View>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.screenDivider} />
-      <SectionTitle>{t('settings.section.capture')}</SectionTitle>
-      <Card>
-        <Text style={styles.label}>{t('settings.language.label')}</Text>
-        <OptionChips
-          value={settings.language}
-          options={languageOptions}
-          onChange={value => update({language: value})}
-        />
-
-        <View style={styles.sectionSpacer} />
-
-        <ToggleRow
-          label={t('settings.audio.enabled.label')}
-          description={t('settings.audio.enabled.description')}
-          value={settings.audio}
-          onValueChange={value => update({ audio: value })}
-        />
-      </Card>
-
       <SectionTitle>{t('settings.pro.section')}</SectionTitle>
       <Card>
         <View style={styles.proHeaderRow}>
           <View style={styles.proTitleGroup}>
             <Text style={styles.proTitle}>{t('settings.pro.section')}</Text>
-            <Text style={styles.helper}>
-              {t('settings.pro.buildInfo', {channel: buildChannel})}
-            </Text>
           </View>
           <View
             style={[
@@ -557,43 +566,50 @@ export default function SettingsScreen({navigation}) {
             </Text>
           </View>
         </View>
-        <Text style={styles.proDescription}>{t('settings.pro.description')}</Text>
-        <Text style={styles.proDescription}>{t('settings.pro.included')}</Text>
-        <Text style={styles.proPriceText}>
-          {productDetails?.price || t('settings.pro.priceFallback')}
-        </Text>
-        {!isBillingAvailable && !isPro ? (
-          <Text style={styles.helper}>{t('settings.pro.unavailable')}</Text>
-        ) : null}
-        <View style={styles.actionRow}>
-          <Pressable
-            disabled={isPro || isBillingLoading}
-            style={[
-              styles.exportButton,
-              (isPro || isBillingLoading) && styles.actionButtonDisabled,
-            ]}
-            onPress={onPurchasePro}
-          >
-            <Text style={styles.exportText}>
-              {isBillingLoading
-                ? t('settings.pro.processing')
-                : t('settings.pro.unlock')}
+        {isPro ? (
+          <Text style={styles.proUnlockedText}>
+            {t('settings.pro.unlockedAccess')}
+          </Text>
+        ) : (
+          <>
+            <Text style={styles.proDescription}>
+              {t('settings.pro.description')}
             </Text>
-          </Pressable>
-          <Pressable
-            disabled={isBillingLoading}
-            style={[
-              styles.inlineSecondaryButton,
-              styles.proRestoreButton,
-              isBillingLoading && styles.actionButtonDisabled,
-            ]}
-            onPress={onRestorePurchase}
-          >
-            <Text style={styles.inlineSecondaryText}>
-              {t('settings.pro.restore')}
+            <Text style={styles.proDescription}>
+              {t('settings.pro.included')}
             </Text>
-          </Pressable>
-        </View>
+            <Text style={styles.proPriceText}>{proPriceText}</Text>
+            <View style={styles.actionRow}>
+              <Pressable
+                disabled={isBillingLoading}
+                style={[
+                  styles.exportButton,
+                  isBillingLoading && styles.actionButtonDisabled,
+                ]}
+                onPress={onPurchasePro}
+              >
+                <Text style={styles.exportText}>
+                  {isBillingLoading
+                    ? t('settings.pro.processing')
+                    : t('settings.pro.unlock')}
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled={isBillingLoading}
+                style={[
+                  styles.inlineSecondaryButton,
+                  styles.proRestoreButton,
+                  isBillingLoading && styles.actionButtonDisabled,
+                ]}
+                onPress={onRestorePurchase}
+              >
+                <Text style={styles.inlineSecondaryText}>
+                  {t('settings.pro.restore')}
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        )}
         {canUseDebugOverride ? (
           <>
             <View style={styles.sectionSpacer} />
@@ -605,6 +621,16 @@ export default function SettingsScreen({navigation}) {
             />
           </>
         ) : null}
+      </Card>
+
+      <SectionTitle>{t('settings.section.capture')}</SectionTitle>
+      <Card>
+        <Text style={styles.label}>{t('settings.language.label')}</Text>
+        <OptionChips
+          value={settings.language}
+          options={languageOptions}
+          onChange={value => update({language: value})}
+        />
       </Card>
 
       <SectionTitle>{t('settings.section.behavior')}</SectionTitle>
@@ -709,10 +735,8 @@ export default function SettingsScreen({navigation}) {
         </Pressable>
       </Card>
 
-      <SectionTitle>{t('settings.section.audio')}</SectionTitle>
+      <SectionTitle>{t('settings.section.optimization')}</SectionTitle>
       <Card>
-        <View style={styles.sectionSpacer} />
-
         <Text style={styles.label}>{t('settings.optimize.label')}</Text>
         <OptionChips
           value={optimizationMode.value}
@@ -720,6 +744,38 @@ export default function SettingsScreen({navigation}) {
           onChange={onOptimizationModeChange}
         />
 
+        <View style={styles.sectionSpacer} />
+
+        <View
+          style={[
+            styles.audioStatusBox,
+            optimizationMode.value === 'none'
+              ? styles.audioStatusBoxSafe
+              : styles.audioStatusBoxWarning,
+          ]}
+        >
+          <Text style={styles.audioStatusTitle}>
+            {t('settings.optimization.title', {
+              mode: optimizationMode.label,
+            })}
+          </Text>
+          <Text style={styles.audioStatusText}>
+            {optimizationMode.description}
+          </Text>
+        </View>
+      </Card>
+
+      <SectionTitle>{t('settings.section.audio')}</SectionTitle>
+      <Card>
+        <ToggleRow
+          label={t('settings.audio.enabled.label')}
+          description={t('settings.audio.enabled.description')}
+          value={settings.audio}
+          onValueChange={value => update({ audio: value })}
+        />
+
+        {settings.audio ? (
+          <>
         <View style={styles.sectionSpacer} />
 
         <Text style={styles.label}>{t('settings.captureSettings.label')}</Text>
@@ -749,7 +805,7 @@ export default function SettingsScreen({navigation}) {
         <OptionChips
           value={settings.audioCodec}
           options={audioCodecOptions}
-          onChange={value => updateProAudioSetting({ audioCodec: value })}
+          onChange={value => updateAudioSetting({ audioCodec: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -758,7 +814,7 @@ export default function SettingsScreen({navigation}) {
         <OptionChips
           value={settings.audioChannels}
           options={audioChannelOptions}
-          onChange={value => updateProAudioSetting({ audioChannels: value })}
+          onChange={value => updateAudioSetting({ audioChannels: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -767,7 +823,7 @@ export default function SettingsScreen({navigation}) {
         <OptionChips
           value={settings.audioSampleRate}
           options={AUDIO_SAMPLE_RATE_OPTIONS}
-          onChange={value => updateProAudioSetting({ audioSampleRate: value })}
+          onChange={value => updateAudioSetting({ audioSampleRate: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -776,7 +832,7 @@ export default function SettingsScreen({navigation}) {
         <OptionChips
           value={settings.audioGain}
           options={audioGainOptions}
-          onChange={value => updateProAudioSetting({ audioGain: value })}
+          onChange={onAudioGainChange}
         />
 
         <View style={styles.sectionSpacer} />
@@ -785,7 +841,7 @@ export default function SettingsScreen({navigation}) {
           label={t('settings.audioBitRate.label')}
           value={settings.audioBitRateKbps}
           onChangeText={text =>
-            updateProAudioSetting({ audioBitRateKbps: text })
+            updateAudioSetting({ audioBitRateKbps: text })
           }
           placeholder={t('settings.audioBitRate.placeholder')}
         />
@@ -797,7 +853,7 @@ export default function SettingsScreen({navigation}) {
           description={t('settings.showAudioStatus.description')}
           value={settings.showAudioStatus}
           onValueChange={value =>
-            updateProAudioSetting({ showAudioStatus: value })
+            updateAudioSetting({ showAudioStatus: value })
           }
         />
 
@@ -808,7 +864,7 @@ export default function SettingsScreen({navigation}) {
           description={t('settings.showVu.description')}
           value={settings.showAudioLevelMeter}
           onValueChange={value =>
-            updateProAudioSetting({ showAudioLevelMeter: value })
+            updateAudioSetting({ showAudioLevelMeter: value })
           }
         />
 
@@ -819,7 +875,7 @@ export default function SettingsScreen({navigation}) {
           description={t('settings.normalizeVolume.description')}
           value={settings.normalizeAudioLoudness}
           onValueChange={value =>
-            updateProAudioSetting({ normalizeAudioLoudness: value })
+            updateAudioSetting({ normalizeAudioLoudness: value })
           }
         />
 
@@ -829,20 +885,14 @@ export default function SettingsScreen({navigation}) {
         <OptionChips
           value={limiterPreset.value}
           options={audioLimiterPresetOptions}
-          onChange={value => {
-            if (!ensurePro('camera.proLocked.advancedSettings')) {
-              return;
-            }
-
-            onAudioLimiterPresetChange(value);
-          }}
+          onChange={onAudioLimiterPresetChange}
         />
 
         <View style={styles.sectionSpacer} />
 
         <AudioSourcePicker
           selectedSource={settings.audioSource}
-          onSourceChange={value => updateProAudioSetting({ audioSource: value })}
+          onSourceChange={value => updateAudioSetting({ audioSource: value })}
         />
 
         <View style={styles.sectionSpacer} />
@@ -866,25 +916,20 @@ export default function SettingsScreen({navigation}) {
               : t('settings.activeSource.warning')}
           </Text>
         </View>
-        <View style={styles.sectionSpacer} />
-
-        <View
-          style={[
-            styles.audioStatusBox,
-            optimizationMode.value === 'none'
-              ? styles.audioStatusBoxSafe
-              : styles.audioStatusBoxWarning,
-          ]}
-        >
-          <Text style={styles.audioStatusTitle}>
-            {t('settings.optimization.title', {
-              mode: optimizationMode.label,
-            })}
-          </Text>
-          <Text style={styles.audioStatusText}>
-            {optimizationMode.description}
-          </Text>
-        </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.sectionSpacer} />
+            <View style={[styles.audioStatusBox, styles.audioStatusBoxWarning]}>
+              <Text style={styles.audioStatusTitle}>
+                {t('settings.audio.disabled.title')}
+              </Text>
+              <Text style={styles.audioStatusText}>
+                {t('settings.audio.disabled.description')}
+              </Text>
+            </View>
+          </>
+        )}
       </Card>
 
       <SectionTitle>{t('settings.section.recording')}</SectionTitle>
@@ -896,10 +941,7 @@ export default function SettingsScreen({navigation}) {
           value={settings.videoResolutionPreset}
           options={resolutionOptions}
           onChange={value =>
-            value === '2k' || value === '4k'
-              ? ensurePro('camera.proLocked.highResolution') &&
-                update({ videoResolutionPreset: value, formatIndex: '' })
-              : update({ videoResolutionPreset: value, formatIndex: '' })
+            update({ videoResolutionPreset: value, formatIndex: '' })
           }
         />
 
@@ -938,7 +980,7 @@ export default function SettingsScreen({navigation}) {
             <Text style={styles.exportText}>
               {isExportingMetadata
                 ? t('settings.exporting')
-                : t('settings.exportMetadata')}
+                : exportMetadataLabel}
             </Text>
           </Pressable>
           <Pressable
@@ -946,7 +988,7 @@ export default function SettingsScreen({navigation}) {
             onPress={onDeleteMetadata}
           >
             <Text style={styles.destructiveText}>
-              {t('settings.deleteMetadata')}
+              {deleteMetadataLabel}
             </Text>
           </Pressable>
         </View>

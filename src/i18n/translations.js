@@ -178,10 +178,11 @@ export const translations = {
     'settings.title': 'Configurações',
     'settings.subtitle':
       'Ajuste o comportamento de captura, os perfis de áudio e os formatos de gravação.',
-    'settings.section.capture': 'Captura',
+    'settings.section.capture': 'Geral',
     'settings.section.behavior': 'Interação e comportamento',
     'settings.section.format': 'Formato e imagem',
     'settings.section.visualControls': 'Controles visuais',
+    'settings.section.optimization': 'Otimização PRO',
     'settings.section.audio': 'Áudio',
     'settings.section.recording': 'Gravação',
     'settings.section.additional': 'Opções adicionais',
@@ -189,6 +190,9 @@ export const translations = {
     'settings.audio.enabled.label': 'Áudio',
     'settings.audio.enabled.description':
       'Habilita gravação com áudio. Exige permissão de microfone.',
+    'settings.audio.disabled.title': 'Áudio desativado',
+    'settings.audio.disabled.description':
+      'As configurações de áudio não terão efeito enquanto a gravação com áudio estiver desligada.',
     'settings.zoomGesture.label': 'Zoom por gesto',
     'settings.zoomGesture.description':
       'Ativa o gesto de pinça para controlar o zoom.',
@@ -244,12 +248,13 @@ export const translations = {
     'settings.pro.debugToggle.label': 'Teste PRO no debug',
     'settings.pro.debugToggle.description':
       'Liga e desliga o modo PRO localmente para validar os bloqueios antes da publicação.',
-    'settings.pro.buildInfo': 'Build: {{channel}}',
     'settings.pro.description':
       'Pagamento único para liberar recursos avançados de gravação, áudio e otimização.',
     'settings.pro.included':
       'Inclui otimização de vídeo, análise de som ambiente, perfis de áudio personalizados, presets avançados e configurações avançadas.',
-    'settings.pro.priceFallback': 'R$ 5,99 no Brasil ou US$ 1,99 fora do Brasil, conforme configuração da Play Store.',
+    'settings.pro.price': 'Somente {{price}}',
+    'settings.pro.priceFallback': 'Somente R$ 5,99',
+    'settings.pro.unlockedAccess': 'Acesso liberado aos recursos PRO.',
     'settings.pro.unavailable':
       'A compra será ativada quando o produto videonly_pro_unlock estiver configurado no Google Play Console.',
     'settings.noMetadata.title': 'Sem metadados',
@@ -289,7 +294,7 @@ export const translations = {
     'audioSourcePicker.infoText':
       'Nesta fase, a melhor prevenção é combinar Sem processamento com captação em mono. Isso reduz o risco de áudio abafado, graves cortados e distorção em ambientes de alto volume.',
 
-    'header.optimize': 'Otimizar',
+    'header.optimize': 'Otimizar PRO',
     'header.closeOptimization': 'Fechar otimização',
     'header.recordingMode': 'Modo de gravação',
     'header.videoResolution': 'Resolução de vídeo',
@@ -372,6 +377,10 @@ export const translations = {
     'camera.proLocked.optimization': 'otimização de mídia',
     'camera.proLocked.ambient': 'análise de som ambiente',
     'camera.proLocked.audioProfiles': 'perfis de áudio personalizados',
+    'camera.proLocked.saveAudioProfiles': 'salvar perfis de áudio personalizados',
+    'camera.proLocked.maxReducedGain': 'ganho de áudio máximo reduzido (-12 dB)',
+    'camera.proLocked.strongLimiter': 'limitador forte',
+    'camera.proLocked.metadata': 'exportar e apagar metadados',
     'camera.proLocked.advancedSettings': 'configurações avançadas',
     'camera.proLocked.advancedPreset': 'presets avançados',
     'camera.proLocked.highResolution': 'resoluções avançadas',
@@ -660,10 +669,11 @@ export const translations = {
     'settings.title': 'Settings',
     'settings.subtitle':
       'Adjust capture behavior, audio profiles, and recording formats.',
-    'settings.section.capture': 'Capture',
+    'settings.section.capture': 'General',
     'settings.section.behavior': 'Interaction and behavior',
     'settings.section.format': 'Format and image',
     'settings.section.visualControls': 'Visual controls',
+    'settings.section.optimization': 'Optimization PRO',
     'settings.section.audio': 'Audio',
     'settings.section.recording': 'Recording',
     'settings.section.additional': 'Additional options',
@@ -671,6 +681,9 @@ export const translations = {
     'settings.audio.enabled.label': 'Audio',
     'settings.audio.enabled.description':
       'Enables audio recording. Requires microphone permission.',
+    'settings.audio.disabled.title': 'Audio disabled',
+    'settings.audio.disabled.description':
+      'Audio settings will have no effect while audio recording is turned off.',
     'settings.zoomGesture.label': 'Gesture zoom',
     'settings.zoomGesture.description':
       'Enables pinch gesture to control zoom.',
@@ -726,12 +739,13 @@ export const translations = {
     'settings.pro.debugToggle.label': 'Debug PRO test',
     'settings.pro.debugToggle.description':
       'Turns local PRO mode on and off to validate locked flows before publishing.',
-    'settings.pro.buildInfo': 'Build: {{channel}}',
     'settings.pro.description':
       'One-time payment to unlock advanced recording, audio, and optimization features.',
     'settings.pro.included':
       'Includes video optimization, ambient sound analysis, custom audio profiles, advanced presets, and advanced settings.',
-    'settings.pro.priceFallback': 'R$5.99 in Brazil or US$1.99 outside Brazil, based on Play Store configuration.',
+    'settings.pro.price': 'Only {{price}}',
+    'settings.pro.priceFallback': 'Only $1.99',
+    'settings.pro.unlockedAccess': 'Access to PRO features unlocked.',
     'settings.pro.unavailable':
       'Purchasing will be enabled when the videonly_pro_unlock product is configured in Google Play Console.',
     'settings.noMetadata.title': 'No metadata',
@@ -771,7 +785,7 @@ export const translations = {
     'audioSourcePicker.infoText':
       'For now, the best prevention is combining Unprocessed with mono capture. This reduces the risk of muffled audio, cut bass, and distortion in loud environments.',
 
-    'header.optimize': 'Optimize',
+    'header.optimize': 'Optimize PRO',
     'header.closeOptimization': 'Close optimization',
     'header.recordingMode': 'Recording mode',
     'header.videoResolution': 'Video resolution',
@@ -852,6 +866,10 @@ export const translations = {
     'camera.proLocked.optimization': 'media optimization',
     'camera.proLocked.ambient': 'ambient sound analysis',
     'camera.proLocked.audioProfiles': 'custom audio profiles',
+    'camera.proLocked.saveAudioProfiles': 'saving custom audio profiles',
+    'camera.proLocked.maxReducedGain': 'maximum reduced audio gain (-12 dB)',
+    'camera.proLocked.strongLimiter': 'strong limiter',
+    'camera.proLocked.metadata': 'exporting and deleting metadata',
     'camera.proLocked.advancedSettings': 'advanced settings',
     'camera.proLocked.advancedPreset': 'advanced presets',
     'camera.proLocked.highResolution': 'advanced resolutions',

@@ -24,6 +24,7 @@ import {
   MAX_SAVED_AUDIO_PROFILES,
   getAudioProfileOptions,
   getAudioRiskLevel,
+  sanitizeAudioSettingsForProAccess,
 } from '../../constants/audioProfiles';
 import {
   SLOW_MOTION_DURATION_OPTIONS,
@@ -86,13 +87,19 @@ export default function CameraPreview({
   const device = useCameraDevice(cameraPosition);
   const effectiveSettings = useMemo(
     () =>
-      isPro
-        ? settings
-        : {
-            ...settings,
-            optimizationMode: 'none',
-            recordingMode: 'normal',
-          },
+      sanitizeAudioSettingsForProAccess(
+        isPro
+          ? settings
+          : {
+              ...settings,
+              optimizationMode: 'none',
+              recordingMode:
+                settings.recordingMode === 'timelapse'
+                  ? 'normal'
+                  : settings.recordingMode,
+            },
+        isPro,
+      ),
     [isPro, settings],
   );
   const captureSettings = useMemo(
@@ -441,7 +448,7 @@ export default function CameraPreview({
 
   const openSaveProfileModal = () => {
     if (!isPro) {
-      requestProFeature('camera.proLocked.audioProfiles');
+      requestProFeature('camera.proLocked.saveAudioProfiles');
       return;
     }
 
@@ -454,7 +461,7 @@ export default function CameraPreview({
 
   const openRenameProfileModal = profile => {
     if (!isPro) {
-      requestProFeature('camera.proLocked.audioProfiles');
+      requestProFeature('camera.proLocked.saveAudioProfiles');
       return;
     }
 
@@ -467,7 +474,7 @@ export default function CameraPreview({
 
   const submitProfileName = () => {
     if (!isPro) {
-      requestProFeature('camera.proLocked.audioProfiles');
+      requestProFeature('camera.proLocked.saveAudioProfiles');
       return;
     }
 
@@ -490,7 +497,7 @@ export default function CameraPreview({
 
   const confirmReplaceSavedAudioProfile = profile => {
     if (!isPro) {
-      requestProFeature('camera.proLocked.audioProfiles');
+      requestProFeature('camera.proLocked.saveAudioProfiles');
       return;
     }
 
@@ -513,7 +520,7 @@ export default function CameraPreview({
 
   const confirmDeleteSavedAudioProfile = profile => {
     if (!isPro) {
-      requestProFeature('camera.proLocked.audioProfiles');
+      requestProFeature('camera.proLocked.saveAudioProfiles');
       return;
     }
 
@@ -699,20 +706,8 @@ export default function CameraPreview({
           key={option.value}
           onPress={() => {
             if (option.value === 'custom') {
-              if (!isPro) {
-                requestProFeature('camera.proLocked.audioProfiles');
-                return;
-              }
-
+              onApplyAudioProfile(option.value);
               setIsCustomProfileMenuOpen(true);
-              return;
-            }
-
-            if (
-              option.value !== 'standard' &&
-              !isPro
-            ) {
-              requestProFeature('camera.proLocked.audioProfiles');
               return;
             }
 

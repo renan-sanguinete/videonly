@@ -195,6 +195,12 @@ export const styles = StyleSheet.create({
     fontWeight: '800',
     fontFamily: typography.body.fontFamily,
   },
+  proUnlockedText: {
+    color: colors.accent,
+    marginTop: 12,
+    fontWeight: '800',
+    fontFamily: typography.body.fontFamily,
+  },
   proRestoreButton: {
     flex: 1,
     marginTop: 0,

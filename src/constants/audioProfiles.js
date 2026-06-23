@@ -1,7 +1,7 @@
 import { UNPROCESSED_AUDIO_SOURCE } from './audioSources';
 import {translate} from '../i18n/translations';
 
-export const MAX_SAVED_AUDIO_PROFILES = 3;
+export const MAX_SAVED_AUDIO_PROFILES = 5;
 
 export const AUDIO_PROFILE_SETTING_KEYS = [
   'audioCodec',
@@ -92,6 +92,21 @@ export function applyAudioProfile(settings, value) {
     ...settings,
     ...buildAudioProfilePatch(value),
     audioCustomProfileId: null,
+  };
+}
+
+export function sanitizeAudioSettingsForProAccess(settings, isPro) {
+  if (isPro) {
+    return settings;
+  }
+
+  return {
+    ...settings,
+    audioGain: settings.audioGain === -12 ? -9 : settings.audioGain,
+    audioLimiterPreset:
+      settings.audioLimiterPreset === 'strong'
+        ? 'standard'
+        : settings.audioLimiterPreset,
   };
 }
 
