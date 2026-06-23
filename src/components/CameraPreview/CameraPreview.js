@@ -30,6 +30,7 @@ import {
   SLOW_MOTION_DURATION_OPTIONS,
   getCaptureSettingsForRecordingMode,
   getRecordingModeOption,
+  getTimelapseMaxDurationOptions,
 } from '../../constants/recordingModes';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import ZoomRail from './ZoomRail';
@@ -145,6 +146,25 @@ export default function CameraPreview({
     () => getRecordingModeOption(settings.recordingMode, t),
     [settings.recordingMode, t],
   );
+  const timelapseMaxDurationOptions = useMemo(
+    () => getTimelapseMaxDurationOptions(t),
+    [t],
+  );
+  const timelapseMaxDurationLabel = useMemo(() => {
+    if (settings.recordingMode !== 'timelapse' || !settings.timelapseMaxDurationMs) {
+      return '';
+    }
+
+    return (
+      timelapseMaxDurationOptions.find(
+        option => option.value === settings.timelapseMaxDurationMs,
+      )?.label ?? ''
+    );
+  }, [
+    settings.recordingMode,
+    settings.timelapseMaxDurationMs,
+    timelapseMaxDurationOptions,
+  ]);
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 0);
   const topOverlayStyle = useMemo(
@@ -871,6 +891,15 @@ export default function CameraPreview({
                 {currentRecordingMode.indicatorLabel}
               </Text>
             </View>
+            {timelapseMaxDurationLabel ? (
+              <View style={styles.recordingModeIndicator}>
+                <Text style={styles.recordingModeIndicatorText}>
+                  {t('timelapse.maxDuration.short', {
+                    duration: timelapseMaxDurationLabel,
+                  })}
+                </Text>
+              </View>
+            ) : null}
             {settings.recordingMode === 'slowMotion' ? (
               <View style={styles.slowMotionDurationOptions}>
                 {SLOW_MOTION_DURATION_OPTIONS.map(option => {

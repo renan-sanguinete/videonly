@@ -64,6 +64,8 @@ export const translations = {
     'common.save': 'Salvar',
     'common.edit': 'Editar',
     'common.replace': 'Substituir',
+    'common.apply': 'Aplicar',
+    'common.stop': 'Parar',
     'common.back': 'Voltar',
     'common.error': 'Erro',
     'common.audio': 'Áudio',
@@ -174,6 +176,31 @@ export const translations = {
     'recording.normal.label': 'Normal',
     'recording.slowMotion.label': 'Câmera lenta',
     'recording.timelapse.label': 'Time-lapse',
+
+    'timelapse.modal.title': 'Configurar time-lapse',
+    'timelapse.modal.description':
+      'Escolha o comportamento antes de iniciar a gravação.',
+    'timelapse.mode.label': 'Modo',
+    'timelapse.mode.normal.label': 'Modo normal',
+    'timelapse.mode.normal.description':
+      'Configuração padrão para cenas com boa iluminação.',
+    'timelapse.mode.night.label': 'Modo noturno',
+    'timelapse.mode.night.description':
+      'Prioriza mais luz em cenas escuras, mantendo áudio desligado.',
+    'timelapse.interval.label': 'Frame interval',
+    'timelapse.maxDuration.label': 'Duração máxima de gravação',
+    'timelapse.maxDuration.short': '{{duration}}',
+    'timelapse.stopConfirm.title': 'Parar time-lapse?',
+    'timelapse.stopConfirm.message':
+      'Esta gravação tem duração máxima configurada. Deseja parar agora?',
+    'timelapse.duration.none': 'Nenhuma',
+    'timelapse.duration.1m': '1 min',
+    'timelapse.duration.3m': '3 min',
+    'timelapse.duration.10m': '10 min',
+    'timelapse.duration.20m': '20 min',
+    'timelapse.duration.30m': '30 min',
+    'timelapse.duration.60m': '1 h',
+    'timelapse.duration.3h': '3 h',
 
     'settings.title': 'Configurações',
     'settings.subtitle':
@@ -554,6 +581,8 @@ export const translations = {
     'common.save': 'Save',
     'common.edit': 'Edit',
     'common.replace': 'Replace',
+    'common.apply': 'Apply',
+    'common.stop': 'Stop',
     'common.back': 'Back',
     'common.error': 'Error',
     'common.audio': 'Audio',
@@ -665,6 +694,31 @@ export const translations = {
     'recording.normal.label': 'Normal',
     'recording.slowMotion.label': 'Slow motion',
     'recording.timelapse.label': 'Time-lapse',
+
+    'timelapse.modal.title': 'Configure time-lapse',
+    'timelapse.modal.description':
+      'Choose the behavior before starting the recording.',
+    'timelapse.mode.label': 'Mode',
+    'timelapse.mode.normal.label': 'Normal mode',
+    'timelapse.mode.normal.description':
+      'Default setup for scenes with good lighting.',
+    'timelapse.mode.night.label': 'Night mode',
+    'timelapse.mode.night.description':
+      'Prioritizes more light in dark scenes while keeping audio off.',
+    'timelapse.interval.label': 'Frame interval',
+    'timelapse.maxDuration.label': 'Maximum recording duration',
+    'timelapse.maxDuration.short': '{{duration}}',
+    'timelapse.stopConfirm.title': 'Stop time-lapse?',
+    'timelapse.stopConfirm.message':
+      'This recording has a maximum duration configured. Stop it now?',
+    'timelapse.duration.none': 'None',
+    'timelapse.duration.1m': '1 min',
+    'timelapse.duration.3m': '3 min',
+    'timelapse.duration.10m': '10 min',
+    'timelapse.duration.20m': '20 min',
+    'timelapse.duration.30m': '30 min',
+    'timelapse.duration.60m': '1 h',
+    'timelapse.duration.3h': '3 h',
 
     'settings.title': 'Settings',
     'settings.subtitle':

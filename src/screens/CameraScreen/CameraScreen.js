@@ -11,8 +11,10 @@ import {
   AppState,
   FlatList,
   Linking,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from 'react-native';
@@ -68,7 +70,13 @@ import {
   getMediaOptimizationModeOption,
 } from '../../constants/mediaOptimization';
 import {buildVideoResolutionOptions} from '../../utils/videoResolutionOptions';
-import {getCaptureSettingsForRecordingMode} from '../../constants/recordingModes';
+import {
+  TIMELAPSE_FRAME_INTERVAL_OPTIONS,
+  getCaptureSettingsForRecordingMode,
+  getTimelapseMaxDurationOptions,
+  getTimelapseModeOptions,
+  getTimelapseSpeedFactor,
+} from '../../constants/recordingModes';
 import { useAudioLevelMonitor } from '../../hooks/useAudioLevelMonitor';
 import { useAmbientAudioAnalysis } from '../../hooks/useAmbientAudioAnalysis';
 import {useI18n} from '../../i18n/I18nContext';
@@ -165,6 +173,11 @@ export default function CameraScreen({ navigation }) {
     () => buildVideoResolutionOptions(t),
     [t],
   );
+  const timelapseModeOptions = useMemo(() => getTimelapseModeOptions(t), [t]);
+  const timelapseMaxDurationOptions = useMemo(
+    () => getTimelapseMaxDurationOptions(t),
+    [t],
+  );
 
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
@@ -185,6 +198,13 @@ export default function CameraScreen({ navigation }) {
   const [activeFlashMode, setActiveFlashMode] = useState('off');
   const [isRecoveringCamera, setIsRecoveringCamera] = useState(false);
   const [isOptimizationMenuOpen, setIsOptimizationMenuOpen] = useState(false);
+  const [isTimelapseModalVisible, setIsTimelapseModalVisible] =
+    useState(false);
+  const [timelapseDraft, setTimelapseDraft] = useState({
+    mode: settings.timelapseMode ?? 'normal',
+    intervalMs: settings.timelapseIntervalMs ?? '500',
+    maxDurationMs: settings.timelapseMaxDurationMs ?? '',
+  });
   const [isAmbientAnalysisMenuOpen, setIsAmbientAnalysisMenuOpen] =
     useState(false);
   const [
@@ -577,13 +597,52 @@ export default function CameraScreen({ navigation }) {
         return;
       }
 
+      if (value === 'timelapse') {
+        setTimelapseDraft({
+          mode: settings.timelapseMode ?? 'normal',
+          intervalMs: settings.timelapseIntervalMs ?? '500',
+          maxDurationMs: settings.timelapseMaxDurationMs ?? '',
+        });
+        requestAnimationFrame(() => {
+          setIsTimelapseModalVisible(true);
+        });
+        return;
+      }
+
       setSettings(prev => ({
         ...prev,
         recordingMode: value,
       }));
     },
-    [ensurePro, setSettings],
+    [
+      ensurePro,
+      setSettings,
+      settings.timelapseIntervalMs,
+      settings.timelapseMaxDurationMs,
+      settings.timelapseMode,
+    ],
   );
+
+  const closeTimelapseModal = useCallback(() => {
+    setIsTimelapseModalVisible(false);
+  }, []);
+
+  const applyTimelapseSettings = useCallback(() => {
+    const fps = timelapseDraft.mode === 'night' ? '24' : '30';
+
+    setSettings(prev => ({
+      ...prev,
+      recordingMode: 'timelapse',
+      timelapseMode: timelapseDraft.mode,
+      timelapseIntervalMs: timelapseDraft.intervalMs,
+      timelapseMaxDurationMs: timelapseDraft.maxDurationMs,
+      timelapseSpeedFactor: getTimelapseSpeedFactor(
+        timelapseDraft.intervalMs,
+        fps,
+      ),
+    }));
+    setIsTimelapseModalVisible(false);
+  }, [setSettings, timelapseDraft]);
 
   const onResolutionChange = useCallback(
     value => {
@@ -1189,6 +1248,20 @@ export default function CameraScreen({ navigation }) {
             console.warn('Falha ao parar câmera lenta automaticamente.', error);
           });
         }, Number.isFinite(maxDurationMs) ? maxDurationMs : 5000);
+      } else if (settings.recordingMode === 'timelapse') {
+        const maxDurationMs = Number(captureSettings.timelapseMaxDurationMs);
+
+        if (Number.isFinite(maxDurationMs) && maxDurationMs > 0) {
+          recordingLimitTimeoutRef.current = setTimeout(() => {
+            if (!isRecordingRef.current || !camera.current) {
+              return;
+            }
+
+            camera.current.stopRecording().catch(error => {
+              console.warn('Falha ao parar time-lapse automaticamente.', error);
+            });
+          }, maxDurationMs);
+        }
       }
     } catch (error) {
       if (recordingLimitTimeoutRef.current) {
@@ -1218,6 +1291,38 @@ export default function CameraScreen({ navigation }) {
       return;
     }
 
+    if (settings.recordingMode === 'timelapse' && settings.timelapseMaxDurationMs) {
+      showAlert(
+        t('timelapse.stopConfirm.title'),
+        t('timelapse.stopConfirm.message'),
+        [
+          {text: t('common.cancel'), style: 'cancel'},
+          {
+            text: t('common.stop'),
+            style: 'destructive',
+            onPress: () => {
+              if (recordingLimitTimeoutRef.current) {
+                clearTimeout(recordingLimitTimeoutRef.current);
+                recordingLimitTimeoutRef.current = null;
+              }
+
+              camera.current?.stopRecording().catch(error => {
+                recordingStartedAtRef.current = null;
+                setRecordingElapsedMs(0);
+                setIsRecording(false);
+                showAlert(
+                  t('common.error'),
+                  error?.message ?? t('camera.stopRecordingError'),
+                );
+              });
+            },
+          },
+        ],
+        {cancelable: true},
+      );
+      return;
+    }
+
     try {
       if (recordingLimitTimeoutRef.current) {
         clearTimeout(recordingLimitTimeoutRef.current);
@@ -1230,7 +1335,13 @@ export default function CameraScreen({ navigation }) {
       setIsRecording(false);
       showAlert(t('common.error'), error?.message ?? t('camera.stopRecordingError'));
     }
-  }, [isRecording, showAlert, t]);
+  }, [
+    isRecording,
+    settings.recordingMode,
+    settings.timelapseMaxDurationMs,
+    showAlert,
+    t,
+  ]);
 
   const onPermissionPress = useCallback(async () => {
     try {
@@ -1517,6 +1628,172 @@ export default function CameraScreen({ navigation }) {
         title={t('camera.deletingSelectedTitle')}
         visible={isDeletingSelectedVideo}
       />
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isTimelapseModalVisible}
+        onRequestClose={closeTimelapseModal}
+      >
+        <View style={styles.timelapseModalBackdrop}>
+          <View style={styles.timelapseModalCard}>
+            <View style={styles.timelapseModalHeader}>
+              <View style={styles.timelapseModalTitleWrap}>
+                <Text style={styles.timelapseModalTitle}>
+                  {t('timelapse.modal.title')}
+                </Text>
+                <Text style={styles.timelapseModalDescription}>
+                  {t('timelapse.modal.description')}
+                </Text>
+              </View>
+              <Pressable
+                hitSlop={10}
+                onPress={closeTimelapseModal}
+                style={styles.timelapseModalCloseButton}
+              >
+                <Icon name="close-outline" size={24} color="#FAF8F5" />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.timelapseModalContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View>
+                <Text style={styles.timelapseSectionLabel}>
+                  {t('timelapse.mode.label')}
+                </Text>
+                <View style={styles.timelapseModeOptions}>
+                  {timelapseModeOptions.map(option => {
+                    const isSelected = timelapseDraft.mode === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        onPress={() =>
+                          setTimelapseDraft(prev => ({
+                            ...prev,
+                            mode: option.value,
+                          }))
+                        }
+                        style={[
+                          styles.timelapseModeOption,
+                          isSelected && styles.timelapseOptionSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.timelapseModeOptionTitle,
+                            isSelected &&
+                              styles.timelapseModeOptionTitleSelected,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                        <Text style={styles.timelapseModeOptionDescription}>
+                          {option.description}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View>
+                <Text style={styles.timelapseSectionLabel}>
+                  {t('timelapse.interval.label')}
+                </Text>
+                <View style={styles.timelapseChipGrid}>
+                  {TIMELAPSE_FRAME_INTERVAL_OPTIONS.map(option => {
+                    const isSelected =
+                      timelapseDraft.intervalMs === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        onPress={() =>
+                          setTimelapseDraft(prev => ({
+                            ...prev,
+                            intervalMs: option.value,
+                          }))
+                        }
+                        style={[
+                          styles.timelapseChip,
+                          isSelected && styles.timelapseOptionSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.timelapseChipText,
+                            isSelected && styles.timelapseChipTextSelected,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View>
+                <Text style={styles.timelapseSectionLabel}>
+                  {t('timelapse.maxDuration.label')}
+                </Text>
+                <View style={styles.timelapseChipGrid}>
+                  {timelapseMaxDurationOptions.map(option => {
+                    const isSelected =
+                      timelapseDraft.maxDurationMs === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        onPress={() =>
+                          setTimelapseDraft(prev => ({
+                            ...prev,
+                            maxDurationMs: option.value,
+                          }))
+                        }
+                        style={[
+                          styles.timelapseChip,
+                          isSelected && styles.timelapseOptionSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.timelapseChipText,
+                            isSelected && styles.timelapseChipTextSelected,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.timelapseModalActions}>
+              <Pressable
+                onPress={closeTimelapseModal}
+                style={styles.timelapseSecondaryButton}
+              >
+                <Text style={styles.timelapseSecondaryButtonText}>
+                  {t('common.cancel')}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={applyTimelapseSettings}
+                style={styles.timelapsePrimaryButton}
+              >
+                <Text style={styles.timelapsePrimaryButtonText}>
+                  {t('common.apply')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <View style={styles.previewStage}>
         {canMountCameraPreview ? (
           <CameraPreview

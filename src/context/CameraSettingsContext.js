@@ -51,9 +51,11 @@ const DEFAULT_SETTINGS = {
   slowMotionTargetFps: '120',
   slowMotionPlaybackFps: '30',
   slowMotionMaxDurationMs: '5000',
-  timelapseIntervalMs: '1000',
+  timelapseIntervalMs: '500',
   timelapseOutputFps: '24',
   timelapseSpeedFactor: '8',
+  timelapseMode: 'normal',
+  timelapseMaxDurationMs: '',
   videoResolutionPreset: 'auto',
   enableZoomGesture: true,
   lowLightBoost: false,
@@ -114,6 +116,9 @@ function normalizePersistedSettings(parsedSettings) {
   normalized.recordingMode = getRecordingModeOption(
     normalized.recordingMode,
   ).value;
+  if (normalized.recordingMode !== 'normal') {
+    normalized.recordingMode = DEFAULT_SETTINGS.recordingMode;
+  }
   if (
     normalized.slowMotionTargetFps === undefined ||
     normalized.slowMotionTargetFps === null
@@ -150,6 +155,19 @@ function normalizePersistedSettings(parsedSettings) {
     normalized.timelapseSpeedFactor === null
   ) {
     normalized.timelapseSpeedFactor = DEFAULT_SETTINGS.timelapseSpeedFactor;
+  }
+  if (
+    normalized.timelapseMode === undefined ||
+    normalized.timelapseMode === null
+  ) {
+    normalized.timelapseMode = DEFAULT_SETTINGS.timelapseMode;
+  }
+  if (
+    normalized.timelapseMaxDurationMs === undefined ||
+    normalized.timelapseMaxDurationMs === null
+  ) {
+    normalized.timelapseMaxDurationMs =
+      DEFAULT_SETTINGS.timelapseMaxDurationMs;
   }
   if (normalized.audioSource === undefined || normalized.audioSource === null) {
     normalized.audioSource = UNPROCESSED_AUDIO_SOURCE;
