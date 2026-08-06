@@ -12,7 +12,6 @@ import {
   FlatList,
   Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -35,13 +34,11 @@ import { useCameraSettings } from '../../context/CameraSettingsContext';
 import { useCustomAlert } from '../../context/CustomAlertContext';
 import {useProAccess} from '../../context/ProAccessContext';
 import {
-  canManageAndroidMedia,
   ensureCameraPermission,
   ensureCameraRollVideoPermission,
   ensureMicrophonePermission,
   ensureStartupPermissions,
   getCameraRollVideoPermissionStatus,
-  openAndroidManageMediaSettings,
 } from '../../utils/appPermissions';
 import { usePermissionQueue } from '../../hooks/usePermissionQueue';
 import {
@@ -200,7 +197,6 @@ export default function CameraScreen({ navigation }) {
   const recoveryTimeoutRef = useRef(null);
   const isUnmountedRef = useRef(false);
   const hasBootstrappedInitialFlowRef = useRef(false);
-  const hasPromptedManageMediaRef = useRef(false);
   const isRequestingPermissionsRef = useRef(false);
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
@@ -884,42 +880,6 @@ export default function CameraScreen({ navigation }) {
     [settings.audio, showAlert, t],
   );
 
-  const promptManageMediaAccess = useCallback(async () => {
-    if (
-      hasPromptedManageMediaRef.current ||
-      Platform.OS !== 'android' ||
-      Platform.Version < 31
-    ) {
-      return;
-    }
-
-    const canManageMedia = await canManageAndroidMedia();
-    if (canManageMedia) {
-      return;
-    }
-
-    hasPromptedManageMediaRef.current = true;
-
-    showAlert(
-      t('camera.manageMedia.title'),
-      t('camera.manageMedia.message'),
-      [
-        { text: t('camera.notNow'), style: 'cancel' },
-        {
-          text: t('camera.openSettings'),
-          onPress: () => {
-            openAndroidManageMediaSettings().catch(error => {
-              console.warn(
-                'Falha ao abrir configurações de gerenciamento de mídia.',
-                error,
-              );
-            });
-          },
-        },
-      ],
-    );
-  }, [showAlert, t]);
-
   useEffect(() => {
     if (
       !isHydrated ||
@@ -1002,23 +962,6 @@ export default function CameraScreen({ navigation }) {
       },
     );
 
-    enqueuePermission(
-      'startup-manage-media',
-      async () => {
-        if (!galleryPermissionGranted) {
-          return;
-        }
-
-        await promptManageMediaAccess();
-      },
-      error => {
-        console.warn(
-          'Falha ao sugerir acesso especial de gerenciamento de mídia.',
-          error,
-        );
-      },
-    );
-
     enqueuePermission('startup-complete', async () => {
       finalizeBootstrap();
     });
@@ -1031,7 +974,6 @@ export default function CameraScreen({ navigation }) {
     isHydrated,
     isPermissionFlowReady,
     loadVideosFromGallery,
-    promptManageMediaAccess,
     settings.audio,
   ]);
 
@@ -1083,7 +1025,7 @@ export default function CameraScreen({ navigation }) {
         effectiveSettings.recordingMode === 'timelapse';
       const shouldProcessMedia =
         shouldOptimize && (optimizationMode !== 'audio' || settings.audio);
-      const saveRecordingMetadata = async finalPath => {
+      const saveRecordingMetadata = async (finalPath, savedAssetUri = null) => {
         const savedFileName = getFileNameFromPath(finalPath) ?? newFileName;
         const savedDurationSeconds = getEstimatedSavedDurationSeconds({
           captureSettings,
@@ -1097,6 +1039,7 @@ export default function CameraScreen({ navigation }) {
           originalPath,
           sourcePath,
           savedPath: finalPath,
+          savedAssetUri,
           compressedPath,
           recordedDurationSeconds,
           savedDurationSeconds,
@@ -1146,9 +1089,9 @@ export default function CameraScreen({ navigation }) {
           pathToSave = effectPath;
         }
 
-        await saveVideoToCameraRoll(pathToSave);
+        const savedVideo = await saveVideoToCameraRoll(pathToSave);
         try {
-          await saveRecordingMetadata(pathToSave);
+          await saveRecordingMetadata(pathToSave, savedVideo?.uri);
         } catch (metadataError) {
           console.warn(
             'Não foi possível salvar os metadados da gravação.',
@@ -1160,9 +1103,9 @@ export default function CameraScreen({ navigation }) {
       } catch (error) {
         if (shouldProcessMedia || shouldApplyEffect) {
           try {
-            await saveVideoToCameraRoll(sourcePath);
+            const savedVideo = await saveVideoToCameraRoll(sourcePath);
             try {
-              await saveRecordingMetadata(sourcePath);
+              await saveRecordingMetadata(sourcePath, savedVideo?.uri);
             } catch (metadataError) {
               console.warn(
                 'Não foi possível salvar os metadados da gravação.',
@@ -1465,35 +1408,6 @@ export default function CameraScreen({ navigation }) {
     setSelectedVideoUri(null);
   }, []);
 
-  const maybeWarnAboutManageMedia = useCallback(async () => {
-    if (Platform.OS !== 'android' || Platform.Version < 31) {
-      return;
-    }
-
-    if (await canManageAndroidMedia()) {
-      return;
-    }
-
-    showAlert(
-      t('camera.manageMedia.extraTitle'),
-      t('camera.manageMedia.extraMessage'),
-      [
-        { text: t('common.close'), style: 'cancel' },
-        {
-          text: t('camera.openSettings'),
-          onPress: () => {
-            openAndroidManageMediaSettings().catch(openError => {
-              console.warn(
-                'Falha ao abrir configurações de gerenciamento de mídia.',
-                openError,
-              );
-            });
-          },
-        },
-      ],
-    );
-  }, [showAlert, t]);
-
   const selectedVideo = useMemo(
     () => savedVideos.find(item => item.uri === selectedVideoUri) ?? null,
     [savedVideos, selectedVideoUri],
@@ -1504,12 +1418,8 @@ export default function CameraScreen({ navigation }) {
       setIsDeletingSelectedVideo(true);
 
       try {
-        const result = await deleteVideoFromCameraRoll(item.uri);
+        await deleteVideoFromCameraRoll(item.uri, {filename: item.filename});
         await loadVideosFromGallery({ showLoader: false });
-
-        if (!result?.bypassedSystemPrompt) {
-          await maybeWarnAboutManageMedia();
-        }
       } catch (error) {
         showAlert(
           t('common.error'),
@@ -1519,7 +1429,7 @@ export default function CameraScreen({ navigation }) {
         setIsDeletingSelectedVideo(false);
       }
     },
-    [loadVideosFromGallery, maybeWarnAboutManageMedia, showAlert, t],
+    [loadVideosFromGallery, showAlert, t],
   );
 
   const optimizeSelectedVideo = useCallback(
@@ -1549,7 +1459,27 @@ export default function CameraScreen({ navigation }) {
           normalizeAudioLoudness: settings.normalizeAudioLoudness,
         });
 
-        await saveVideoToCameraRoll(optimizedPath);
+        const savedVideo = await saveVideoToCameraRoll(optimizedPath);
+        const savedFileName = getFileNameFromPath(optimizedPath);
+
+        if (savedFileName) {
+          await saveVideoRecordingMetadata(
+            savedFileName,
+            buildVideoRecordingMetadata({
+              videoFileName: savedFileName,
+              originalPath: item.path,
+              sourcePath: item.path,
+              savedPath: optimizedPath,
+              savedAssetUri: savedVideo?.uri,
+              compressedPath: optimizedPath,
+              savedDurationSeconds: item.duration,
+              requestedOptimizationMode: mode,
+              appliedOptimizationMode: mode,
+              usedFallbackToOriginal: false,
+              settings,
+            }),
+          );
+        }
         await loadVideosFromGallery({ showLoader: false });
 
         showAlert(
@@ -1580,8 +1510,7 @@ export default function CameraScreen({ navigation }) {
     [
       loadVideosFromGallery,
       ensurePro,
-      settings.audioLimiterPreset,
-      settings.normalizeAudioLoudness,
+      settings,
       showAlert,
       t,
     ],

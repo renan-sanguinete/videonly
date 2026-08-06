@@ -1,10 +1,5 @@
-import {NativeModules, PermissionsAndroid, Platform} from 'react-native';
+import {PermissionsAndroid, Platform} from 'react-native';
 import {Camera} from 'react-native-vision-camera';
-
-const {MediaManagementModule} = NativeModules;
-const READ_MEDIA_VISUAL_USER_SELECTED =
-  PermissionsAndroid.PERMISSIONS.READ_MEDIA_VISUAL_USER_SELECTED ??
-  'android.permission.READ_MEDIA_VISUAL_USER_SELECTED';
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -17,18 +12,8 @@ function getAndroidGalleryPermissions() {
 
   const permissions = [];
 
-  if (Platform.Version >= 33) {
-    permissions.push(PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO);
-  } else {
+  if (Platform.Version < 33) {
     permissions.push(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
-  }
-
-  if (Platform.Version >= 34) {
-    permissions.push(READ_MEDIA_VISUAL_USER_SELECTED);
-  }
-
-  if (Platform.Version <= 29) {
-    permissions.push(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
   }
 
   return permissions;
@@ -71,16 +56,11 @@ async function getAndroidGalleryPermissionState() {
     };
   }
 
-  if (Platform.Version >= 34) {
-    const [hasFullAccess, hasLimitedAccess] = await Promise.all([
-      PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO),
-      PermissionsAndroid.check(READ_MEDIA_VISUAL_USER_SELECTED),
-    ]);
-
+  if (Platform.Version >= 33) {
     return {
-      fullAccess: hasFullAccess,
-      limitedAccess: hasLimitedAccess,
-      granted: hasFullAccess || hasLimitedAccess,
+      fullAccess: true,
+      limitedAccess: false,
+      granted: true,
     };
   }
 
@@ -119,17 +99,8 @@ export async function ensureCameraRollVideoPermission({request = true} = {}) {
     return true;
   }
 
-  if (Platform.Version >= 34) {
-    const statuses = await PermissionsAndroid.requestMultiple([
-      PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
-      READ_MEDIA_VISUAL_USER_SELECTED,
-    ]);
-
-    return (
-      statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO] ===
-        PermissionsAndroid.RESULTS.GRANTED ||
-      statuses[READ_MEDIA_VISUAL_USER_SELECTED] === PermissionsAndroid.RESULTS.GRANTED
-    );
+  if (Platform.Version >= 33) {
+    return true;
   }
 
   return ensureAndroidPermissions(getAndroidGalleryPermissions(), {request: true});
@@ -199,38 +170,4 @@ export async function ensureStartupPermissions({
     galleryOk,
     microphoneOk,
   };
-}
-
-export async function canManageAndroidMedia() {
-  if (
-    Platform.OS !== 'android' ||
-    Platform.Version < 31 ||
-    !MediaManagementModule?.canManageMedia
-  ) {
-    return false;
-  }
-
-  try {
-    return (await MediaManagementModule.canManageMedia()) === true;
-  } catch (error) {
-    console.warn('Não foi possível verificar o acesso de gerenciamento de mídia.', error);
-    return false;
-  }
-}
-
-export async function openAndroidManageMediaSettings() {
-  if (
-    Platform.OS !== 'android' ||
-    Platform.Version < 31 ||
-    !MediaManagementModule?.openManageMediaSettings
-  ) {
-    return false;
-  }
-
-  try {
-    return (await MediaManagementModule.openManageMediaSettings()) === true;
-  } catch (error) {
-    console.warn('Não foi possível abrir as configurações de gerenciamento de mídia.', error);
-    return false;
-  }
 }

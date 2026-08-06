@@ -12,7 +12,6 @@ class VideoIntentPackage : ReactPackage {
       VideoCompressionModule(reactContext),
       MediaProcessingModule(reactContext),
       AudioLevelMonitorModule(reactContext),
-      MediaManagementModule(reactContext),
       PlayBillingModule(reactContext),
       VideonlyBuildConfigModule(reactContext),
     )

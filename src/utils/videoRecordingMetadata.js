@@ -25,6 +25,7 @@ export function buildVideoRecordingMetadata({
   originalPath,
   sourcePath,
   savedPath,
+  savedAssetUri = null,
   compressedPath = null,
   recordedDurationSeconds = null,
   savedDurationSeconds = null,
@@ -40,6 +41,7 @@ export function buildVideoRecordingMetadata({
     originalPath,
     sourcePath,
     savedPath,
+    savedAssetUri,
     compressedPath,
     recordedDurationSeconds,
     savedDurationSeconds,
@@ -107,6 +109,56 @@ export async function readVideoRecordingMetadata(videoFileName) {
 
   const contents = await RNFS.readFile(filePath, 'utf8');
   return JSON.parse(contents);
+}
+
+export async function listVideoRecordingMetadata() {
+  const directoryPath = getMetadataDirectoryPath();
+  const directoryExists = await RNFS.exists(directoryPath);
+
+  if (!directoryExists) {
+    return [];
+  }
+
+  const files = await RNFS.readDir(directoryPath);
+  const metadataFiles = files
+    .filter(item => item.isFile() && item.name.endsWith('.json'))
+    .sort((left, right) => {
+      const leftTime = left.mtime?.getTime?.() ?? 0;
+      const rightTime = right.mtime?.getTime?.() ?? 0;
+
+      return rightTime - leftTime;
+    });
+
+  const records = [];
+
+  for (const file of metadataFiles) {
+    try {
+      const contents = await RNFS.readFile(file.path, 'utf8');
+      records.push({
+        fileName: file.name,
+        filePath: file.path,
+        metadata: JSON.parse(contents),
+      });
+    } catch (error) {
+      console.warn('Não foi possível carregar metadados de vídeo.', error);
+    }
+  }
+
+  return records;
+}
+
+export async function deleteVideoRecordingMetadataFile(videoFileName) {
+  if (!videoFileName) {
+    return;
+  }
+
+  const fileName = getVideoMetadataFileName(videoFileName);
+  const filePath = `${getMetadataDirectoryPath()}/${fileName}`;
+  const exists = await RNFS.exists(filePath);
+
+  if (exists) {
+    await RNFS.unlink(filePath);
+  }
 }
 
 function generateExportFileName() {

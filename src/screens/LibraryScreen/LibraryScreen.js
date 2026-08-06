@@ -2,7 +2,6 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Platform,
   Pressable,
   RefreshControl,
   Text,
@@ -19,16 +18,16 @@ import {useCustomAlert} from '../../context/CustomAlertContext';
 import {useProAccess} from '../../context/ProAccessContext';
 import {useI18n} from '../../i18n/I18nContext';
 import {
-  canManageAndroidMedia,
-  openAndroidManageMediaSettings,
-} from '../../utils/appPermissions';
-import {
   deleteVideoFromCameraRoll,
   loadVideosPageFromCameraRoll,
   saveVideoToCameraRoll,
 } from '../../utils/cameraRollVideos';
 import {openVideoUri, shareVideo} from '../../utils/videoActions';
 import {optimizeVideo} from '../../utils/videoCompression';
+import {
+  buildVideoRecordingMetadata,
+  saveVideoRecordingMetadata,
+} from '../../utils/videoRecordingMetadata';
 import {cinematicTheme} from '../../theme/cinematicTheme';
 import {styles} from './styles';
 
@@ -68,6 +67,14 @@ function getVideoExtensionFromItem(item) {
   const extension = extensionMatch?.[1]?.toLowerCase();
 
   return extension === 'mov' ? 'mov' : 'mp4';
+}
+
+function getFileNameFromPath(path) {
+  if (typeof path !== 'string') {
+    return null;
+  }
+
+  return decodeURIComponent(path.split('/').pop()?.split('?')[0] ?? '') || null;
 }
 
 function mergeVideos(currentVideos, nextVideos) {
@@ -210,35 +217,6 @@ export default function LibraryScreen({navigation}) {
     );
   }, []);
 
-  const maybeWarnAboutManageMedia = useCallback(async () => {
-    if (Platform.OS !== 'android' || Platform.Version < 31) {
-      return;
-    }
-
-    if (await canManageAndroidMedia()) {
-      return;
-    }
-
-    showAlert(
-      t('camera.manageMedia.extraTitle'),
-      t('camera.manageMedia.extraMessage'),
-      [
-        {text: t('common.close'), style: 'cancel'},
-        {
-          text: t('camera.openSettings'),
-          onPress: () => {
-            openAndroidManageMediaSettings().catch(openError => {
-              console.warn(
-                'Falha ao abrir configurações de gerenciamento de mídia.',
-                openError,
-              );
-            });
-          },
-        },
-      ],
-    );
-  }, [showAlert, t]);
-
   const deleteVideos = useCallback(async () => {
     const urisToDelete = [...selectedUris];
 
@@ -250,21 +228,16 @@ export default function LibraryScreen({navigation}) {
     setDeleteProgress({current: 0, total: urisToDelete.length});
 
     try {
-      let bypassedSystemPrompt = false;
-
       for (let index = 0; index < urisToDelete.length; index += 1) {
         setDeleteProgress({current: index + 1, total: urisToDelete.length});
-        const result = await deleteVideoFromCameraRoll(urisToDelete[index]);
-        bypassedSystemPrompt =
-          bypassedSystemPrompt || Boolean(result?.bypassedSystemPrompt);
+        const video = videos.find(item => item.uri === urisToDelete[index]);
+        await deleteVideoFromCameraRoll(urisToDelete[index], {
+          filename: video?.filename,
+        });
       }
 
       clearSelection();
       await load({showLoader: false});
-
-      if (!bypassedSystemPrompt) {
-        await maybeWarnAboutManageMedia();
-      }
     } catch (error) {
       showAlert(
         t('common.error'),
@@ -274,7 +247,7 @@ export default function LibraryScreen({navigation}) {
       setIsDeleting(false);
       setDeleteProgress({current: 0, total: 0});
     }
-  }, [clearSelection, load, maybeWarnAboutManageMedia, selectedUris, showAlert, t]);
+  }, [clearSelection, load, selectedUris, showAlert, t, videos]);
 
   const confirmDeleteSelected = useCallback(() => {
     if (selectedCount === 0 || isDeleting) {
@@ -390,14 +363,10 @@ export default function LibraryScreen({navigation}) {
       setDeleteProgress({current: 1, total: 1});
 
       try {
-        const result = await deleteVideoFromCameraRoll(item.uri);
+        await deleteVideoFromCameraRoll(item.uri, {filename: item.filename});
         setActionVideoUri(null);
         setIsActionOptimizationOpen(false);
         await load({showLoader: false});
-
-        if (!result?.bypassedSystemPrompt) {
-          await maybeWarnAboutManageMedia();
-        }
       } catch (error) {
         showAlert(
           t('common.error'),
@@ -408,7 +377,7 @@ export default function LibraryScreen({navigation}) {
         setDeleteProgress({current: 0, total: 0});
       }
     },
-    [isDeleting, load, maybeWarnAboutManageMedia, showAlert, t],
+    [isDeleting, load, showAlert, t],
   );
 
   const confirmDeleteVideo = useCallback(
@@ -487,7 +456,27 @@ export default function LibraryScreen({navigation}) {
           normalizeAudioLoudness: settings.normalizeAudioLoudness,
         });
 
-        await saveVideoToCameraRoll(optimizedPath);
+        const savedVideo = await saveVideoToCameraRoll(optimizedPath);
+        const savedFileName = getFileNameFromPath(optimizedPath);
+
+        if (savedFileName) {
+          await saveVideoRecordingMetadata(
+            savedFileName,
+            buildVideoRecordingMetadata({
+              videoFileName: savedFileName,
+              originalPath: item.path,
+              sourcePath: item.path,
+              savedPath: optimizedPath,
+              savedAssetUri: savedVideo?.uri,
+              compressedPath: optimizedPath,
+              savedDurationSeconds: item.duration,
+              requestedOptimizationMode: optimizationMode,
+              appliedOptimizationMode: optimizationMode,
+              usedFallbackToOriginal: false,
+              settings,
+            }),
+          );
+        }
         await load({showLoader: false});
 
         showAlert(
@@ -524,8 +513,7 @@ export default function LibraryScreen({navigation}) {
       isPro,
       isOptimizing,
       load,
-      settings.audioLimiterPreset,
-      settings.normalizeAudioLoudness,
+      settings,
       showProLockedAlert,
       showAlert,
       t,
