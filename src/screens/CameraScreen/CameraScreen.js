@@ -188,7 +188,7 @@ function getVideoExtensionFromItem(item) {
 
 export default function CameraScreen({ navigation }) {
   const {t} = useI18n();
-  const {billingError, isPro, purchasePro} = useProAccess();
+  const {isPro, purchasePro} = useProAccess();
   const camera = useRef(null);
   const recordingStartedAtRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
@@ -602,8 +602,7 @@ export default function CameraScreen({ navigation }) {
                     : t('camera.pro.purchasePendingTitle'),
                   purchased
                     ? t('camera.pro.purchaseSuccessMessage')
-                    : billingError ??
-                        t('camera.pro.purchasePendingMessage'),
+                    : t('camera.pro.purchasePendingMessage'),
                   [{text: t('common.ok')}],
                 );
               });
@@ -612,7 +611,7 @@ export default function CameraScreen({ navigation }) {
         ],
       );
     },
-    [billingError, purchasePro, showAlert, t],
+    [purchasePro, showAlert, t],
   );
 
   const ensurePro = useCallback(

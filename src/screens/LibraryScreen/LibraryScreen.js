@@ -112,7 +112,7 @@ export default function LibraryScreen({navigation}) {
     useState(false);
   const {settings} = useCameraSettings();
   const {showAlert} = useCustomAlert();
-  const {billingError, isPro, purchasePro} = useProAccess();
+  const {isPro, purchasePro} = useProAccess();
   const insets = useSafeAreaInsets();
   const activeSource = activeFilter === 'gallery' ? 'gallery' : 'videonly';
   const filterOptions = useMemo(
@@ -420,7 +420,7 @@ export default function LibraryScreen({navigation}) {
                   : t('camera.pro.purchasePendingTitle'),
                 purchased
                   ? t('camera.pro.purchaseSuccessMessage')
-                  : billingError ?? t('camera.pro.purchasePendingMessage'),
+                  : t('camera.pro.purchasePendingMessage'),
                 [{text: t('common.ok')}],
               );
             });
@@ -428,7 +428,7 @@ export default function LibraryScreen({navigation}) {
         },
       ],
     );
-  }, [billingError, purchasePro, showAlert, t]);
+  }, [purchasePro, showAlert, t]);
 
   const optimizeSelectedVideo = useCallback(
     async (item, optimizationMode) => {

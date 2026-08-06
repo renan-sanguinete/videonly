@@ -170,7 +170,7 @@ class PlayBillingModule(private val reactContext: ReactApplicationContext) :
 
       val productDetails = queryResult.productDetailsList.firstOrNull()
       if (productDetails == null) {
-        onUnavailable("Product $proProductId was not found.")
+        onUnavailable("Compra indisponível no momento.")
         return@queryProductDetailsAsync
       }
 

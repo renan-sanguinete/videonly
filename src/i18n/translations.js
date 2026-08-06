@@ -285,7 +285,7 @@ export const translations = {
     'settings.pro.priceFallback': 'Somente R$ 5,99',
     'settings.pro.unlockedAccess': 'Acesso liberado aos recursos PRO.',
     'settings.pro.unavailable':
-      'A compra será ativada quando o produto videonly_pro_unlock estiver configurado no Google Play Console.',
+      'A compra será ativada quando o desbloqueio PRO estiver configurado no Google Play Console.',
     'settings.noMetadata.title': 'Sem metadados',
     'settings.noMetadata.message':
       'Ainda não há arquivos de metadados salvos para exportar.',
@@ -805,7 +805,7 @@ export const translations = {
     'settings.pro.priceFallback': 'Only $1.99',
     'settings.pro.unlockedAccess': 'Access to PRO features unlocked.',
     'settings.pro.unavailable':
-      'Purchasing will be enabled when the videonly_pro_unlock product is configured in Google Play Console.',
+      'Purchasing will be enabled when the PRO unlock is configured in Google Play Console.',
     'settings.noMetadata.title': 'No metadata',
     'settings.noMetadata.message':
       'There are no saved metadata files to export yet.',

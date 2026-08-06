@@ -288,11 +288,11 @@ export default function SettingsScreen({navigation}) {
           : t('camera.pro.purchasePendingTitle'),
         purchased
           ? t('camera.pro.purchaseSuccessMessage')
-          : billingError ?? t('camera.pro.purchasePendingMessage'),
+          : t('camera.pro.purchasePendingMessage'),
         [{text: t('common.ok')}],
       );
     });
-  }, [billingError, purchasePro, showAlert, t]);
+  }, [purchasePro, showAlert, t]);
 
   const onRestorePurchase = useCallback(() => {
     restorePurchase().then(restored => {
