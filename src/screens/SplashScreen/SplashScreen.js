@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {Image, Linking, View} from 'react-native';
 
 import {useCameraSettings} from '../../context/CameraSettingsContext';
@@ -7,11 +7,19 @@ import {useI18n} from '../../i18n/I18nContext';
 import {ensureStartupPermissions} from '../../utils/appPermissions';
 import {styles} from './styles';
 
-export default function SplashScreen({navigation}) {
+export default function SplashScreen({navigation, onComplete}) {
   const {showAlert} = useCustomAlert();
   const {t} = useI18n();
   const {isHydrated, settings} = useCameraSettings();
   const hasRunRef = useRef(false);
+  const completeStartup = useCallback(() => {
+    if (typeof onComplete === 'function') {
+      onComplete();
+      return;
+    }
+
+    navigation?.replace?.('Camera');
+  }, [navigation, onComplete]);
 
   useEffect(() => {
     if (!isHydrated || hasRunRef.current) {
@@ -42,7 +50,7 @@ export default function SplashScreen({navigation}) {
                 text: t('camera.notNow'),
                 style: 'cancel',
                 onPress: () => {
-                  navigation.replace('Camera');
+                  completeStartup();
                 },
               },
               {
@@ -54,7 +62,7 @@ export default function SplashScreen({navigation}) {
                       error,
                     );
                   });
-                  navigation.replace('Camera');
+                  completeStartup();
                 },
               },
             ],
@@ -63,12 +71,12 @@ export default function SplashScreen({navigation}) {
           return;
         }
 
-        navigation.replace('Camera');
+        completeStartup();
       } catch (error) {
         console.warn('Falha ao solicitar permissões iniciais.', error);
 
         if (!isCancelled) {
-          navigation.replace('Camera');
+          completeStartup();
         }
       }
     })();
@@ -76,7 +84,7 @@ export default function SplashScreen({navigation}) {
     return () => {
       isCancelled = true;
     };
-  }, [isHydrated, navigation, settings.audio, showAlert, t]);
+  }, [completeStartup, isHydrated, settings.audio, showAlert, t]);
 
   return (
     <View style={styles.container}>
